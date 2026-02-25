@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>虎キング v1.1.7 by Popolo App.com</title>
+    <title>虎キング v1.1.6 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; }
@@ -26,7 +26,7 @@
 </head>
 <body>
 
-<div id="header">虎キング v1.1.7 by Popolo App.com</div>
+<div id="header">虎キング v1.1.6 by Popolo App.com</div>
 <div id="map"></div>
 <div class="status-panel" id="status">通信待機中...</div>
 
@@ -54,33 +54,16 @@
     const db = firebase.database();
     const myId = "tiger_" + Math.floor(Math.random() * 10000);
 
-
-
- // --- 2. 地図の初期化 (最後に表示した位置を復元) ---
-    // ブラウザに保存されている前回の位置を読み込む（なければ [35.0, 135.0]）
-    const lastPos = JSON.parse(localStorage.getItem('tora_king_pos')) || { lat: 35.0, lng: 135.0, zoom: 15 };
-    
-    const map = L.map('map', { zoomControl: false }).setView([lastPos.lat, lastPos.lng], lastPos.zoom);
-    
+    // --- 2. 地図の初期化 ---
+    const map = L.map('map', { zoomControl: false }).setView([35.0, 135.0], 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap'
     }).addTo(map);
-    
     L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-    // 地図を動かし終わったら、その場所をブラウザに覚えさせる
-    map.on('moveend', () => {
-        const center = map.getCenter();
-        const zoom = map.getZoom();
-        localStorage.setItem('tora_king_pos', JSON.stringify({ lat: center.lat, lng: center.lng, zoom: zoom }));
-    });
 
     const userMarkers = {};   // 参加者のマーカー
     const objectMarkers = {}; // マークブイ・本部船のマーカー
-    let isFollowing = false;  // 【追加】勝手に現在地へ戻らないためのフラグ
-   
-   
-   
+
     // --- 3. 自分の位置を取得・送信 ---
     let myMarker = L.circleMarker([0, 0], { radius: 8, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1 }).addTo(map);
 
@@ -96,18 +79,11 @@
                 ts: Date.now()
             });
 
-
-
-myMarker.setLatLng(latlng);
-// 初回だけ自分の場所に飛ばす、または追従モードがONの時だけ飛ばす
-if (isFollowing) {
-    map.panTo(latlng);
-}
-
-
-
-
-
+            myMarker.setLatLng(latlng);
+            map.panTo(latlng);
+            document.getElementById('status').innerText = `現在地: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+        }, null, { enableHighAccuracy: true });
+    }
 
     // --- 4. 参加者のリアルタイム同期 ---
     db.ref('users').on('value', snap => {
