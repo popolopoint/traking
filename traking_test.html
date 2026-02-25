@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>虎キング v1.1.8 by Popolo App.com</title>
+    <title>虎キング v1.2.0 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; }
@@ -32,7 +32,7 @@
 </head>
 <body>
 
-<div id="header">虎キング v1.1.8 by Popolo App.com</div>
+<div id="header">虎キング v1.2.0 by Popolo App.com</div>
 <div id="map"></div>
 <div class="status-panel" id="status">通信待機中...</div>
 <button id="recenter-btn" onclick="goMe()">🎯</button>
@@ -77,27 +77,43 @@
     const objectMarkers = {};
     let isFollowing = false; // 自動追従フラグ
 
-    // --- 3. 自分の位置を取得・送信 ---
-    let myMarker = L.circleMarker([0, 0], { radius: 8, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1 }).addTo(map);
+
+
+// --- 3. 自分の位置を取得・送信 (残像除去版) ---
+    let myMarker = null; // 最初は空にしておく
 
     if ("geolocation" in navigator) {
         navigator.geolocation.watchPosition(pos => {
             const { latitude, longitude, speed } = pos.coords;
             const latlng = [latitude, longitude];
             
+            // Firebaseへ送信
             db.ref('users/' + myId).set({
                 lat: latitude, lng: longitude,
                 speed: speed || 0,
                 ts: Date.now()
             });
 
-            myMarker.setLatLng(latlng);
+            // 【重要】もしすでにマーカーがあれば場所を更新、なければ作成
+            if (!myMarker) {
+                myMarker = L.circleMarker(latlng, { radius: 8, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1 }).addTo(map);
+            } else {
+                myMarker.setLatLng(latlng);
+            }
+
             if (isFollowing) {
                 map.panTo(latlng);
             }
             document.getElementById('status').innerText = `現在地: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-        }, null, { enableHighAccuracy: true }); // カッコの閉じ忘れを修正しました
+        }, null, { enableHighAccuracy: true });
     }
+
+
+
+
+
+    
+    
 
     // 🎯自分に戻るボタンの処理
     window.goMe = function() {
@@ -110,12 +126,28 @@
         if (!e.hard) isFollowing = false;
     });
 
-    // --- 4. 参加者のリアルタイム同期 ---
+
+
+// --- 4. 参加者のリアルタイム同期 (修正版) ---
     db.ref('users').on('value', snap => {
         const users = snap.val();
+        
+        // 10分以上更新がない古いユーザーや、一旦全員のマーカーを管理
         for (let id in users) {
+            const { lat, lng, ts } = users[id];
+            
+            // 自分のデータは飛ばす
             if (id === myId) continue;
-            const { lat, lng } = users[id];
+
+            // 古いデータ（例：5分以上更新なし）は表示しない工夫も可能
+            if (Date.now() - ts > 300000) {
+                if (userMarkers[id]) {
+                    map.removeLayer(userMarkers[id]);
+                    delete userMarkers[id];
+                }
+                continue;
+            }
+
             if (!userMarkers[id]) {
                 userMarkers[id] = L.circleMarker([lat, lng], { radius: 6, color: '#ff9900' }).addTo(map);
             } else {
@@ -123,6 +155,12 @@
             }
         }
     });
+
+
+
+
+
+
 
     // --- 5. マークブイ・本部船の同期 ---
     db.ref('objects').on('value', snap => {
