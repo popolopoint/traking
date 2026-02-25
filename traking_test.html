@@ -3,16 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.2.6 by Popolo App.com</title>
+    <title>虎キング v1.2.7 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
         #header { background: #1a1a1a; color: #ff9900; padding: 10px; text-align: center; font-weight: bold; position: fixed; width: 100%; z-index: 3000; border-bottom: 2px solid #ff9900; }
         #map { height: 100vh; width: 100vw; z-index: 1; }
-        #user-list { position: fixed; top: 60px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 10px; border-radius: 8px; width: 100px; max-height: 200px; overflow-y: auto; border: 1px solid #ff9900; font-size: 12px; }
-        .user-item { border-bottom: 1px solid #444; padding: 4px 0; }
+        /* 右側の参加者リスト枠 */
+        #user-list { position: fixed; top: 60px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 10px; border-radius: 8px; width: 100px; max-height: 250px; overflow-y: auto; border: 1px solid #ff9900; font-size: 11px; pointer-events: auto; }
+        .list-title { color: #ff9900; font-weight: bold; border-bottom: 1px solid #ff9900; margin-bottom: 5px; padding-bottom: 2px; }
+        .user-item { border-bottom: 1px solid #444; padding: 4px 0; line-height: 1.2; }
         .user-item.me { color: #00ff00; font-weight: bold; }
         .user-label { background: rgba(0,0,0,0.7); color: #00ff00; border: 1px solid #ff9900; font-size: 11px; font-weight: bold; padding: 2px 5px; border-radius: 4px; }
+        .other-label { color: #ffffff; border: 1px solid #ccc; }
         #recenter-btn, #name-btn { position: fixed; right: 10px; z-index: 2000; background: #fff; border: 2px solid #ff9900; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
         #recenter-btn { bottom: 80px; font-size: 20px; }
         #name-btn { bottom: 135px; font-size: 18px; color: #333; }
@@ -20,10 +23,10 @@
     </style>
 </head>
 <body>
-<div id="header">虎キング v1.2.6 by Popolo App.com</div>
-<div id="user-list"><div style="color:#ff9900;font-weight:bold;margin-bottom:5px;">参加者</div><div id="list-content"></div></div>
+<div id="header">虎キング v1.2.7 by Popolo App.com</div>
+<div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
 <div id="map"></div>
-<div class="status-panel" id="status">待機中</div>
+<div class="status-panel" id="status">位置情報取得中...</div>
 <button id="name-btn" onclick="changeName()">👤</button>
 <button id="recenter-btn" onclick="goMe()">🎯</button>
 
@@ -31,8 +34,13 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    let myName = localStorage.getItem('tora_king_name') || prompt("名前（番号）入力","選手");
-    localStorage.setItem('tora_king_name', myName);
+    // --- 1. 初期設定 ---
+    let myName = localStorage.getItem('tora_king_name');
+    if(!myName) {
+        myName = prompt("参加名を入力してください","選手");
+        if(!myName) myName = "選手" + Math.floor(Math.random()*100);
+        localStorage.setItem('tora_king_name', myName);
+    }
 
     const firebaseConfig = { apiKey: "AIzaSyB_OOgXiE1YkFzQK0Nujhnx3lNM_7dp66U", authDomain: "tra-king.firebaseapp.com", databaseURL: "https://tra-king-default-rtdb.firebaseio.com", projectId: "tra-king", storageBucket: "tra-king.firebasestorage.app", messagingSenderId: "355068381368", appId: "1:355068381368:web:440efbe59649791404cc4d" };
     firebase.initializeApp(firebaseConfig);
@@ -45,44 +53,75 @@
     let myMarker = null, isFollowing = false;
     const userMarkers = {};
 
+    // --- 2. 自分の位置管理 ---
     if (navigator.geolocation) {
         navigator.geolocation.watchPosition(pos => {
             const {latitude, longitude, speed} = pos.coords;
             db.ref('users/'+myId).set({lat: latitude, lng: longitude, name: myName, speed: speed||0, ts: Date.now()});
+            
             if (!myMarker) {
-                myMarker = L.circleMarker([latitude, longitude], {radius: 8, color: '#00ff00', fillOpacity: 1}).addTo(map);
+                myMarker = L.circleMarker([latitude, longitude], {radius: 8, color: '#00ff00', fillOpacity: 1, zIndexOffset: 1000}).addTo(map);
                 myMarker.bindTooltip(myName, {permanent: true, direction: 'top', className: 'user-label'}).openTooltip();
-            } else { myMarker.setLatLng([latitude, longitude]); }
+            } else {
+                myMarker.setLatLng([latitude, longitude]);
+                myMarker.setTooltipContent(myName);
+            }
             if (isFollowing) map.panTo([latitude, longitude]);
-            document.getElementById('status').innerText = `${latitude.toFixed(4)},${longitude.toFixed(4)}`;
+            document.getElementById('status').innerText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
         }, null, {enableHighAccuracy: true});
     }
 
-    window.changeName = () => {
-        let n = prompt("新しい名前:", myName);
-        if(n) { myName = n; localStorage.setItem('tora_king_name', n); db.ref('users/'+myId+'/name').set(n); if(myMarker) myMarker.setTooltipContent(n); }
-    };
-    window.goMe = () => { isFollowing = true; if(myMarker) map.panTo(myMarker.getLatLng()); };
-    map.on('movestart', e => { if(!e.hard) isFollowing = false; });
-
+    // --- 3. 参加者リスト & 地図マーカー同期 ---
     db.ref('users').on('value', snap => {
         const users = snap.val();
         if (!users) return;
+        
         let listHtml = "";
+        const now = Date.now();
+
         for (let id in users) {
             const u = users[id];
-            if (Date.now() - u.ts > 600000) { if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; } continue; }
+            // 10分以上更新がないユーザーは除外
+            if (now - u.ts > 600000) {
+                if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
+                continue;
+            }
+
             const isMe = (id === myId);
-            listHtml += `<div class="user-item ${isMe?'me':''}">${u.name||'参加者'}<br><small>${(u.speed*1.94).toFixed(1)}kt</small></div>`;
+            const speedKt = (u.speed * 1.94384).toFixed(1);
+
+            // リスト用HTML作成 (自分も他人も含める)
+            listHtml += `<div class="user-item ${isMe ? 'me' : ''}">
+                            ${u.name || '参加者'}<br>
+                            <span style="color:#aaa; font-size:9px;">${speedKt} kt</span>
+                         </div>`;
+
+            // 自分以外の地図マーカー処理
             if (!isMe) {
                 if (!userMarkers[id]) {
-                    userMarkers[id] = L.circleMarker([u.lat, u.lng], {radius: 6, color: '#ff9900'}).addTo(map);
-                    userMarkers[id].bindTooltip(u.name, {permanent: true, direction: 'top', className: 'user-label'}).openTooltip();
-                } else { userMarkers[id].setLatLng([u.lat, u.lng]); userMarkers[id].setTooltipContent(u.name); }
+                    userMarkers[id] = L.circleMarker([u.lat, u.lng], {radius: 6, color: '#ff9900', fillOpacity: 0.8}).addTo(map);
+                    userMarkers[id].bindTooltip(u.name || '参加者', {permanent: true, direction: 'top', className: 'user-label other-label'}).openTooltip();
+                } else {
+                    userMarkers[id].setLatLng([u.lat, u.lng]);
+                    userMarkers[id].setTooltipContent(u.name || '参加者');
+                }
             }
         }
         document.getElementById('list-content').innerHTML = listHtml;
     });
+
+    // --- 4. 操作関数 ---
+    window.changeName = () => {
+        let n = prompt("新しい名前:", myName);
+        if(n) {
+            myName = n;
+            localStorage.setItem('tora_king_name', n);
+            db.ref('users/'+myId+'/name').set(n);
+            if(myMarker) myMarker.setTooltipContent(n);
+        }
+    };
+    window.goMe = () => { isFollowing = true; if(myMarker) map.panTo(myMarker.getLatLng()); };
+    map.on('movestart', e => { if(!e.hard) isFollowing = false; });
 </script>
 </body>
 </html>
