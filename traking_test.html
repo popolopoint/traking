@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>虎キング v1.1.7 by Popolo App.com</title>
+    <title>虎キング v1.1.8 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; }
@@ -17,49 +17,48 @@
             position: fixed; bottom: 20px; right: 10px; z-index: 2000;
             background: rgba(0,0,0,0.8); color: #fff; padding: 10px; border-radius: 8px; font-size: 11px;
         }
-        /* ポップアップ内のスタイル */
+        /* 自分の場所に戻るボタン */
+        #recenter-btn {
+            position: fixed; bottom: 80px; right: 10px; z-index: 2000;
+            background: #fff; border: 2px solid #ff9900; border-radius: 50%;
+            width: 44px; height: 44px; cursor: pointer; font-size: 22px; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
         .popup-form { color: #333; min-width: 150px; }
         .popup-form select, .popup-form input { width: 100%; margin: 5px 0; padding: 5px; box-sizing: border-box; }
-        .btn-save { background: #ff9900; color: white; border: none; width: 100%; padding: 8px; cursor: pointer; border-radius: 4px; }
-        .btn-del { background: #ff4444; color: white; border: none; width: 100%; padding: 5px; margin-top: 10px; cursor: pointer; border-radius: 4px; font-size: 10px; }
+        .btn-save { background: #ff9900; color: white; border: none; width: 100%; padding: 8px; cursor: pointer; border-radius: 4px; font-weight: bold; }
+        .btn-del { background: #ff4444; color: white; border: none; width: 100%; padding: 6px; margin-top: 10px; cursor: pointer; border-radius: 4px; font-size: 11px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="header">虎キング v1.1.7 by Popolo App.com</div>
+<div id="header">虎キング v1.1.8 by Popolo App.com</div>
 <div id="map"></div>
 <div class="status-panel" id="status">通信待機中...</div>
+<button id="recenter-btn" onclick="goMe()">🎯</button>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-    // --- 1. Firebaseの設定 (ご自身のプロジェクト情報を入れてください) ---
-  const firebaseConfig = {
-    apiKey: "AIzaSyB_OOgXiE1YkFzQK0Nujhnx3lNM_7dp66U",
-    authDomain: "tra-king.firebaseapp.com",
-    // ↓ここを追加してください！
-    databaseURL: "https://tra-king-default-rtdb.firebaseio.com", 
-    projectId: "tra-king",
-    storageBucket: "tra-king.firebasestorage.app",
-    messagingSenderId: "355068381368",
-    appId: "1:355068381368:web:440efbe59649791404cc4d"
-  };
-
-
-
+    // --- 1. Firebaseの設定 ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyB_OOgXiE1YkFzQK0Nujhnx3lNM_7dp66U",
+        authDomain: "tra-king.firebaseapp.com",
+        databaseURL: "https://tra-king-default-rtdb.firebaseio.com", 
+        projectId: "tra-king",
+        storageBucket: "tra-king.firebasestorage.app",
+        messagingSenderId: "355068381368",
+        appId: "1:355068381368:web:440efbe59649791404cc4d"
+    };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const myId = "tiger_" + Math.floor(Math.random() * 10000);
 
-
-
- // --- 2. 地図の初期化 (最後に表示した位置を復元) ---
-    // ブラウザに保存されている前回の位置を読み込む（なければ [35.0, 135.0]）
+    // --- 2. 地図の初期化 (位置記憶) ---
     const lastPos = JSON.parse(localStorage.getItem('tora_king_pos')) || { lat: 35.0, lng: 135.0, zoom: 15 };
-    
     const map = L.map('map', { zoomControl: false }).setView([lastPos.lat, lastPos.lng], lastPos.zoom);
     
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -68,19 +67,16 @@
     
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // 地図を動かし終わったら、その場所をブラウザに覚えさせる
     map.on('moveend', () => {
         const center = map.getCenter();
         const zoom = map.getZoom();
         localStorage.setItem('tora_king_pos', JSON.stringify({ lat: center.lat, lng: center.lng, zoom: zoom }));
     });
 
-    const userMarkers = {};   // 参加者のマーカー
-    const objectMarkers = {}; // マークブイ・本部船のマーカー
-    let isFollowing = false;  // 【追加】勝手に現在地へ戻らないためのフラグ
-   
-   
-   
+    const userMarkers = {};
+    const objectMarkers = {};
+    let isFollowing = false; // 自動追従フラグ
+
     // --- 3. 自分の位置を取得・送信 ---
     let myMarker = L.circleMarker([0, 0], { radius: 8, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1 }).addTo(map);
 
@@ -89,25 +85,30 @@
             const { latitude, longitude, speed } = pos.coords;
             const latlng = [latitude, longitude];
             
-            // Firebaseへ送信
             db.ref('users/' + myId).set({
                 lat: latitude, lng: longitude,
                 speed: speed || 0,
                 ts: Date.now()
             });
 
+            myMarker.setLatLng(latlng);
+            if (isFollowing) {
+                map.panTo(latlng);
+            }
+            document.getElementById('status').innerText = `現在地: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+        }, null, { enableHighAccuracy: true }); // カッコの閉じ忘れを修正しました
+    }
 
+    // 🎯自分に戻るボタンの処理
+    window.goMe = function() {
+        isFollowing = true;
+        map.panTo(myMarker.getLatLng());
+    };
 
-myMarker.setLatLng(latlng);
-// 初回だけ自分の場所に飛ばす、または追従モードがONの時だけ飛ばす
-if (isFollowing) {
-    map.panTo(latlng);
-}
-
-
-
-
-
+    // 地図を触ったら追従解除
+    map.on('movestart', (e) => {
+        if (!e.hard) isFollowing = false;
+    });
 
     // --- 4. 参加者のリアルタイム同期 ---
     db.ref('users').on('value', snap => {
@@ -123,124 +124,73 @@ if (isFollowing) {
         }
     });
 
+    // --- 5. マークブイ・本部船の同期 ---
+    db.ref('objects').on('value', snap => {
+        for (let key in objectMarkers) map.removeLayer(objectMarkers[key]);
+        const objects = snap.val();
+        if (!objects) return;
 
+        for (let key in objects) {
+            const obj = objects[key];
+            let iconHtml = "";
+            if (obj.type === 'ship') {
+                iconHtml = `<div style="font-size:18px;">🚤</div>`;
+            } else {
+                const colorMap = { pink: "#ff66cc", orange: "#ff9900", red: "#ff0000", green: "#00ff00", yellow: "#ffff00" };
+                const color = colorMap[obj.color] || "#ff0000";
+                iconHtml = `<svg width="15" height="18" viewBox="0 0 100 120"><path d="M50 5 L95 100 Q95 115 50 115 Q5 115 5 100 Z" fill="${color}" stroke="white" stroke-width="6" /></svg>`;
+            }
+            
+            const marker = L.marker([obj.lat, obj.lng], {
+                icon: L.divIcon({ html: iconHtml, className: 'custom-icon', iconSize: [15, 18], iconAnchor: [7.5, 16] })
+            }).addTo(map);
 
-
-// --- 5. マークブイ・本部船の同期 & 削除機能 ---
-db.ref('objects').on('value', snap => {
-    // 既存のマーカーを一旦すべて削除
-    for (let key in objectMarkers) map.removeLayer(objectMarkers[key]);
-    
-    const objects = snap.val();
-    if (!objects) return;
-
-    for (let key in objects) {
-        const obj = objects[key];
-        let iconHtml = "";
-
-        if (obj.type === 'ship') {
-            // ゴムボート（サイズを半分: 約15px〜20px）
-            iconHtml = `<div style="font-size:18px; filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.5));">🚤</div>`;
-        } else {
-            // 角の丸い三角錐（サイズを約半分に縮小：width 20）
-            const colorMap = {
-                pink: "#ff66cc", orange: "#ff9900", red: "#ff0000", green: "#00ff00", yellow: "#ffff00"
-            };
-            const color = colorMap[obj.color] || "#ff0000";
-            iconHtml = `
-                <svg width="15" height="18" viewBox="0 0 100 120">
-                    <path d="M50 5 L95 100 Q95 115 50 115 Q5 115 5 100 Z" fill="${color}" stroke="white" stroke-width="6" />
-                </svg>`;
+            marker.bindPopup(`
+                <div class="popup-form" style="text-align:center;">
+                    <b>${obj.type === 'ship' ? '本部船' : 'マークブイ'}</b><br>
+                    ${obj.comment || ''}<br>
+                    <button class="btn-del" onclick="deleteObject('${key}')">🗑️ 削除</button>
+                </div>
+            `);
+            objectMarkers[key] = marker;
         }
-        
-        const marker = L.marker([obj.lat, obj.lng], {
-            icon: L.divIcon({ 
-                html: iconHtml, 
-                className: 'custom-icon', 
-                iconSize: [15, 18], 
-                iconAnchor: [7.5, 16] 
-            })
-        }).addTo(map);
+    });
 
-        // --- 削除ボタン付きのポップアップ ---
-        marker.bindPopup(`
-            <div class="popup-form" style="text-align:center; min-width:120px;">
-                <b style="font-size:13px;">${obj.type === 'ship' ? '本部船' : 'マークブイ'}</b><br>
-                <span style="font-size:11px; color:#555;">${obj.comment || 'コメントなし'}</span><br>
-                <hr style="border:0; border-top:1px solid #ddd; margin:8px 0;">
-                <button onclick="deleteObject('${key}')" 
-                    style="background:#ff4444; color:white; border:none; padding:6px; border-radius:4px; cursor:pointer; width:100%; font-size:11px; font-weight:bold;">
-                    🗑️ この地点を削除
-                </button>
-            </div>
-        `);
-        objectMarkers[key] = marker;
-    }
-});
-
-
-
-
-
-  
-
-// --- 6. タップで新規設置 ---
-map.on('click', e => {
-    const { lat, lng } = e.latlng;
-    const popupContent = `
-        <div class="popup-form">
-            <b>新規設置</b>
-            <select id="new_type" onchange="toggleColorSelect()">
-                <option value="buoy">🚩 マークブイ</option>
-                <option value="ship">🚤 ゴムボート</option>
-            </select>
-            <div id="color_area">
-                色: <select id="new_color">
-                    <option value="pink">ピンク</option>
-                    <option value="orange" selected>オレンジ</option>
-                    <option value="red">赤</option>
-                    <option value="green">緑</option>
-                    <option value="yellow">黄色</option>
+    // --- 6. タップで新規設置 ---
+    map.on('click', e => {
+        const { lat, lng } = e.latlng;
+        const popupContent = `
+            <div class="popup-form">
+                <b>新規設置</b>
+                <select id="new_type" onchange="toggleColorSelect()">
+                    <option value="buoy">🚩 マークブイ</option>
+                    <option value="ship">🚤 ゴムボート</option>
                 </select>
-            </div>
-            <input type="text" id="new_comment" placeholder="コメント (1マーク等)">
-            <button class="btn-save" onclick="saveObject(${lat}, ${lng})">設置を共有</button>
-        </div>
-    `;
-    L.popup().setLatLng(e.latlng).setContent(popupContent).openOn(map);
-});
+                <div id="color_area">色: <select id="new_color"><option value="pink">ピンク</option><option value="orange" selected>オレンジ</option><option value="red">赤</option><option value="green">緑</option><option value="yellow">黄色</option></select></div>
+                <input type="text" id="new_comment" placeholder="コメント">
+                <button class="btn-save" onclick="saveObject(${lat}, ${lng})">共有</button>
+            </div>`;
+        L.popup().setLatLng(e.latlng).setContent(popupContent).openOn(map);
+    });
 
-// 船のときは色選択を隠す工夫
-window.toggleColorSelect = function() {
-    const type = document.getElementById('new_type').value;
-    document.getElementById('color_area').style.display = (type === 'ship') ? 'none' : 'block';
-};
+    window.toggleColorSelect = () => {
+        const type = document.getElementById('new_type').value;
+        document.getElementById('color_area').style.display = (type === 'ship') ? 'none' : 'block';
+    };
 
-function saveObject(lat, lng) {
-    const type = document.getElementById('new_type').value;
-    const color = document.getElementById('new_color').value;
-    const comment = document.getElementById('new_comment').value;
-    db.ref('objects').push({ type, color, lat, lng, comment, ts: Date.now() });
-    map.closePopup();
-}
+    window.saveObject = (lat, lng) => {
+        const type = document.getElementById('new_type').value;
+        const color = document.getElementById('new_color').value;
+        const comment = document.getElementById('new_comment').value;
+        db.ref('objects').push({ type, color, lat, lng, comment, ts: Date.now() });
+        map.closePopup();
+    };
 
- 
-
-// --- 6. 削除実行関数 (グローバルに配置) ---
-window.deleteObject = function(key) {
-    if(confirm("このマークを全員の画面から削除しますか？")) {
-        db.ref('objects/' + key).remove()
-          .then(() => map.closePopup())
-          .catch(err => alert("削除エラー: " + err.message));
-    }
-};
-
-
-
-
-
-
-
+    window.deleteObject = (key) => {
+        if(confirm("削除しますか？")) {
+            db.ref('objects/' + key).remove().then(() => map.closePopup());
+        }
+    };
 
 </script>
 </body>
