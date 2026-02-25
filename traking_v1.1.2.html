@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>虎キング v1.1.3 by Popolo App.com</title>
+    <title>虎キング v1.1.2 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; }
@@ -26,7 +26,7 @@
 </head>
 <body>
 
-<div id="header">虎キング v1.1.3 by Popolo App.com</div>
+<div id="header">虎キング v1.1.2 by Popolo App.com</div>
 <div id="map"></div>
 <div class="status-panel" id="status">通信待機中...</div>
 
@@ -100,88 +100,54 @@
     });
 
     // --- 5. マークブイ・本部船の同期 & 削除機能 ---
-db.ref('objects').on('value', snap => {
-    for (let key in objectMarkers) map.removeLayer(objectMarkers[key]);
-    
-    const objects = snap.val();
-    for (let key in objects) {
-        const obj = objects[key];
-        let iconHtml = "";
-
-        if (obj.type === 'ship') {
-            // ゴムボート（黒いボートのイメージ）
-            iconHtml = `<div style="font-size:30px; filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.5));">🚤</div>`;
-        } else {
-            // 角の丸い三角錐（SVGで描画）
-            const colorMap = {
-                pink: "#ff66cc", orange: "#ff9900", red: "#ff0000", green: "#00ff00", yellow: "#ffff00"
-            };
-            const color = colorMap[obj.color] || "#ff0000";
-            iconHtml = `
-                <svg width="40" height="40" viewBox="0 0 100 100">
-                    <path d="M50 5 L90 85 Q90 95 50 95 Q10 95 10 85 Z" fill="${color}" stroke="white" stroke-width="3" />
-                </svg>`;
-        }
+    db.ref('objects').on('value', snap => {
+        // 一旦すべて消して再描画（または差分更新）
+        for (let key in objectMarkers) map.removeLayer(objectMarkers[key]);
         
-        const marker = L.marker([obj.lat, obj.lng], {
-            icon: L.divIcon({ 
-                html: iconHtml, 
-                className: 'custom-icon', 
-                iconSize: [40, 40], 
-                iconAnchor: [20, 35] 
-            })
-        }).addTo(map);
+        const objects = snap.val();
+        for (let key in objects) {
+            const obj = objects[key];
+            const color = obj.type === 'ship' ? '#3366ff' : '#ff0000'; // 船は青、マークは赤
+            const iconLabel = obj.type === 'ship' ? '🚢' : '🚩';
+            
+            const marker = L.marker([obj.lat, obj.lng], {
+                icon: L.divIcon({ html: `<div style="font-size:24px;">${iconLabel}</div>`, className: 'dummy' })
+            }).addTo(map);
 
-        marker.bindPopup(`
+            marker.bindPopup(`
+                <div class="popup-form">
+                    <b>${obj.type === 'ship' ? '本部船' : 'マーク'}</b><br>
+                    コメント: ${obj.comment || 'なし'}<br>
+                    <button class="btn-del" onclick="deleteObject('${key}')">削除する</button>
+                </div>
+            `);
+            objectMarkers[key] = marker;
+        }
+    });
+
+    // --- 6. タップで新規設置 ---
+    map.on('click', e => {
+        const { lat, lng } = e.latlng;
+        const popupContent = `
             <div class="popup-form">
-                <b>${obj.type === 'ship' ? '本部船 (ゴムボート)' : 'マークブイ'}</b><br>
-                コメント: ${obj.comment || 'なし'}<br>
-                <button class="btn-del" onclick="deleteObject('${key}')">削除する</button>
-            </div>
-        `);
-        objectMarkers[key] = marker;
-    }
-});
-
-// --- 6. タップで新規設置 ---
-map.on('click', e => {
-    const { lat, lng } = e.latlng;
-    const popupContent = `
-        <div class="popup-form">
-            <b>新規設置</b>
-            <select id="new_type" onchange="toggleColorSelect()">
-                <option value="buoy">🚩 マークブイ</option>
-                <option value="ship">🚤 ゴムボート</option>
-            </select>
-            <div id="color_area">
-                色: <select id="new_color">
-                    <option value="pink">ピンク</option>
-                    <option value="orange" selected>オレンジ</option>
-                    <option value="red">赤</option>
-                    <option value="green">緑</option>
-                    <option value="yellow">黄色</option>
+                <b>新規設置</b>
+                <select id="new_type">
+                    <option value="buoy">🚩 マークブイ</option>
+                    <option value="ship">🚢 本部船</option>
                 </select>
+                <input type="text" id="new_comment" placeholder="コメントを入力">
+                <button class="btn-save" onclick="saveObject(${lat}, ${lng})">設置を共有</button>
             </div>
-            <input type="text" id="new_comment" placeholder="コメント (1マーク等)">
-            <button class="btn-save" onclick="saveObject(${lat}, ${lng})">設置を共有</button>
-        </div>
-    `;
-    L.popup().setLatLng(e.latlng).setContent(popupContent).openOn(map);
-});
+        `;
+        L.popup().setLatLng(e.latlng).setContent(popupContent).openOn(map);
+    });
 
-// 船のときは色選択を隠す工夫
-window.toggleColorSelect = function() {
-    const type = document.getElementById('new_type').value;
-    document.getElementById('color_area').style.display = (type === 'ship') ? 'none' : 'block';
-};
-
-function saveObject(lat, lng) {
-    const type = document.getElementById('new_type').value;
-    const color = document.getElementById('new_color').value;
-    const comment = document.getElementById('new_comment').value;
-    db.ref('objects').push({ type, color, lat, lng, comment, ts: Date.now() });
-    map.closePopup();
-}
+    function saveObject(lat, lng) {
+        const type = document.getElementById('new_type').value;
+        const comment = document.getElementById('new_comment').value;
+        db.ref('objects').push({ type, lat, lng, comment, ts: Date.now() });
+        map.closePopup();
+    }
 
     window.deleteObject = function(key) {
         if(confirm("このマークを全員の画面から削除しますか？")) {
