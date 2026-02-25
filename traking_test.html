@@ -124,7 +124,7 @@ db.ref('objects').on('value', snap => {
             };
             const color = colorMap[obj.color] || "#ff0000";
             iconHtml = `
-                <svg width="10" height="12" viewBox="0 0 100 120">
+                <svg width="15" height="18" viewBox="0 0 100 120">
                     <path d="M50 5 L95 100 Q95 115 50 115 Q5 115 5 100 Z" fill="${color}" stroke="white" stroke-width="6" />
                 </svg>`;
         }
@@ -133,8 +133,8 @@ db.ref('objects').on('value', snap => {
             icon: L.divIcon({ 
                 html: iconHtml, 
                 className: 'custom-icon', 
-                iconSize: [10, 12], 
-                iconAnchor: [5, 11] 
+                iconSize: [15, 18], 
+                iconAnchor: [7.5, 16] 
             })
         }).addTo(map);
 
