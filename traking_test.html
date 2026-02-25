@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>虎キング v1.1.2 by Popolo App.com</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; padding: 0; font-family: sans-serif; background: #000; }
+        #header { 
+            background: #1a1a1a; color: #ff9900; padding: 12px; text-align: center;
+            font-weight: bold; font-size: 16px; position: fixed; width: 100%; z-index: 2000;
+            border-bottom: 2px solid #ff9900; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+        #map { height: 100vh; width: 100vw; cursor: crosshair; }
+        .status-panel {
+            position: fixed; bottom: 20px; right: 10px; z-index: 2000;
+            background: rgba(0,0,0,0.8); color: #fff; padding: 10px; border-radius: 8px; font-size: 11px;
+        }
+        /* ポップアップ内のスタイル */
+        .popup-form { color: #333; min-width: 150px; }
+        .popup-form select, .popup-form input { width: 100%; margin: 5px 0; padding: 5px; box-sizing: border-box; }
+        .btn-save { background: #ff9900; color: white; border: none; width: 100%; padding: 8px; cursor: pointer; border-radius: 4px; }
+        .btn-del { background: #ff4444; color: white; border: none; width: 100%; padding: 5px; margin-top: 10px; cursor: pointer; border-radius: 4px; font-size: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="header">虎キング v1.1.2 by Popolo App.com</div>
+<div id="map"></div>
+<div class="status-panel" id="status">通信待機中...</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    // --- 1. Firebaseの設定 (ご自身のプロジェクト情報を入れてください) ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyB_OOgXiE1YkFzQK0Nujhnx3lNM_7dp66U",
+    authDomain: "tra-king.firebaseapp.com",
+    // ↓ここを追加してください！
+    databaseURL: "https://tra-king-default-rtdb.firebaseio.com", 
+    projectId: "tra-king",
+    storageBucket: "tra-king.firebasestorage.app",
+    messagingSenderId: "355068381368",
+    appId: "1:355068381368:web:440efbe59649791404cc4d"
+  };
+
+
+
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const myId = "tiger_" + Math.floor(Math.random() * 10000);
+
+    // --- 2. 地図の初期化 ---
+    const map = L.map('map', { zoomControl: false }).setView([35.0, 135.0], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+    const userMarkers = {};   // 参加者のマーカー
+    const objectMarkers = {}; // マークブイ・本部船のマーカー
+
+    // --- 3. 自分の位置を取得・送信 ---
+    let myMarker = L.circleMarker([0, 0], { radius: 8, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1 }).addTo(map);
+
+    if ("geolocation" in navigator) {
+        navigator.geolocation.watchPosition(pos => {
+            const { latitude, longitude, speed } = pos.coords;
+            const latlng = [latitude, longitude];
+            
+            // Firebaseへ送信
+            db.ref('users/' + myId).set({
+                lat: latitude, lng: longitude,
+                speed: speed || 0,
+                ts: Date.now()
+            });
+
+            myMarker.setLatLng(latlng);
+            map.panTo(latlng);
+            document.getElementById('status').innerText = `現在地: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+        }, null, { enableHighAccuracy: true });
+    }
+
+    // --- 4. 参加者のリアルタイム同期 ---
+    db.ref('users').on('value', snap => {
+        const users = snap.val();
+        for (let id in users) {
+            if (id === myId) continue;
+            const { lat, lng } = users[id];
+            if (!userMarkers[id]) {
+                userMarkers[id] = L.circleMarker([lat, lng], { radius: 6, color: '#ff9900' }).addTo(map);
+            } else {
+                userMarkers[id].setLatLng([lat, lng]);
+            }
+        }
+    });
+
+    // --- 5. マークブイ・本部船の同期 & 削除機能 ---
+    db.ref('objects').on('value', snap => {
+        // 一旦すべて消して再描画（または差分更新）
+        for (let key in objectMarkers) map.removeLayer(objectMarkers[key]);
+        
+        const objects = snap.val();
+        for (let key in objects) {
+            const obj = objects[key];
+            const color = obj.type === 'ship' ? '#3366ff' : '#ff0000'; // 船は青、マークは赤
+            const iconLabel = obj.type === 'ship' ? '🚢' : '🚩';
+            
+            const marker = L.marker([obj.lat, obj.lng], {
+                icon: L.divIcon({ html: `<div style="font-size:24px;">${iconLabel}</div>`, className: 'dummy' })
+            }).addTo(map);
+
+            marker.bindPopup(`
+                <div class="popup-form">
+                    <b>${obj.type === 'ship' ? '本部船' : 'マーク'}</b><br>
+                    コメント: ${obj.comment || 'なし'}<br>
+                    <button class="btn-del" onclick="deleteObject('${key}')">削除する</button>
+                </div>
+            `);
+            objectMarkers[key] = marker;
+        }
+    });
+
+    // --- 6. タップで新規設置 ---
+    map.on('click', e => {
+        const { lat, lng } = e.latlng;
+        const popupContent = `
+            <div class="popup-form">
+                <b>新規設置</b>
+                <select id="new_type">
+                    <option value="buoy">🚩 マークブイ</option>
+                    <option value="ship">🚢 本部船</option>
+                </select>
+                <input type="text" id="new_comment" placeholder="コメントを入力">
+                <button class="btn-save" onclick="saveObject(${lat}, ${lng})">設置を共有</button>
+            </div>
+        `;
+        L.popup().setLatLng(e.latlng).setContent(popupContent).openOn(map);
+    });
+
+    function saveObject(lat, lng) {
+        const type = document.getElementById('new_type').value;
+        const comment = document.getElementById('new_comment').value;
+        db.ref('objects').push({ type, lat, lng, comment, ts: Date.now() });
+        map.closePopup();
+    }
+
+    window.deleteObject = function(key) {
+        if(confirm("このマークを全員の画面から削除しますか？")) {
+            db.ref('objects/' + key).remove();
+        }
+    };
+
+</script>
+</body>
+</html>
