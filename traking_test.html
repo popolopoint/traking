@@ -3,11 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>虎キング v1.2.2 by Popolo App.com</title>
+    <title>虎キング v1.2.1 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* --- CSS部分: 見た目の設定 --- */
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; }
+
+/* 名前変更ボタンのスタイル */
+        #name-btn {
+            position: fixed; bottom: 135px; right: 10px; z-index: 2000;
+            background: #333; border: 2px solid #ff9900; border-radius: 50%;
+            width: 44px; height: 44px; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3); color: white;
+        }
+
+
+
+
+
+
         #header { 
             background: #1a1a1a; color: #ff9900; padding: 12px; text-align: center;
             font-weight: bold; font-size: 16px; position: fixed; width: 100%; z-index: 2000;
@@ -18,52 +31,46 @@
             position: fixed; bottom: 20px; right: 10px; z-index: 2000;
             background: rgba(0,0,0,0.8); color: #fff; padding: 10px; border-radius: 8px; font-size: 11px;
         }
-        /* 操作ボタンのスタイル */
-        #recenter-btn, #name-btn {
-            position: fixed; right: 10px; z-index: 2000;
+        /* 自分の場所に戻るボタン */
+        #recenter-btn {
+            position: fixed; bottom: 80px; right: 10px; z-index: 2000;
             background: #fff; border: 2px solid #ff9900; border-radius: 50%;
-            width: 44px; height: 44px; cursor: pointer; font-size: 22px; 
-            display: flex; align-items: center; justify-content: center;
+            width: 44px; height: 44px; cursor: pointer; font-size: 22px; display: flex; align-items: center; justify-content: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
-        #recenter-btn { bottom: 80px; }
-        #name-btn { bottom: 135px; color: #333; font-size: 18px; }
-
-        /* 名前ラベルのスタイル */
-        .user-label {
-            background: rgba(0, 0, 0, 0.7); color: #00ff00; border: 1px solid #ff9900;
-            font-size: 11px; font-weight: bold; padding: 2px 5px; border-radius: 4px;
-        }
-        .other-label { color: #ffffff; border: 1px solid #ccc; }
-
         .popup-form { color: #333; min-width: 150px; }
         .popup-form select, .popup-form input { width: 100%; margin: 5px 0; padding: 5px; box-sizing: border-box; }
         .btn-save { background: #ff9900; color: white; border: none; width: 100%; padding: 8px; cursor: pointer; border-radius: 4px; font-weight: bold; }
         .btn-del { background: #ff4444; color: white; border: none; width: 100%; padding: 6px; margin-top: 10px; cursor: pointer; border-radius: 4px; font-size: 11px; font-weight: bold; }
     </style>
 </head>
+
+
 <body>
 
-<div id="header">虎キング v1.2.2 by Popolo App.com</div>
+<div id="user-list">
+    <div style="font-weight:bold; border-bottom:1px solid #ff9900; margin-bottom:5px;">参加者一覧</div>
+    <div id="list-content"></div>
+</div>
+
+
+
+
+<div id="header">虎キング v1.2.1 by Popolo App.com</div>
 <div id="map"></div>
 <div class="status-panel" id="status">通信待機中...</div>
 
-<button id="name-btn" onclick="changeName()" title="名前変更">👤</button>
-<button id="recenter-btn" onclick="goMe()" title="自分に戻る">🎯</button>
+
+<button id="name-btn" onclick="changeName()">👤</button>
+<button id="recenter-btn" onclick="goMe()">🎯</button>
+
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-    // --- 1. 名前管理 & Firebase初期設定 ---
-    let myName = localStorage.getItem('tora_king_name');
-    if (!myName) {
-        myName = prompt("参加名（ゼッケン番号など）を入力してください");
-        if (!myName) myName = "参加者" + Math.floor(Math.random() * 100);
-        localStorage.setItem('tora_king_name', myName);
-    }
-
+    // --- 1. Firebaseの設定 ---
     const firebaseConfig = {
         apiKey: "AIzaSyB_OOgXiE1YkFzQK0Nujhnx3lNM_7dp66U",
         authDomain: "tra-king.firebaseapp.com",
@@ -78,11 +85,14 @@
     const db = firebase.database();
     const myId = "tiger_" + Math.floor(Math.random() * 10000);
 
-    // --- 2. 地図の初期化 (位置記憶機能付き) ---
+    // --- 2. 地図の初期化 (位置記憶) ---
     const lastPos = JSON.parse(localStorage.getItem('tora_king_pos')) || { lat: 35.0, lng: 135.0, zoom: 15 };
     const map = L.map('map', { zoomControl: false }).setView([lastPos.lat, lastPos.lng], lastPos.zoom);
     
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+    
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
     map.on('moveend', () => {
@@ -93,77 +103,116 @@
 
     const userMarkers = {};
     const objectMarkers = {};
-    let isFollowing = false;
-    let myMarker = null;
+    let isFollowing = false; // 自動追従フラグ
 
-    // --- 3. 自分の位置を取得・送信 (名前ラベル表示) ---
+
+
+// --- 3. 自分の位置を取得・送信 (残像除去版) ---
+    let myMarker = null; // 最初は空にしておく
+
     if ("geolocation" in navigator) {
         navigator.geolocation.watchPosition(pos => {
             const { latitude, longitude, speed } = pos.coords;
             const latlng = [latitude, longitude];
             
+            // Firebaseへ送信
             db.ref('users/' + myId).set({
                 lat: latitude, lng: longitude,
-                name: myName,
                 speed: speed || 0,
                 ts: Date.now()
             });
 
+            // 【重要】もしすでにマーカーがあれば場所を更新、なければ作成
             if (!myMarker) {
                 myMarker = L.circleMarker(latlng, { radius: 8, color: '#00ff00', fillColor: '#00ff00', fillOpacity: 1 }).addTo(map);
-                myMarker.bindTooltip(myName, { permanent: true, direction: 'top', className: 'user-label' }).openTooltip();
             } else {
                 myMarker.setLatLng(latlng);
             }
 
-            if (isFollowing) map.panTo(latlng);
+            if (isFollowing) {
+                map.panTo(latlng);
+            }
             document.getElementById('status').innerText = `現在地: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
         }, null, { enableHighAccuracy: true });
     }
 
-    // 名前変更の関数
-    window.changeName = () => {
-        const newName = prompt("新しい名前（番号）を入力してください", myName);
-        if (newName) {
-            myName = newName;
-            localStorage.setItem('tora_king_name', myName);
-            if (myMarker) myMarker.setTooltipContent(myName);
-            // Firebaseにも即座に反映
-            db.ref('users/' + myId + '/name').set(myName);
-        }
+
+
+
+
+    
+    
+
+    // 🎯自分に戻るボタンの処理
+    window.goMe = function() {
+        isFollowing = true;
+        map.panTo(myMarker.getLatLng());
     };
 
-    window.goMe = () => { isFollowing = true; if(myMarker) map.panTo(myMarker.getLatLng()); };
-    map.on('movestart', (e) => { if (!e.hard) isFollowing = false; });
+    // 地図を触ったら追従解除
+    map.on('movestart', (e) => {
+        if (!e.hard) isFollowing = false;
+    });
 
-    // --- 4. 参加者のリアルタイム同期 (名前ラベル表示) ---
+
+
+
+// --- 4. 参加者のリアルタイム同期 & リスト表示 (修正版) ---
     db.ref('users').on('value', snap => {
         const users = snap.val();
         if (!users) return;
+
+        let listHtml = ""; // リスト用のHTMLを貯める
+        
         for (let id in users) {
-            if (id === myId) continue;
-            const { lat, lng, name, ts } = users[id];
-            
-            if (Date.now() - ts > 600000) { // 10分以上更新なしは削除
+            const { lat, lng, name, ts, speed } = users[id];
+            // 速度をノット(kt)に変換 (m/s * 1.94384)
+            const speedKt = (speed ? (speed * 1.94384).toFixed(1) : "0.0");
+
+            // 10分以上更新なしは表示しない
+            if (Date.now() - ts > 600000) {
                 if (userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
                 continue;
             }
 
-            if (!userMarkers[id]) {
-                userMarkers[id] = L.circleMarker([lat, lng], { radius: 6, color: '#ff9900' }).addTo(map);
-                userMarkers[id].bindTooltip(name || "参加者", { permanent: true, direction: 'top', className: 'user-label other-label' }).openTooltip();
-            } else {
-                userMarkers[id].setLatLng([lat, lng]);
-                userMarkers[id].setTooltipContent(name || "参加者");
+            // リスト用の行を作成
+            const isMe = (id === myId);
+            listHtml += `<div class="user-item ${isMe ? 'me' : ''}">
+                ${name || '参加者'} <span style="font-size:10px; color:#aaa;">(${speedKt}kt)</span>
+            </div>`;
+
+            // 地図上のマーカー処理 (自分以外)
+            if (!isMe) {
+                if (!userMarkers[id]) {
+                    userMarkers[id] = L.circleMarker([lat, lng], { radius: 6, color: '#ff9900' }).addTo(map);
+                    userMarkers[id].bindTooltip(name || "参加者", { permanent: true, direction: 'top', className: 'user-label other-label' }).openTooltip();
+                } else {
+                    userMarkers[id].setLatLng([lat, lng]);
+                    userMarkers[id].setTooltipContent(name || "参加者");
+                }
             }
         }
+        // リストを画面に反映
+        document.getElementById('list-content').innerHTML = listHtml;
     });
+
+
+
+
+
+
+
+
+
+
+
 
     // --- 5. マークブイ・本部船の同期 ---
     db.ref('objects').on('value', snap => {
         for (let key in objectMarkers) map.removeLayer(objectMarkers[key]);
         const objects = snap.val();
         if (!objects) return;
+
         for (let key in objects) {
             const obj = objects[key];
             let iconHtml = "";
@@ -174,24 +223,57 @@
                 const color = colorMap[obj.color] || "#ff0000";
                 iconHtml = `<svg width="15" height="18" viewBox="0 0 100 120"><path d="M50 5 L95 100 Q95 115 50 115 Q5 115 5 100 Z" fill="${color}" stroke="white" stroke-width="6" /></svg>`;
             }
+            
             const marker = L.marker([obj.lat, obj.lng], {
                 icon: L.divIcon({ html: iconHtml, className: 'custom-icon', iconSize: [15, 18], iconAnchor: [7.5, 16] })
             }).addTo(map);
-            marker.bindPopup(`<div class="popup-form" style="text-align:center;"><b>${obj.type === 'ship' ? '本部船' : 'マーク'}</b><br>${obj.comment || ''}<br><button class="btn-del" onclick="deleteObject('${key}')">🗑️ 削除</button></div>`);
+
+            marker.bindPopup(`
+                <div class="popup-form" style="text-align:center;">
+                    <b>${obj.type === 'ship' ? '本部船' : 'マークブイ'}</b><br>
+                    ${obj.comment || ''}<br>
+                    <button class="btn-del" onclick="deleteObject('${key}')">🗑️ 削除</button>
+                </div>
+            `);
             objectMarkers[key] = marker;
         }
     });
 
-    // --- 6. 設置・削除ロジック ---
+    // --- 6. タップで新規設置 ---
     map.on('click', e => {
         const { lat, lng } = e.latlng;
-        const popupContent = `<div class="popup-form"><b>新規設置</b><select id="new_type" onchange="toggleColorSelect()"><option value="buoy">🚩 マーク</option><option value="ship">🚤 本部船</option></select><div id="color_area">色: <select id="new_color"><option value="pink">ピンク</option><option value="orange" selected>オレンジ</option><option value="red">赤</option><option value="green">緑</option><option value="yellow">黄色</option></select></div><input type="text" id="new_comment" placeholder="コメント"><button class="btn-save" onclick="saveObject(${lat}, ${lng})">共有</button></div>`;
+        const popupContent = `
+            <div class="popup-form">
+                <b>新規設置</b>
+                <select id="new_type" onchange="toggleColorSelect()">
+                    <option value="buoy">🚩 マークブイ</option>
+                    <option value="ship">🚤 ゴムボート</option>
+                </select>
+                <div id="color_area">色: <select id="new_color"><option value="pink">ピンク</option><option value="orange" selected>オレンジ</option><option value="red">赤</option><option value="green">緑</option><option value="yellow">黄色</option></select></div>
+                <input type="text" id="new_comment" placeholder="コメント">
+                <button class="btn-save" onclick="saveObject(${lat}, ${lng})">共有</button>
+            </div>`;
         L.popup().setLatLng(e.latlng).setContent(popupContent).openOn(map);
     });
 
-    window.toggleColorSelect = () => { const type = document.getElementById('new_type').value; document.getElementById('color_area').style.display = (type === 'ship') ? 'none' : 'block'; };
-    window.saveObject = (lat, lng) => { const type = document.getElementById('new_type').value; const color = document.getElementById('new_color').value; const comment = document.getElementById('new_comment').value; db.ref('objects').push({ type, color, lat, lng, comment, ts: Date.now() }); map.closePopup(); };
-    window.deleteObject = (key) => { if(confirm("削除しますか？")) db.ref('objects/' + key).remove().then(() => map.closePopup()); };
+    window.toggleColorSelect = () => {
+        const type = document.getElementById('new_type').value;
+        document.getElementById('color_area').style.display = (type === 'ship') ? 'none' : 'block';
+    };
+
+    window.saveObject = (lat, lng) => {
+        const type = document.getElementById('new_type').value;
+        const color = document.getElementById('new_color').value;
+        const comment = document.getElementById('new_comment').value;
+        db.ref('objects').push({ type, color, lat, lng, comment, ts: Date.now() });
+        map.closePopup();
+    };
+
+    window.deleteObject = (key) => {
+        if(confirm("削除しますか？")) {
+            db.ref('objects/' + key).remove().then(() => map.closePopup());
+        }
+    };
 
 </script>
 </body>
