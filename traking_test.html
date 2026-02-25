@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.2.8 by Popolo App.com</title>
+    <title>虎キング v1.3.0 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -22,7 +22,7 @@
     </style>
 </head>
 <body>
-<div id="header">虎キング v1.2.8 by Popolo App.com</div>
+<div id="header">虎キング v1.3.0 by Popolo App.com</div>
 <div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
 <div id="map"></div>
 <div class="status-panel" id="status">位置情報取得中...</div>
@@ -33,24 +33,18 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // --- 1. 初期化と保存された位置の復元 ---
     let myName = localStorage.getItem('tora_king_name') || prompt("参加名を入力してください","選手");
     localStorage.setItem('tora_king_name', myName);
-
     const savedPos = JSON.parse(localStorage.getItem('tora_king_pos')) || { lat: 35.0, lng: 135.0, zoom: 15 };
-
     const firebaseConfig = { apiKey: "AIzaSyB_OOgXiE1YkFzQK0Nujhnx3lNM_7dp66U", authDomain: "tra-king.firebaseapp.com", databaseURL: "https://tra-king-default-rtdb.firebaseio.com", projectId: "tra-king", storageBucket: "tra-king.firebasestorage.app", messagingSenderId: "355068381368", appId: "1:355068381368:web:440efbe59649791404cc4d" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    
-    // IDを固定して「残像」を防ぐ
     let myId = localStorage.getItem('tora_king_id') || "tiger_" + Math.floor(Math.random()*10000);
     localStorage.setItem('tora_king_id', myId);
 
     const map = L.map('map', {zoomControl: false}).setView([savedPos.lat, savedPos.lng], savedPos.zoom);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-    // 地図を動かしたら位置を保存
     map.on('moveend', () => {
         const center = map.getCenter();
         localStorage.setItem('tora_king_pos', JSON.stringify({ lat: center.lat, lng: center.lng, zoom: map.getZoom() }));
@@ -59,12 +53,11 @@
     let myMarker = null, isFollowing = false;
     const userMarkers = {};
 
-    // --- 2. 自分の位置管理 ---
+    // --- Android対策: タイムアウト設定を追加 ---
     if (navigator.geolocation) {
         navigator.geolocation.watchPosition(pos => {
             const {latitude, longitude, speed} = pos.coords;
             db.ref('users/'+myId).set({lat: latitude, lng: longitude, name: myName, speed: speed||0, ts: Date.now()});
-            
             const latlng = [latitude, longitude];
             if (!myMarker) {
                 myMarker = L.circleMarker(latlng, {radius: 8, color: '#00ff00', fillOpacity: 1, zIndexOffset: 1000}).addTo(map);
@@ -75,39 +68,38 @@
             }
             if (isFollowing) map.panTo(latlng);
             document.getElementById('status').innerText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-        }, null, {enableHighAccuracy: true});
+        }, err => {
+            console.error(err);
+        }, {enableHighAccuracy: true, timeout: 10000, maximumAge: 0});
     }
 
-    // --- 3. 同期処理 (リスト & 地図) ---
+    // --- 同期処理: Androidの「一瞬の途切れ」を許容する ---
     db.ref('users').on('value', snap => {
         const users = snap.val();
         if (!users) return;
-        
         let listHtml = "";
         const now = Date.now();
-
-        // 描画前に一度全ユーザーをチェック
         for (let id in users) {
             const u = users[id];
-            const isMe = (id === myId);
-
-            // 10分以上更新がない、またはデータが不完全な場合は削除
-            if (now - u.ts > 600000 || !u.lat) {
+            if (!u.name || !u.lat) continue;
+            
+            // 判定を10分→20分に緩和（Androidの省電力対策）
+            if (now - u.ts > 1200000) {
                 if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
-                if(!isMe) db.ref('users/'+id).remove(); // 古いデータをDBからも消す
                 continue;
             }
 
+            const isMe = (id === myId);
             const speedKt = (u.speed * 1.94384).toFixed(1);
-            listHtml += `<div class="user-item ${isMe ? 'me' : ''}">${u.name || '選手'}<br><span style="color:#aaa; font-size:9px;">${speedKt} kt</span></div>`;
+            listHtml += `<div class="user-item ${isMe ? 'me' : ''}">${u.name}<br><span style="color:#aaa; font-size:9px;">${speedKt} kt</span></div>`;
 
             if (!isMe) {
                 if (!userMarkers[id]) {
                     userMarkers[id] = L.circleMarker([u.lat, u.lng], {radius: 6, color: '#ff9900', fillOpacity: 0.8}).addTo(map);
-                    userMarkers[id].bindTooltip(u.name || '選手', {permanent: true, direction: 'top', className: 'user-label other-label'}).openTooltip();
+                    userMarkers[id].bindTooltip(u.name, {permanent: true, direction: 'top', className: 'user-label other-label'}).openTooltip();
                 } else {
                     userMarkers[id].setLatLng([u.lat, u.lng]);
-                    userMarkers[id].setTooltipContent(u.name || '選手');
+                    userMarkers[id].setTooltipContent(u.name);
                 }
             }
         }
