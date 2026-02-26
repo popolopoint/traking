@@ -3,26 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.3.2b by Popolo App.com</title>
+    <title>虎キング v1.3.3 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
         #header { background: #1a1a1a; color: #ff9900; padding: 10px; text-align: center; font-weight: bold; position: fixed; width: 100%; z-index: 3000; border-bottom: 2px solid #ff9900; }
         #map { height: 100vh; width: 100vw; z-index: 1; }
+        
+        /* 参加者リスト */
         #user-list { position: fixed; top: 60px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 10px; border-radius: 8px; width: 100px; max-height: 250px; overflow-y: auto; border: 1px solid #ff9900; font-size: 11px; }
         .list-title { color: #ff9900; font-weight: bold; border-bottom: 1px solid #ff9900; margin-bottom: 5px; }
-        .user-item { border-bottom: 1px solid #444; padding: 4px 0; }
+        .user-item { border-bottom: 1px solid #444; padding: 4px 0; cursor: pointer; }
         .user-item.me { color: #00ff00; font-weight: bold; }
+        
+        /* ラベル・ステータス */
         .user-label { background: rgba(0,0,0,0.7); color: #00ff00; border: 1px solid #ff9900; font-size: 11px; font-weight: bold; padding: 2px 5px; border-radius: 4px; }
         .other-label { color: #ffffff; border: 1px solid #ccc; }
+        .status-panel { position: fixed; bottom: 20px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 8px; border-radius: 5px; font-size: 10px; }
+        
+        /* ボタン類 */
         #recenter-btn, #name-btn { position: fixed; right: 10px; z-index: 2000; background: #fff; border: 2px solid #ff9900; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
         #recenter-btn { bottom: 80px; font-size: 20px; }
         #name-btn { bottom: 135px; font-size: 18px; color: #333; }
-        .status-panel { position: fixed; bottom: 20px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 8px; border-radius: 5px; font-size: 10px; }
+
+        /* ポップアップフォーム（v1.2.0より継承） */
+        .popup-form { color: #333; min-width: 150px; }
+        .popup-form select, .popup-form input { width: 100%; margin: 5px 0; padding: 5px; box-sizing: border-box; }
+        .btn-save { background: #ff9900; color: white; border: none; width: 100%; padding: 8px; cursor: pointer; border-radius: 4px; font-weight: bold; }
+        .btn-del { background: #ff4444; color: white; border: none; width: 100%; padding: 6px; margin-top: 10px; cursor: pointer; border-radius: 4px; font-size: 11px; font-weight: bold; }
     </style>
 </head>
 <body>
-<div id="header">虎キング v1.3.2b by Popolo App.com</div>
+
+<div id="header">虎キング v1.3.3 by Popolo App.com</div>
 <div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
 <div id="map"></div>
 <div class="status-panel" id="status">位置情報取得中...</div>
@@ -32,12 +45,13 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <script>
+    // --- 初期設定 ---
     let myName = localStorage.getItem('tora_king_name') || prompt("参加名を入力してください","選手");
     localStorage.setItem('tora_king_name', myName);
     const savedPos = JSON.parse(localStorage.getItem('tora_king_pos')) || { lat: 35.0, lng: 135.0, zoom: 15 };
     
-    // --- Firebase設定（正しく書き戻しました） ---
     const firebaseConfig = { 
         apiKey: "AIzaSyB_OOgXiE1YkFzQK0Nujhnx3lNM_7dp66U", 
         authDomain: "tra-king.firebaseapp.com", 
@@ -53,9 +67,12 @@
     let myId = localStorage.getItem('tora_king_id') || "tiger_" + Math.floor(Math.random()*10000);
     localStorage.setItem('tora_king_id', myId);
 
-    // 速度単位設定 (0: kt, 1: km/h)
-    let speedUnitMode = 0;
+    let speedUnitMode = 0; // 0: kt, 1: km/h
+    let myMarker = null, isFollowing = false;
+    const userMarkers = {};
+    const objectMarkers = {};
 
+    // --- 地図初期化 ---
     const map = L.map('map', {zoomControl: false}).setView([savedPos.lat, savedPos.lng], savedPos.zoom);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
@@ -64,9 +81,7 @@
         localStorage.setItem('tora_king_pos', JSON.stringify({ lat: center.lat, lng: center.lng, zoom: map.getZoom() }));
     });
 
-    let myMarker = null, isFollowing = false;
-    const userMarkers = {};
-
+    // --- 自位置取得 ---
     if (navigator.geolocation) {
         navigator.geolocation.watchPosition(pos => {
             const {latitude, longitude, speed} = pos.coords;
@@ -81,11 +96,10 @@
             }
             if (isFollowing) map.panTo(latlng);
             document.getElementById('status').innerText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-        }, err => {
-            console.error(err);
-        }, {enableHighAccuracy: true, timeout: 10000, maximumAge: 0});
+        }, null, {enableHighAccuracy: true, timeout: 10000, maximumAge: 0});
     }
 
+    // --- 参加者同期 & リスト更新 ---
     db.ref('users').on('value', snap => {
         const users = snap.val();
         if (!users) return;
@@ -94,24 +108,16 @@
         for (let id in users) {
             const u = users[id];
             if (!u.name || !u.lat) continue;
-            
-            if (now - u.ts > 1200000) {
+            if (now - u.ts > 1200000) { // 20分更新なしで削除
                 if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
                 continue;
             }
 
             const isMe = (id === myId);
-
-            // --- 単位切り替えロジック ---
             const speedMs = u.speed || 0;
-            let displaySpeed;
-            if (speedUnitMode === 0) {
-                displaySpeed = (speedMs * 1.94384).toFixed(1) + " kt";
-            } else {
-                displaySpeed = (speedMs * 3.6).toFixed(1) + " km/h";
-            }
+            let displaySpeed = (speedUnitMode === 0) ? (speedMs * 1.94384).toFixed(1) + " kt" : (speedMs * 3.6).toFixed(1) + " km/h";
 
-            listHtml += `<div class="user-item ${isMe ? 'me' : ''}" onclick="toggleSpeedUnit()" style="cursor:pointer;">
+            listHtml += `<div class="user-item ${isMe ? 'me' : ''}" onclick="toggleSpeedUnit()">
                 ${u.name}<br><span style="color:#aaa; font-size:9px;">${displaySpeed}</span>
             </div>`;
 
@@ -128,13 +134,51 @@
         document.getElementById('list-content').innerHTML = listHtml;
     });
 
-    window.toggleSpeedUnit = () => {
-        speedUnitMode = (speedUnitMode + 1) % 2;
-        db.ref('users').once('value', () => {}); // 再描画用
-    };
+    // --- オブジェクト（ブイ・船）同期 ---
+    db.ref('objects').on('value', snap => {
+        for (let key in objectMarkers) map.removeLayer(objectMarkers[key]);
+        const objects = snap.val();
+        if (!objects) return;
+        for (let key in objects) {
+            const obj = objects[key];
+            let iconHtml = (obj.type === 'ship') ? `<div style="font-size:18px;">🚤</div>` : 
+                `<svg width="15" height="18" viewBox="0 0 100 120"><path d="M50 5 L95 100 Q95 115 50 115 Q5 115 5 100 Z" fill="${obj.color||'#ff9900'}" stroke="white" stroke-width="6" /></svg>`;
+            
+            const marker = L.marker([obj.lat, obj.lng], {
+                icon: L.divIcon({ html: iconHtml, className: 'custom-icon', iconSize: [15, 18], iconAnchor: [7.5, 16] })
+            }).addTo(map);
+            marker.bindPopup(`<div class="popup-form" style="text-align:center;"><b>${obj.type==='ship'?'本部船':'ブイ'}</b><br>${obj.comment||''}<br><button class="btn-del" onclick="deleteObject('${key}')">🗑️ 削除</button></div>`);
+            objectMarkers[key] = marker;
+        }
+    });
 
+    // --- インタラクション ---
+    map.on('click', e => {
+        const { lat, lng } = e.latlng;
+        const popupContent = `
+            <div class="popup-form">
+                <b>新規設置</b>
+                <select id="new_type" onchange="toggleColorSelect()"><option value="buoy">🚩 マークブイ</option><option value="ship">🚤 本部船</option></select>
+                <div id="color_area">色: <select id="new_color"><option value="pink">ピンク</option><option value="orange" selected>オレンジ</option><option value="red">赤</option><option value="green">緑</option><option value="yellow">黄色</option></select></div>
+                <input type="text" id="new_comment" placeholder="コメント">
+                <button class="btn-save" onclick="saveObject(${lat}, ${lng})">共有</button>
+            </div>`;
+        L.popup().setLatLng(e.latlng).setContent(popupContent).openOn(map);
+    });
+
+    window.toggleColorSelect = () => { document.getElementById('color_area').style.display = (document.getElementById('new_type').value === 'ship') ? 'none' : 'block'; };
+    window.saveObject = (lat, lng) => {
+        const type = document.getElementById('new_type').value;
+        const colorMap = { pink: "#ff66cc", orange: "#ff9900", red: "#ff0000", green: "#00ff00", yellow: "#ffff00" };
+        const color = colorMap[document.getElementById('new_color').value];
+        const comment = document.getElementById('new_comment').value;
+        db.ref('objects').push({ type, color, lat, lng, comment, ts: Date.now() });
+        map.closePopup();
+    };
+    window.deleteObject = (key) => { if(confirm("削除しますか？")) db.ref('objects/' + key).remove().then(() => map.closePopup()); };
+    window.toggleSpeedUnit = () => { speedUnitMode = (speedUnitMode + 1) % 2; db.ref('users').once('value', () => {}); };
     window.changeName = () => {
-        let n = prompt("新しい名前:", myName);
+        let n = prompt("名前:", myName);
         if(n) { myName = n; localStorage.setItem('tora_king_name', n); db.ref('users/'+myId+'/name').set(n); if(myMarker) myMarker.setTooltipContent(n); }
     };
     window.goMe = () => { isFollowing = true; if(myMarker) map.panTo(myMarker.getLatLng()); };
