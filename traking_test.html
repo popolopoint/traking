@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.3.2a by Popolo App.com</title>
-
-     // --- km/s knot 切り替え←真っ黒画面修正---
+    <title>虎キング v1.3.2b by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -24,7 +22,7 @@
     </style>
 </head>
 <body>
-<div id="header">虎キング v1.3.2a by Popolo App.com</div>
+<div id="header">虎キング v1.3.2b by Popolo App.com</div>
 <div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
 <div id="map"></div>
 <div class="status-panel" id="status">位置情報取得中...</div>
@@ -35,46 +33,30 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+    let myName = localStorage.getItem('tora_king_name') || prompt("参加名を入力してください","選手");
+    localStorage.setItem('tora_king_name', myName);
+    const savedPos = JSON.parse(localStorage.getItem('tora_king_pos')) || { lat: 35.0, lng: 135.0, zoom: 15 };
+    
+    // --- Firebase設定（正しく書き戻しました） ---
+    const firebaseConfig = { 
+        apiKey: "AIzaSyB_OOgXiE1YkFzQK0Nujhnx3lNM_7dp66U", 
+        authDomain: "tra-king.firebaseapp.com", 
+        databaseURL: "https://tra-king-default-rtdb.firebaseio.com", 
+        projectId: "tra-king", 
+        storageBucket: "tra-king.firebasestorage.app", 
+        messagingSenderId: "355068381368", 
+        appId: "1:355068381368:web:440efbe59649791404cc4d" 
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-// --- scriptタグの冒頭部分 ---
-let myName = localStorage.getItem('tora_king_name') || prompt("参加名を入力してください","選手");
-localStorage.setItem('tora_king_name', myName);
+    let myId = localStorage.getItem('tora_king_id') || "tiger_" + Math.floor(Math.random()*10000);
+    localStorage.setItem('tora_king_id', myId);
 
-const savedPos = JSON.parse(localStorage.getItem('tora_king_pos')) || { lat: 35.0, lng: 135.0, zoom: 15 };
+    // 速度単位設定 (0: kt, 1: km/h)
+    let speedUnitMode = 0;
 
-
-
-// --- 修正箇所：ここを書き換えてください ---
-const firebaseConfig = { 
-    apiKey: "AIzaSyB_OOgXiE1YkFzQK0Nujhnx3lNM_7dp66U", 
-    authDomain: "tra-king.firebaseapp.com", 
-    databaseURL: "https://tra-king-default-rtdb.firebaseio.com", 
-    projectId: "tra-king", 
-    storageBucket: "tra-king.firebasestorage.app", 
-    messagingSenderId: "355068381368", 
-    appId: "1:355068381368:web:440efbe59649791404cc4d" 
-};
-
-
-
-
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-let myId = localStorage.getItem('tora_king_id') || "tiger_" + Math.floor(Math.random()*10000);
-localStorage.setItem('tora_king_id', myId);
-
-// --- ここに追加 ---
-let speedUnitMode = 0; 
-
-// その後に地図の初期化
-const map = L.map('map', {zoomControl: false}).setView([savedPos.lat, savedPos.lng], savedPos.zoom);
-
-
-
-
-
+    const map = L.map('map', {zoomControl: false}).setView([savedPos.lat, savedPos.lng], savedPos.zoom);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
     map.on('moveend', () => {
@@ -85,7 +67,6 @@ const map = L.map('map', {zoomControl: false}).setView([savedPos.lat, savedPos.l
     let myMarker = null, isFollowing = false;
     const userMarkers = {};
 
-    // --- Android対策: タイムアウト設定を追加 ---
     if (navigator.geolocation) {
         navigator.geolocation.watchPosition(pos => {
             const {latitude, longitude, speed} = pos.coords;
@@ -105,10 +86,7 @@ const map = L.map('map', {zoomControl: false}).setView([savedPos.lat, savedPos.l
         }, {enableHighAccuracy: true, timeout: 10000, maximumAge: 0});
     }
 
-    // --- 同期処理: Androidの「一瞬の途切れ」を許容する ---
     db.ref('users').on('value', snap => {
-
-
         const users = snap.val();
         if (!users) return;
         let listHtml = "";
@@ -117,36 +95,26 @@ const map = L.map('map', {zoomControl: false}).setView([savedPos.lat, savedPos.l
             const u = users[id];
             if (!u.name || !u.lat) continue;
             
-            // 判定を10分→20分に緩和（Androidの省電力対策）
             if (now - u.ts > 1200000) {
                 if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
                 continue;
             }
 
+            const isMe = (id === myId);
 
+            // --- 単位切り替えロジック ---
+            const speedMs = u.speed || 0;
+            let displaySpeed;
+            if (speedUnitMode === 0) {
+                displaySpeed = (speedMs * 1.94384).toFixed(1) + " kt";
+            } else {
+                displaySpeed = (speedMs * 3.6).toFixed(1) + " km/h";
+            }
 
+            listHtml += `<div class="user-item ${isMe ? 'me' : ''}" onclick="toggleSpeedUnit()" style="cursor:pointer;">
+                ${u.name}<br><span style="color:#aaa; font-size:9px;">${displaySpeed}</span>
+            </div>`;
 
-// --- ループ内の該当箇所をこれに差し替え ---
-const isMe = (id === myId);
-
-// --- 単位切り替えに対応した表示ロジック ---
-const speedMs = u.speed || 0;
-let displaySpeed;
-if (speedUnitMode === 0) {
-    displaySpeed = (speedMs * 1.94384).toFixed(1) + " kt";
-} else {
-    displaySpeed = (speedMs * 3.6).toFixed(1) + " km/h";
-}
-
-listHtml += `<div class="user-item ${isMe ? 'me' : ''}" onclick="toggleSpeedUnit()" style="cursor:pointer;">
-    ${u.name}<br><span style="color:#aaa; font-size:9px;">${displaySpeed}</span>
-</div>`;
-
-
-            
-
-
-           
             if (!isMe) {
                 if (!userMarkers[id]) {
                     userMarkers[id] = L.circleMarker([u.lat, u.lng], {radius: 6, color: '#ff9900', fillOpacity: 0.8}).addTo(map);
@@ -160,25 +128,17 @@ listHtml += `<div class="user-item ${isMe ? 'me' : ''}" onclick="toggleSpeedUnit
         document.getElementById('list-content').innerHTML = listHtml;
     });
 
+    window.toggleSpeedUnit = () => {
+        speedUnitMode = (speedUnitMode + 1) % 2;
+        db.ref('users').once('value', () => {}); // 再描画用
+    };
+
     window.changeName = () => {
         let n = prompt("新しい名前:", myName);
         if(n) { myName = n; localStorage.setItem('tora_king_name', n); db.ref('users/'+myId+'/name').set(n); if(myMarker) myMarker.setTooltipContent(n); }
     };
     window.goMe = () => { isFollowing = true; if(myMarker) map.panTo(myMarker.getLatLng()); };
     map.on('movestart', e => { if(!e.hard) isFollowing = false; });
-
-// --- 追加: 単位切り替え関数 ---
-window.toggleSpeedUnit = () => {
-    speedUnitMode = (speedUnitMode + 1) % 2;
-    // リストを即時更新するためにFirebaseのデータを再読み込みさせる
-    db.ref('users').once('value', snap => {
-        // snapイベントが自動で発火するため、中身は空でも再描画されます
-    });
-};
-
-
-
-
 </script>
 </body>
 </html>
