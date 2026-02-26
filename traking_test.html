@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.3.0 by Popolo App.com</title>
+    <title>虎キング v1.3.1 by Popolo App.com</title>
+
+     // --- km/s knot 切り替え ---
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -22,7 +24,7 @@
     </style>
 </head>
 <body>
-<div id="header">虎キング v1.3.0 by Popolo App.com</div>
+<div id="header">虎キング v1.3.1 by Popolo App.com</div>
 <div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
 <div id="map"></div>
 <div class="status-panel" id="status">位置情報取得中...</div>
@@ -75,6 +77,8 @@
 
     // --- 同期処理: Androidの「一瞬の途切れ」を許容する ---
     db.ref('users').on('value', snap => {
+
+
         const users = snap.val();
         if (!users) return;
         let listHtml = "";
@@ -90,9 +94,26 @@
             }
 
             const isMe = (id === myId);
-            const speedKt = (u.speed * 1.94384).toFixed(1);
-            listHtml += `<div class="user-item ${isMe ? 'me' : ''}">${u.name}<br><span style="color:#aaa; font-size:9px;">${speedKt} kt</span></div>`;
 
+            
+
+           
+           // --- 変更: 単位切り替えに対応した表示ロジック ---
+const speedMs = u.speed || 0;
+let displaySpeed;
+if (speedUnitMode === 0) {
+    displaySpeed = (speedMs * 1.94384).toFixed(1) + " kt";
+} else {
+    displaySpeed = (speedMs * 3.6).toFixed(1) + " km/h";
+}
+
+const isMe = (id === myId);
+listHtml += `<div class="user-item ${isMe ? 'me' : ''}" onclick="toggleSpeedUnit()" style="cursor:pointer;">
+    ${u.name}<br><span style="color:#aaa; font-size:9px;">${displaySpeed}</span>
+</div>`;
+
+
+           
             if (!isMe) {
                 if (!userMarkers[id]) {
                     userMarkers[id] = L.circleMarker([u.lat, u.lng], {radius: 6, color: '#ff9900', fillOpacity: 0.8}).addTo(map);
@@ -112,6 +133,19 @@
     };
     window.goMe = () => { isFollowing = true; if(myMarker) map.panTo(myMarker.getLatLng()); };
     map.on('movestart', e => { if(!e.hard) isFollowing = false; });
+
+// --- 追加: 単位切り替え関数 ---
+window.toggleSpeedUnit = () => {
+    speedUnitMode = (speedUnitMode + 1) % 2;
+    // リストを即時更新するためにFirebaseのデータを再読み込みさせる
+    db.ref('users').once('value', snap => {
+        // snapイベントが自動で発火するため、中身は空でも再描画されます
+    });
+};
+
+
+
+
 </script>
 </body>
 </html>
