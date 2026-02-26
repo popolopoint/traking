@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.3.1 by Popolo App.com</title>
+    <title>虎キング v1.3.2 by Popolo App.com</title>
 
-     // --- km/s knot 切り替え ---
+     // --- km/s knot 切り替え←真っ黒画面修正---
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -24,7 +24,7 @@
     </style>
 </head>
 <body>
-<div id="header">虎キング v1.3.1 by Popolo App.com</div>
+<div id="header">虎キング v1.3.2 by Popolo App.com</div>
 <div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
 <div id="map"></div>
 <div class="status-panel" id="status">位置情報取得中...</div>
@@ -35,16 +35,30 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    let myName = localStorage.getItem('tora_king_name') || prompt("参加名を入力してください","選手");
-    localStorage.setItem('tora_king_name', myName);
-    const savedPos = JSON.parse(localStorage.getItem('tora_king_pos')) || { lat: 35.0, lng: 135.0, zoom: 15 };
-    const firebaseConfig = { apiKey: "AIzaSyB_OOgXiE1YkFzQK0Nujhnx3lNM_7dp66U", authDomain: "tra-king.firebaseapp.com", databaseURL: "https://tra-king-default-rtdb.firebaseio.com", projectId: "tra-king", storageBucket: "tra-king.firebasestorage.app", messagingSenderId: "355068381368", appId: "1:355068381368:web:440efbe59649791404cc4d" };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    let myId = localStorage.getItem('tora_king_id') || "tiger_" + Math.floor(Math.random()*10000);
-    localStorage.setItem('tora_king_id', myId);
 
-    const map = L.map('map', {zoomControl: false}).setView([savedPos.lat, savedPos.lng], savedPos.zoom);
+// --- scriptタグの冒頭部分 ---
+let myName = localStorage.getItem('tora_king_name') || prompt("参加名を入力してください","選手");
+localStorage.setItem('tora_king_name', myName);
+
+const savedPos = JSON.parse(localStorage.getItem('tora_king_pos')) || { lat: 35.0, lng: 135.0, zoom: 15 };
+
+const firebaseConfig = { /* 設定値... */ };
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let myId = localStorage.getItem('tora_king_id') || "tiger_" + Math.floor(Math.random()*10000);
+localStorage.setItem('tora_king_id', myId);
+
+// --- ここに追加 ---
+let speedUnitMode = 0; 
+
+// その後に地図の初期化
+const map = L.map('map', {zoomControl: false}).setView([savedPos.lat, savedPos.lng], savedPos.zoom);
+
+
+
+
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
     map.on('moveend', () => {
@@ -93,12 +107,13 @@
                 continue;
             }
 
-            const isMe = (id === myId);
 
-            
 
-           
-           // --- 変更: 単位切り替えに対応した表示ロジック ---
+
+// --- ループ内の該当箇所をこれに差し替え ---
+const isMe = (id === myId);
+
+// --- 単位切り替えに対応した表示ロジック ---
 const speedMs = u.speed || 0;
 let displaySpeed;
 if (speedUnitMode === 0) {
@@ -107,10 +122,12 @@ if (speedUnitMode === 0) {
     displaySpeed = (speedMs * 3.6).toFixed(1) + " km/h";
 }
 
-const isMe = (id === myId);
 listHtml += `<div class="user-item ${isMe ? 'me' : ''}" onclick="toggleSpeedUnit()" style="cursor:pointer;">
     ${u.name}<br><span style="color:#aaa; font-size:9px;">${displaySpeed}</span>
 </div>`;
+
+
+            
 
 
            
