@@ -29,6 +29,61 @@
         .btn-save { background: #ff9900; color: white; border: none; width: 100%; padding: 6px; cursor: pointer; border-radius: 4px; font-weight: bold; }
         .btn-del { background: #ff4444; color: white; border: none; width: 100%; padding: 4px; margin-top: 8px; cursor: pointer; border-radius: 4px; font-size: 10px; }
         .arrow-icon-wrapper { transition: transform 0.2s linear; }
+
+
+
+/* 地点ごとのカード設定 */
+  .point-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    font-size: 14px;
+  }
+
+  /* 地点ラベル（A, Bなど） */
+  .point-label {
+    font-weight: bold;
+    min-width: 25px;
+    color: #007AFF;
+  }
+
+  /* 選択ボックスと入力欄 */
+  .type-select, .color-select {
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #fff;
+  }
+
+  .comment-input {
+    flex-grow: 1; /* 余ったスペースをすべて使う */
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+  }
+
+  /* 削除ボタン */
+  .delete-btn {
+    background: #ff3b30;
+    color: white;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  .delete-btn:hover {
+    background: #d32f2f;
+  }
+
+
     </style>
 </head>
 <body>
@@ -48,7 +103,21 @@
 </div>
 
 <div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
+
+
+<div id="pointSettingsPanel" style="margin-bottom: 15px; padding: 10px; background: #f0f7ff; border-radius: 8px; border: 1px solid #d0e0f0;">
+  <h3 style="margin: 0 0 10px 0; font-size: 16px;">🚩 コース地点設定</h3>
+  <div id="pointListContainer">
+    <p id="noPointMsg" style="color: #666; font-size: 14px; margin: 0;">座標データが読み込まれていません</p>
+  </div>
+</div>
+
+
+
+
 <div id="map"></div>
+
+
 <div class="status-panel" id="status">Waiting for GPS...</div>
 
 <button id="logout-btn" onclick="logout()" title="ログアウト">🏃</button>
@@ -287,6 +356,104 @@
     map.on('movestart', e => { if(!e.hard) isFollowing = false; });
     window.logout = () => { if (confirm("ログアウトして地図から消えますか？")) { if (watchId !== null) navigator.geolocation.clearWatch(watchId); localStorage.setItem('tora_king_logout_pending', 'true'); location.reload(); } };
     map.on('moveend', () => { const center = map.getCenter(); localStorage.setItem('tora_king_pos', JSON.stringify({ lat: center.lat, lng: center.lng, zoom: map.getZoom() })); });
+
+
+// マーカーを管理するための入れ物
+let markers = {}; 
+
+// --- 1. マーカーの見た目（色・タイトル）を更新する関数 ---
+function updateMarkerAppearance(key) {
+    const container = document.querySelector(`.point-card[data-key="${key}"]`);
+    if (!container || !markers[key]) return;
+
+    const type = container.querySelector('.type-select').value;
+    const color = container.querySelector('.color-select').value;
+    const comment = container.querySelector('.comment-input').value;
+
+    // マーカーのタイトルを更新（マウスを置いた時に表示される）
+    markers[key].setTitle(`${key}: ${comment}`);
+
+    // マーカーのアイコン色を変更（Google標準の色付きピン）
+    // red, blue, yellow, green, orange などに対応
+    const iconUrl = `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`;
+    markers[key].setIcon(iconUrl);
+}
+
+// --- 2. 1点分の「設定カード」を画面に作る関数 ---
+function createPointCard(key, lat, lng) {
+    const listContainer = document.getElementById('pointListContainer');
+    const msg = document.getElementById('noPointMsg');
+    if (msg) msg.style.display = 'none'; // メッセージを隠す
+
+    // 地図にマーカーを設置（初期値は赤）
+    const marker = new google.maps.Marker({
+        position: { lat, lng },
+        map: map,
+        title: key,
+        icon: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
+    });
+    markers[key] = marker;
+
+    // HTMLカードの作成
+    const div = document.createElement('div');
+    div.className = 'point-card';
+    div.dataset.key = key; // どの地点か判別用
+    div.innerHTML = `
+        <span class="point-label">${key}</span>
+        <select class="type-select" onchange="updateMarkerAppearance('${key}')">
+            <option value="buoy">マーク</option>
+            <option value="boat">船</option>
+        </select>
+        <select class="color-select" onchange="updateMarkerAppearance('${key}')">
+            <option value="red">赤</option>
+            <option value="blue">青</option>
+            <option value="yellow">黄</option>
+            <option value="green">緑</option>
+            <option value="orange">橙</option>
+        </select>
+        <input type="text" class="comment-input" placeholder="コメント入力" oninput="updateMarkerAppearance('${key}')">
+        <button class="delete-btn" onclick="deletePoint('${key}')">削除</button>
+    `;
+    listContainer.appendChild(div);
+}
+
+// 地点削除の関数
+function deletePoint(key) {
+    if (markers[key]) {
+        markers[key].setMap(null);
+        delete markers[key];
+    }
+    const card = document.querySelector(`.point-card[data-key="${key}"]`);
+    if (card) card.remove();
+}
+
+// --- 3. ページ読み込み時にURLを解析して実行する ---
+function initPointsFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const pointsParam = params.get('points');
+    
+    if (!pointsParam) return; // データがなければ何もしない
+
+    // "A:26.1,127.1|B:26.2,127.2" という文字を分解する
+    const pointPairs = pointsParam.split('|');
+
+    pointPairs.forEach(pair => {
+        const [label, coords] = pair.split(':');
+        if (label && coords) {
+            const [lat, lng] = coords.split(',');
+            // 先ほど作った「カードとマーカーを作る関数」を呼び出す
+            createPointCard(label, parseFloat(lat), parseFloat(lng));
+        }
+    });
+}
+
+// Google Mapsの初期化（initMap）が終わるタイミングで実行
+// もし既存の initMap 関数がある場合は、その最後の一行に 
+// initPointsFromUrl(); を書き加えるだけでもOKです。
+window.addEventListener('load', () => {
+    // 地図が読み込まれるまで少し待ってから実行（エラー防止）
+    setTimeout(initPointsFromUrl, 1000); 
+});
 </script>
 </body>
 </html>
