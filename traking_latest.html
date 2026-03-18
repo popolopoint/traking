@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.3.3 by Popolo App.com</title>
+    <title>虎キング v1.3.8b by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -22,11 +22,11 @@
         .status-panel { position: fixed; bottom: 20px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 8px; border-radius: 5px; font-size: 10px; }
         
         /* ボタン類 */
-        #recenter-btn, #name-btn { position: fixed; right: 10px; z-index: 2000; background: #fff; border: 2px solid #ff9900; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        #recenter-btn, #name-btn, #logout-btn { position: fixed; right: 10px; z-index: 2000; background: #fff; border: 2px solid #ff9900; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
         #recenter-btn { bottom: 80px; font-size: 20px; }
         #name-btn { bottom: 135px; font-size: 18px; color: #333; }
+        #logout-btn { bottom: 190px; background: #ff4444; border-color: #fff; color: white; font-size: 18px; }
 
-        /* ポップアップフォーム（v1.2.0より継承） */
         .popup-form { color: #333; min-width: 150px; }
         .popup-form select, .popup-form input { width: 100%; margin: 5px 0; padding: 5px; box-sizing: border-box; }
         .btn-save { background: #ff9900; color: white; border: none; width: 100%; padding: 8px; cursor: pointer; border-radius: 4px; font-weight: bold; }
@@ -35,10 +35,12 @@
 </head>
 <body>
 
-<div id="header">虎キング v1.3.3 by Popolo App.com</div>
+<div id="header">虎キング v1.3.8b by Popolo App.com</div>
 <div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
 <div id="map"></div>
 <div class="status-panel" id="status">位置情報取得中...</div>
+
+<button id="logout-btn" onclick="logout()" title="ログアウト">🏃</button>
 <button id="name-btn" onclick="changeName()">👤</button>
 <button id="recenter-btn" onclick="goMe()">🎯</button>
 
@@ -47,11 +49,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-    // --- 初期設定 ---
-    let myName = localStorage.getItem('tora_king_name') || prompt("参加名を入力してください","選手");
-    localStorage.setItem('tora_king_name', myName);
-    const savedPos = JSON.parse(localStorage.getItem('tora_king_pos')) || { lat: 35.0, lng: 135.0, zoom: 15 };
-    
+    // --- 1. 定数と初期設定 ---
     const firebaseConfig = { 
         apiKey: "AIzaSyB_OOgXiE1YkFzQK0Nujhnx3lNM_7dp66U", 
         authDomain: "tra-king.firebaseapp.com", 
@@ -67,10 +65,27 @@
     let myId = localStorage.getItem('tora_king_id') || "tiger_" + Math.floor(Math.random()*10000);
     localStorage.setItem('tora_king_id', myId);
 
-    let speedUnitMode = 0; // 0: kt, 1: km/h
-    let myMarker = null, isFollowing = false;
-    const userMarkers = {};
-    const objectMarkers = {};
+    // --- 2. 強制ログアウト（クリーンアップ）処理 ---
+    // ページ読み込みの瞬間、もしログアウト中ならFirebaseから自分を抹消して終了する
+    if (localStorage.getItem('tora_king_logout_pending') === 'true') {
+        db.ref('users/' + myId).remove().then(() => {
+            localStorage.removeItem('tora_king_name');
+            localStorage.removeItem('tora_king_logout_pending');
+            location.href = location.pathname; // パラメータなしでリロード
+        });
+        // 処理をここで止める（位置情報取得を開始させない）
+        document.body.innerHTML = "<div style='color:white;text-align:center;padding:50px;'>ログアウト中...</div>";
+        throw new Error("Logout in progress"); 
+    }
+
+    let myName = localStorage.getItem('tora_king_name') || prompt("参加名を入力してください","選手");
+    if(!myName) myName = "選手";
+    localStorage.setItem('tora_king_name', myName);
+
+    const savedPos = JSON.parse(localStorage.getItem('tora_king_pos')) || { lat: 35.0, lng: 135.0, zoom: 15 };
+    let speedUnitMode = 0;
+    let myMarker = null, isFollowing = false, watchId = null;
+    const userMarkers = {}, objectMarkers = {};
 
     // --- 地図初期化 ---
     const map = L.map('map', {zoomControl: false}).setView([savedPos.lat, savedPos.lng], savedPos.zoom);
@@ -83,9 +98,12 @@
 
     // --- 自位置取得 ---
     if (navigator.geolocation) {
-        navigator.geolocation.watchPosition(pos => {
+        watchId = navigator.geolocation.watchPosition(pos => {
             const {latitude, longitude, speed} = pos.coords;
-            db.ref('users/'+myId).set({lat: latitude, lng: longitude, name: myName, speed: speed||0, ts: Date.now()});
+            // ログアウト処理中でない場合のみ書き込む
+            if (localStorage.getItem('tora_king_logout_pending') !== 'true') {
+                db.ref('users/'+myId).set({lat: latitude, lng: longitude, name: myName, speed: speed||0, ts: Date.now()});
+            }
             const latlng = [latitude, longitude];
             if (!myMarker) {
                 myMarker = L.circleMarker(latlng, {radius: 8, color: '#00ff00', fillOpacity: 1, zIndexOffset: 1000}).addTo(map);
@@ -99,28 +117,25 @@
         }, null, {enableHighAccuracy: true, timeout: 10000, maximumAge: 0});
     }
 
-    // --- 参加者同期 & リスト更新 ---
+    // --- 同期処理 ---
     db.ref('users').on('value', snap => {
         const users = snap.val();
-        if (!users) return;
+        if (!users) { document.getElementById('list-content').innerHTML = ""; return; }
         let listHtml = "";
         const now = Date.now();
         for (let id in users) {
             const u = users[id];
             if (!u.name || !u.lat) continue;
-            if (now - u.ts > 1200000) { // 20分更新なしで削除
+            if (now - u.ts > 1200000) {
                 if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
                 continue;
             }
-
             const isMe = (id === myId);
             const speedMs = u.speed || 0;
             let displaySpeed = (speedUnitMode === 0) ? (speedMs * 1.94384).toFixed(1) + " kt" : (speedMs * 3.6).toFixed(1) + " km/h";
-
             listHtml += `<div class="user-item ${isMe ? 'me' : ''}" onclick="toggleSpeedUnit()">
                 ${u.name}<br><span style="color:#aaa; font-size:9px;">${displaySpeed}</span>
             </div>`;
-
             if (!isMe) {
                 if (!userMarkers[id]) {
                     userMarkers[id] = L.circleMarker([u.lat, u.lng], {radius: 6, color: '#ff9900', fillOpacity: 0.8}).addTo(map);
@@ -134,7 +149,6 @@
         document.getElementById('list-content').innerHTML = listHtml;
     });
 
-    // --- オブジェクト（ブイ・船）同期 ---
     db.ref('objects').on('value', snap => {
         for (let key in objectMarkers) map.removeLayer(objectMarkers[key]);
         const objects = snap.val();
@@ -143,7 +157,6 @@
             const obj = objects[key];
             let iconHtml = (obj.type === 'ship') ? `<div style="font-size:18px;">🚤</div>` : 
                 `<svg width="15" height="18" viewBox="0 0 100 120"><path d="M50 5 L95 100 Q95 115 50 115 Q5 115 5 100 Z" fill="${obj.color||'#ff9900'}" stroke="white" stroke-width="6" /></svg>`;
-            
             const marker = L.marker([obj.lat, obj.lng], {
                 icon: L.divIcon({ html: iconHtml, className: 'custom-icon', iconSize: [15, 18], iconAnchor: [7.5, 16] })
             }).addTo(map);
@@ -155,23 +168,14 @@
     // --- インタラクション ---
     map.on('click', e => {
         const { lat, lng } = e.latlng;
-        const popupContent = `
-            <div class="popup-form">
-                <b>新規設置</b>
-                <select id="new_type" onchange="toggleColorSelect()"><option value="buoy">🚩 マークブイ</option><option value="ship">🚤 本部船</option></select>
-                <div id="color_area">色: <select id="new_color"><option value="pink">ピンク</option><option value="orange" selected>オレンジ</option><option value="red">赤</option><option value="green">緑</option><option value="yellow">黄色</option></select></div>
-                <input type="text" id="new_comment" placeholder="コメント">
-                <button class="btn-save" onclick="saveObject(${lat}, ${lng})">共有</button>
-            </div>`;
+        const popupContent = `<div class="popup-form"><b>新規設置</b><select id="new_type" onchange="toggleColorSelect()"><option value="buoy">🚩 マークブイ</option><option value="ship">🚤 本部船</option></select><div id="color_area">色: <select id="new_color"><option value="pink">ピンク</option><option value="orange" selected>オレンジ</option><option value="red">赤</option><option value="green">緑</option><option value="yellow">黄色</option></select></div><input type="text" id="new_comment" placeholder="コメント"><button class="btn-save" onclick="saveObject(${lat}, ${lng})">共有</button></div>`;
         L.popup().setLatLng(e.latlng).setContent(popupContent).openOn(map);
     });
 
     window.toggleColorSelect = () => { document.getElementById('color_area').style.display = (document.getElementById('new_type').value === 'ship') ? 'none' : 'block'; };
     window.saveObject = (lat, lng) => {
-        const type = document.getElementById('new_type').value;
-        const colorMap = { pink: "#ff66cc", orange: "#ff9900", red: "#ff0000", green: "#00ff00", yellow: "#ffff00" };
-        const color = colorMap[document.getElementById('new_color').value];
-        const comment = document.getElementById('new_comment').value;
+        const type = document.getElementById('new_type').value, colorMap = { pink: "#ff66cc", orange: "#ff9900", red: "#ff0000", green: "#00ff00", yellow: "#ffff00" };
+        const color = colorMap[document.getElementById('new_color').value], comment = document.getElementById('new_comment').value;
         db.ref('objects').push({ type, color, lat, lng, comment, ts: Date.now() });
         map.closePopup();
     };
@@ -183,6 +187,18 @@
     };
     window.goMe = () => { isFollowing = true; if(myMarker) map.panTo(myMarker.getLatLng()); };
     map.on('movestart', e => { if(!e.hard) isFollowing = false; });
+
+    // --- ログアウト関数 ---
+    window.logout = () => {
+        if (confirm("ログアウトして地図から消えますか？")) {
+            // 1. GPS監視を完全に遮断
+            if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+            // 2. ログアウト中フラグを立てる（再読み込み時の自動削除をトリガーする）
+            localStorage.setItem('tora_king_logout_pending', 'true');
+            // 3. リロードして初期化プロセスへ
+            location.reload();
+        }
+    };
 </script>
 </body>
 </html>
