@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.6.2b by Popolo App.com</title>
+    <title>虎キング v1.6.3 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -43,7 +43,7 @@
 </div>
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v1.6.2b</span>
+    <span style="font-size:14px;">虎キング v1.6.3</span>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
 
@@ -71,8 +71,54 @@
         messagingSenderId: "355068381368", 
         appId: "1:355068381368:web:440efbe59649791404cc4d" 
     };
+
+
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+
+
+
+
+   
+
+    // --- ここから追加：コース作るくん連携処理 ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const pointsData = urlParams.get('points');
+
+    if (pointsData) {
+        // 既存の古いマークを一度リセットしたい場合は以下を有効にしてください
+        // db.ref('objects').remove(); 
+
+        const pts = pointsData.split('|');
+        pts.forEach(p => {
+            const [label, coords] = p.split(':');
+            if (label && coords) {
+                const [lat, lng] = coords.split(',');
+                // Firebaseの objects フォルダに各地点を保存
+                db.ref('objects/' + label).set({
+                    type: (label === 'S' || label.includes('ship')) ? 'ship' : 'buoy',
+                    color: (label === 'A' ? '#ff3b30' : '#ff9900'), // Aは赤、他はオレンジ
+                    lat: parseFloat(lat),
+                    lng: parseFloat(lng),
+                    comment: label + "点 (コース作るくん連携)",
+                    ts: Date.now()
+                });
+            }
+        });
+        // 読み込み終わったらURLからパラメータを消す（再読み込みでの重複登録を防止）
+        window.history.replaceState({}, '', location.pathname);
+        alert("コースデータ（" + pts.length + "地点）を同期しました！");
+    }
+    // --- ここまで追加 ---
+
+  
+    // ...以下、既存の処理へ続く
+
+
+
+
+
 
     let myId = localStorage.getItem('tora_king_id') || "tiger_" + Math.floor(Math.random()*10000);
     localStorage.setItem('tora_king_id', myId);
