@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.3.5 by Popolo App.com</title>
+    <title>虎キング v1.3.6 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -22,11 +22,14 @@
         .status-panel { position: fixed; bottom: 20px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 8px; border-radius: 5px; font-size: 10px; }
         
         /* ボタン類 */
-        #recenter-btn, #name-btn { position: fixed; right: 10px; z-index: 2000; background: #fff; border: 2px solid #ff9900; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        #recenter-btn, #name-btn, #logout-btn { position: fixed; right: 10px; z-index: 2000; background: #fff; border: 2px solid #ff9900; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
         #recenter-btn { bottom: 80px; font-size: 20px; }
         #name-btn { bottom: 135px; font-size: 18px; color: #333; }
+        
+        /* ログアウトボタン専用スタイル */
+        #logout-btn { bottom: 190px; background: #ff4444; border-color: #fff; color: white; font-size: 18px; }
 
-        /* ポップアップフォーム（v1.2.0より継承） */
+        /* ポップアップフォーム */
         .popup-form { color: #333; min-width: 150px; }
         .popup-form select, .popup-form input { width: 100%; margin: 5px 0; padding: 5px; box-sizing: border-box; }
         .btn-save { background: #ff9900; color: white; border: none; width: 100%; padding: 8px; cursor: pointer; border-radius: 4px; font-weight: bold; }
@@ -35,44 +38,14 @@
 </head>
 <body>
 
-<div id="header">虎キング v1.3.5 by Popolo App.com</div>
+<div id="header">虎キング v1.3.6 by Popolo App.com</div>
 <div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
 <div id="map"></div>
 <div class="status-panel" id="status">位置情報取得中...</div>
-<button id="name-btn" onclick="changeName()">👤</button>
-<button id="recenter-btn" onclick="goMe()">🎯</button>
 
 <button id="logout-btn" onclick="logout()" title="ログアウト">🏃</button>
 <button id="name-btn" onclick="changeName()">👤</button>
 <button id="recenter-btn" onclick="goMe()">🎯</button>
-
-
-
-
-
-
-
-/* ログアウトボタン（name-btnの上あたりに配置） */
-#logout-btn { 
-    position: fixed; 
-    right: 10px; 
-    bottom: 190px; 
-    z-index: 2000; 
-    background: #ff4444; 
-    border: 2px solid #fff; 
-    border-radius: 50%; 
-    width: 44px; 
-    height: 44px; 
-    cursor: pointer; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    box-shadow: 0 2px 5px rgba(0,0,0,0.5); 
-    font-size: 18px; 
-    color: white;
-}
-
-
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -81,6 +54,7 @@
 <script>
     // --- 初期設定 ---
     let myName = localStorage.getItem('tora_king_name') || prompt("参加名を入力してください","選手");
+    if(!myName) myName = "選手";
     localStorage.setItem('tora_king_name', myName);
     const savedPos = JSON.parse(localStorage.getItem('tora_king_pos')) || { lat: 35.0, lng: 135.0, zoom: 15 };
     
@@ -134,7 +108,10 @@
     // --- 参加者同期 & リスト更新 ---
     db.ref('users').on('value', snap => {
         const users = snap.val();
-        if (!users) return;
+        if (!users) {
+            document.getElementById('list-content').innerHTML = "";
+            return;
+        }
         let listHtml = "";
         const now = Date.now();
         for (let id in users) {
@@ -216,23 +193,17 @@
     window.goMe = () => { isFollowing = true; if(myMarker) map.panTo(myMarker.getLatLng()); };
     map.on('movestart', e => { if(!e.hard) isFollowing = false; });
 
-
-window.logout = () => {
-    if (confirm("ログアウトして地図から消えますか？")) {
-        // 1. Firebaseから自分のデータを削除
-        db.ref('users/' + myId).remove().then(() => {
-            // 2. ローカルストレージの名前を消去（次回起動時に再入力させるため）
-            localStorage.removeItem('tora_king_name');
-            // 3. ページをリロード
-            location.reload();
-        }).catch(err => {
-            alert("通信エラーにより削除できませんでした");
-        });
-    }
-};
-
-
-
+    // --- ログアウト処理 ---
+    window.logout = () => {
+        if (confirm("ログアウトして地図から消えますか？")) {
+            db.ref('users/' + myId).remove().then(() => {
+                localStorage.removeItem('tora_king_name');
+                location.reload();
+            }).catch(err => {
+                alert("通信エラーにより削除できませんでした");
+            });
+        }
+    };
 </script>
 </body>
 </html>
