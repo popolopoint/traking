@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.3.3 by Popolo App.com</title>
+    <title>虎キング v1.3.5 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -35,12 +35,44 @@
 </head>
 <body>
 
-<div id="header">虎キング v1.3.3 by Popolo App.com</div>
+<div id="header">虎キング v1.3.5 by Popolo App.com</div>
 <div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
 <div id="map"></div>
 <div class="status-panel" id="status">位置情報取得中...</div>
 <button id="name-btn" onclick="changeName()">👤</button>
 <button id="recenter-btn" onclick="goMe()">🎯</button>
+
+<button id="logout-btn" onclick="logout()" title="ログアウト">🏃</button>
+<button id="name-btn" onclick="changeName()">👤</button>
+<button id="recenter-btn" onclick="goMe()">🎯</button>
+
+
+
+
+
+
+
+/* ログアウトボタン（name-btnの上あたりに配置） */
+#logout-btn { 
+    position: fixed; 
+    right: 10px; 
+    bottom: 190px; 
+    z-index: 2000; 
+    background: #ff4444; 
+    border: 2px solid #fff; 
+    border-radius: 50%; 
+    width: 44px; 
+    height: 44px; 
+    cursor: pointer; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5); 
+    font-size: 18px; 
+    color: white;
+}
+
+
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -183,6 +215,24 @@
     };
     window.goMe = () => { isFollowing = true; if(myMarker) map.panTo(myMarker.getLatLng()); };
     map.on('movestart', e => { if(!e.hard) isFollowing = false; });
+
+
+window.logout = () => {
+    if (confirm("ログアウトして地図から消えますか？")) {
+        // 1. Firebaseから自分のデータを削除
+        db.ref('users/' + myId).remove().then(() => {
+            // 2. ローカルストレージの名前を消去（次回起動時に再入力させるため）
+            localStorage.removeItem('tora_king_name');
+            // 3. ページをリロード
+            location.reload();
+        }).catch(err => {
+            alert("通信エラーにより削除できませんでした");
+        });
+    }
+};
+
+
+
 </script>
 </body>
 </html>
