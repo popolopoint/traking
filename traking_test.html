@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.3.6 by Popolo App.com</title>
+    <title>虎キング v1.3.7 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -38,7 +38,7 @@
 </head>
 <body>
 
-<div id="header">虎キング v1.3.6 by Popolo App.com</div>
+<div id="header">虎キング v1.3.7 by Popolo App.com</div>
 <div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
 <div id="map"></div>
 <div class="status-panel" id="status">位置情報取得中...</div>
@@ -75,6 +75,10 @@
 
     let speedUnitMode = 0; // 0: kt, 1: km/h
     let myMarker = null, isFollowing = false;
+
+let watchId = null; // ★ここに追加：監視を止めるためのID保存用
+
+
     const userMarkers = {};
     const objectMarkers = {};
 
@@ -88,9 +92,16 @@
     });
 
     // --- 自位置取得 ---
-    if (navigator.geolocation) {
-        navigator.geolocation.watchPosition(pos => {
+   
+   if (navigator.geolocation) {
+        // ★ここを「watchId = 」で始めるように書き換え
+        watchId = navigator.geolocation.watchPosition(pos => {
             const {latitude, longitude, speed} = pos.coords;
+            // ...以下、既存の処理...
+   
+   
+  
+        
             db.ref('users/'+myId).set({lat: latitude, lng: longitude, name: myName, speed: speed||0, ts: Date.now()});
             const latlng = [latitude, longitude];
             if (!myMarker) {
@@ -193,17 +204,38 @@
     window.goMe = () => { isFollowing = true; if(myMarker) map.panTo(myMarker.getLatLng()); };
     map.on('movestart', e => { if(!e.hard) isFollowing = false; });
 
-    // --- ログアウト処理 ---
+// --- ログアウト処理 ---
     window.logout = () => {
         if (confirm("ログアウトして地図から消えますか？")) {
+            // 1. 位置情報の監視を即座に停止（再書き込みを防止）★重要！
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+
+            // 2. Firebaseから自分のデータを削除
             db.ref('users/' + myId).remove().then(() => {
+                // 3. ローカルストレージをクリア
                 localStorage.removeItem('tora_king_name');
+                // 4. ページをリロード
                 location.reload();
             }).catch(err => {
                 alert("通信エラーにより削除できませんでした");
             });
         }
     };
+
+
+
+
+   
+  
+            
+             
+           
+          
+        
+    
 </script>
 </body>
 </html>
