@@ -3,25 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.3.8b by Popolo App.com</title>
+    <title>虎キング v1.5.1 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
         #header { background: #1a1a1a; color: #ff9900; padding: 10px; text-align: center; font-weight: bold; position: fixed; width: 100%; z-index: 3000; border-bottom: 2px solid #ff9900; }
-        #map { height: 100vh; width: 100vw; z-index: 1; }
+        #map { height: 100vh; width: 100vw; z-index: 1; background: #000; }
         
-        /* 参加者リスト */
-        #user-list { position: fixed; top: 60px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 10px; border-radius: 8px; width: 100px; max-height: 250px; overflow-y: auto; border: 1px solid #ff9900; font-size: 11px; }
+        /* カラー選択画面 */
+        #setup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 4000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        .color-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px; }
+        .color-btn { width: 60px; height: 60px; border-radius: 50%; border: 3px solid #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; text-shadow: 1px 1px 2px #000; }
+        
+        #user-list { position: fixed; top: 60px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 10px; border-radius: 8px; width: 110px; max-height: 250px; overflow-y: auto; border: 1px solid #ff9900; font-size: 11px; }
         .list-title { color: #ff9900; font-weight: bold; border-bottom: 1px solid #ff9900; margin-bottom: 5px; }
         .user-item { border-bottom: 1px solid #444; padding: 4px 0; cursor: pointer; }
         .user-item.me { color: #00ff00; font-weight: bold; }
         
-        /* ラベル・ステータス */
-        .user-label { background: rgba(0,0,0,0.7); color: #00ff00; border: 1px solid #ff9900; font-size: 11px; font-weight: bold; padding: 2px 5px; border-radius: 4px; }
-        .other-label { color: #ffffff; border: 1px solid #ccc; }
+        .user-label { background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #ff9900; font-size: 11px; font-weight: bold; padding: 2px 5px; border-radius: 4px; white-space: nowrap; }
         .status-panel { position: fixed; bottom: 20px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 8px; border-radius: 5px; font-size: 10px; }
         
-        /* ボタン類 */
         #recenter-btn, #name-btn, #logout-btn { position: fixed; right: 10px; z-index: 2000; background: #fff; border: 2px solid #ff9900; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
         #recenter-btn { bottom: 80px; font-size: 20px; }
         #name-btn { bottom: 135px; font-size: 18px; color: #333; }
@@ -31,11 +32,19 @@
         .popup-form select, .popup-form input { width: 100%; margin: 5px 0; padding: 5px; box-sizing: border-box; }
         .btn-save { background: #ff9900; color: white; border: none; width: 100%; padding: 8px; cursor: pointer; border-radius: 4px; font-weight: bold; }
         .btn-del { background: #ff4444; color: white; border: none; width: 100%; padding: 6px; margin-top: 10px; cursor: pointer; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        .arrow-icon-wrapper { transition: transform 0.2s linear; }
     </style>
 </head>
 <body>
 
-<div id="header">虎キング v1.3.8b by Popolo App.com</div>
+<div id="setup-overlay" style="display:none;">
+    <h3>虎キング セットアップ</h3>
+    <input type="text" id="setup-name" placeholder="名前を入力" style="padding:10px; width:200px; border-radius:5px; border:none; margin-bottom:10px;">
+    <p>色を選んでスタート！</p>
+    <div class="color-grid" id="color-grid"></div>
+</div>
+
+<div id="header">虎キング v1.5.1 by Popolo App.com</div>
 <div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
 <div id="map"></div>
 <div class="status-panel" id="status">位置情報取得中...</div>
@@ -49,7 +58,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-    // --- 1. 定数と初期設定 ---
+    // --- 初期設定 ---
     const firebaseConfig = { 
         apiKey: "AIzaSyB_OOgXiE1YkFzQK0Nujhnx3lNM_7dp66U", 
         authDomain: "tra-king.firebaseapp.com", 
@@ -65,59 +74,97 @@
     let myId = localStorage.getItem('tora_king_id') || "tiger_" + Math.floor(Math.random()*10000);
     localStorage.setItem('tora_king_id', myId);
 
-    // --- 2. 強制ログアウト（クリーンアップ）処理 ---
-    // ページ読み込みの瞬間、もしログアウト中ならFirebaseから自分を抹消して終了する
+    // ログアウト処理
     if (localStorage.getItem('tora_king_logout_pending') === 'true') {
         db.ref('users/' + myId).remove().then(() => {
-            localStorage.removeItem('tora_king_name');
-            localStorage.removeItem('tora_king_logout_pending');
-            location.href = location.pathname; // パラメータなしでリロード
+            localStorage.clear();
+            location.href = location.pathname;
         });
-        // 処理をここで止める（位置情報取得を開始させない）
         document.body.innerHTML = "<div style='color:white;text-align:center;padding:50px;'>ログアウト中...</div>";
-        throw new Error("Logout in progress"); 
+        throw new Error("Logout Process");
     }
 
-    let myName = localStorage.getItem('tora_king_name') || prompt("参加名を入力してください","選手");
-    if(!myName) myName = "選手";
-    localStorage.setItem('tora_king_name', myName);
-
-    const savedPos = JSON.parse(localStorage.getItem('tora_king_pos')) || { lat: 35.0, lng: 135.0, zoom: 15 };
-    let speedUnitMode = 0;
-    let myMarker = null, isFollowing = false, watchId = null;
-    const userMarkers = {}, objectMarkers = {};
+    let myName = localStorage.getItem('tora_king_name');
+    let myColor = localStorage.getItem('tora_king_color');
+    
+    const colorPresets = {
+        "赤": "#ff0000", "青": "#0000ff", "ピンク": "#ff66cc", "紫": "#800080", 
+        "橙": "#ff9900", "黄": "#ffff00", "緑": "#32cd32", "黒": "#222222", "白": "#ffffff"
+    };
 
     // --- 地図初期化 ---
+    const savedPos = JSON.parse(localStorage.getItem('tora_king_pos')) || { lat: 35.0, lng: 135.0, zoom: 15 };
     const map = L.map('map', {zoomControl: false}).setView([savedPos.lat, savedPos.lng], savedPos.zoom);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
 
-    map.on('moveend', () => {
-        const center = map.getCenter();
-        localStorage.setItem('tora_king_pos', JSON.stringify({ lat: center.lat, lng: center.lng, zoom: map.getZoom() }));
-    });
+    let speedUnitMode = 0, myMarker = null, isFollowing = false, watchId = null;
+    const userMarkers = {}, objectMarkers = {};
 
-    // --- 自位置取得 ---
-    if (navigator.geolocation) {
-        watchId = navigator.geolocation.watchPosition(pos => {
-            const {latitude, longitude, speed} = pos.coords;
-            // ログアウト処理中でない場合のみ書き込む
-            if (localStorage.getItem('tora_king_logout_pending') !== 'true') {
-                db.ref('users/'+myId).set({lat: latitude, lng: longitude, name: myName, speed: speed||0, ts: Date.now()});
-            }
-            const latlng = [latitude, longitude];
-            if (!myMarker) {
-                myMarker = L.circleMarker(latlng, {radius: 8, color: '#00ff00', fillOpacity: 1, zIndexOffset: 1000}).addTo(map);
-                myMarker.bindTooltip(myName, {permanent: true, direction: 'top', className: 'user-label'}).openTooltip();
-            } else {
-                myMarker.setLatLng(latlng);
-                myMarker.setTooltipContent(myName);
-            }
-            if (isFollowing) map.panTo(latlng);
-            document.getElementById('status').innerText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-        }, null, {enableHighAccuracy: true, timeout: 10000, maximumAge: 0});
+    // 矢印アイコンSVG作成
+    function createArrowIcon(color, heading) {
+        const rotate = heading || 0;
+        const html = `
+            <div class="arrow-icon-wrapper" style="transform: rotate(${rotate}deg); width:30px; height:30px;">
+                <svg viewBox="0 0 100 100" width="30" height="30">
+                    <path d="M50 5 L90 90 L50 75 L10 90 Z" fill="${color}" stroke="white" stroke-width="5" stroke-linejoin="round" />
+                </svg>
+            </div>`;
+        return L.divIcon({ html: html, className: '', iconSize: [30, 30], iconAnchor: [15, 15] });
     }
 
-    // --- 同期処理 ---
+    // --- 初回セットアップ画面のロジック ---
+    if (!myName || !myColor) {
+        const overlay = document.getElementById('setup-overlay');
+        const grid = document.getElementById('color-grid');
+        overlay.style.display = 'flex';
+
+        for (let label in colorPresets) {
+            const btn = document.createElement('div');
+            btn.className = 'color-btn';
+            btn.style.backgroundColor = colorPresets[label];
+            btn.innerText = label;
+            btn.onclick = () => {
+                const nameInp = document.getElementById('setup-name').value;
+                if (!nameInp) return alert("名前を入力してください");
+                myName = nameInp;
+                myColor = colorPresets[label];
+                localStorage.setItem('tora_king_name', myName);
+                localStorage.setItem('tora_king_color', myColor);
+                overlay.style.display = 'none';
+                startTracking();
+            };
+            grid.appendChild(btn);
+        }
+    } else {
+        startTracking();
+    }
+
+    function startTracking() {
+        if (navigator.geolocation) {
+            watchId = navigator.geolocation.watchPosition(pos => {
+                const {latitude, longitude, speed, heading} = pos.coords;
+                if (localStorage.getItem('tora_king_logout_pending') !== 'true') {
+                    db.ref('users/'+myId).set({lat: latitude, lng: longitude, name: myName, color: myColor, speed: speed||0, heading: heading||0, ts: Date.now()});
+                }
+                const latlng = [latitude, longitude];
+                const trail = L.circleMarker(latlng, { radius: 3, color: myColor, weight: 0, fillOpacity: 0.4 }).addTo(map);
+                setTimeout(() => map.removeLayer(trail), 5000);
+
+                if (!myMarker) {
+                    myMarker = L.marker(latlng, { icon: createArrowIcon(myColor, heading) }).addTo(map);
+                    myMarker.bindTooltip(myName, {permanent: true, direction: 'top', className: 'user-label'}).openTooltip();
+                } else {
+                    myMarker.setLatLng(latlng);
+                    myMarker.setIcon(createArrowIcon(myColor, heading));
+                }
+                if (isFollowing) map.panTo(latlng);
+                document.getElementById('status').innerText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+            }, null, {enableHighAccuracy: true, timeout: 10000, maximumAge: 0});
+        }
+    }
+
+    // --- 同期 & オートクリーンアップ ---
     db.ref('users').on('value', snap => {
         const users = snap.val();
         if (!users) { document.getElementById('list-content').innerHTML = ""; return; }
@@ -126,23 +173,23 @@
         for (let id in users) {
             const u = users[id];
             if (!u.name || !u.lat) continue;
-            if (now - u.ts > 1200000) {
+            if (now - u.ts > 600000) { // 10分
                 if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
-                continue;
+                continue; 
             }
             const isMe = (id === myId);
             const speedMs = u.speed || 0;
             let displaySpeed = (speedUnitMode === 0) ? (speedMs * 1.94384).toFixed(1) + " kt" : (speedMs * 3.6).toFixed(1) + " km/h";
             listHtml += `<div class="user-item ${isMe ? 'me' : ''}" onclick="toggleSpeedUnit()">
-                ${u.name}<br><span style="color:#aaa; font-size:9px;">${displaySpeed}</span>
+                <span style="color:${u.color}">●</span> ${u.name}<br><span style="color:#aaa; font-size:9px;">${displaySpeed}</span>
             </div>`;
             if (!isMe) {
                 if (!userMarkers[id]) {
-                    userMarkers[id] = L.circleMarker([u.lat, u.lng], {radius: 6, color: '#ff9900', fillOpacity: 0.8}).addTo(map);
-                    userMarkers[id].bindTooltip(u.name, {permanent: true, direction: 'top', className: 'user-label other-label'}).openTooltip();
+                    userMarkers[id] = L.marker([u.lat, u.lng], { icon: createArrowIcon(u.color, u.heading) }).addTo(map);
+                    userMarkers[id].bindTooltip(u.name, {permanent: true, direction: 'top', className: 'user-label'}).openTooltip();
                 } else {
                     userMarkers[id].setLatLng([u.lat, u.lng]);
-                    userMarkers[id].setTooltipContent(u.name);
+                    userMarkers[id].setIcon(createArrowIcon(u.color, u.heading));
                 }
             }
         }
@@ -165,37 +212,28 @@
         }
     });
 
-    // --- インタラクション ---
+    // --- その他操作 ---
     map.on('click', e => {
         const { lat, lng } = e.latlng;
         const popupContent = `<div class="popup-form"><b>新規設置</b><select id="new_type" onchange="toggleColorSelect()"><option value="buoy">🚩 マークブイ</option><option value="ship">🚤 本部船</option></select><div id="color_area">色: <select id="new_color"><option value="pink">ピンク</option><option value="orange" selected>オレンジ</option><option value="red">赤</option><option value="green">緑</option><option value="yellow">黄色</option></select></div><input type="text" id="new_comment" placeholder="コメント"><button class="btn-save" onclick="saveObject(${lat}, ${lng})">共有</button></div>`;
         L.popup().setLatLng(e.latlng).setContent(popupContent).openOn(map);
     });
-
     window.toggleColorSelect = () => { document.getElementById('color_area').style.display = (document.getElementById('new_type').value === 'ship') ? 'none' : 'block'; };
     window.saveObject = (lat, lng) => {
-        const type = document.getElementById('new_type').value, colorMap = { pink: "#ff66cc", orange: "#ff9900", red: "#ff0000", green: "#00ff00", yellow: "#ffff00" };
-        const color = colorMap[document.getElementById('new_color').value], comment = document.getElementById('new_comment').value;
+        const type = document.getElementById('new_type').value, cMap = { pink: "#ff66cc", orange: "#ff9900", red: "#ff0000", green: "#00ff00", yellow: "#ffff00" };
+        const color = cMap[document.getElementById('new_color').value], comment = document.getElementById('new_comment').value;
         db.ref('objects').push({ type, color, lat, lng, comment, ts: Date.now() });
         map.closePopup();
     };
     window.deleteObject = (key) => { if(confirm("削除しますか？")) db.ref('objects/' + key).remove().then(() => map.closePopup()); };
     window.toggleSpeedUnit = () => { speedUnitMode = (speedUnitMode + 1) % 2; db.ref('users').once('value', () => {}); };
-    window.changeName = () => {
-        let n = prompt("名前:", myName);
-        if(n) { myName = n; localStorage.setItem('tora_king_name', n); db.ref('users/'+myId+'/name').set(n); if(myMarker) myMarker.setTooltipContent(n); }
-    };
+    window.changeName = () => { localStorage.removeItem('tora_king_name'); location.reload(); };
     window.goMe = () => { isFollowing = true; if(myMarker) map.panTo(myMarker.getLatLng()); };
     map.on('movestart', e => { if(!e.hard) isFollowing = false; });
-
-    // --- ログアウト関数 ---
     window.logout = () => {
         if (confirm("ログアウトして地図から消えますか？")) {
-            // 1. GPS監視を完全に遮断
             if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-            // 2. ログアウト中フラグを立てる（再読み込み時の自動削除をトリガーする）
             localStorage.setItem('tora_king_logout_pending', 'true');
-            // 3. リロードして初期化プロセスへ
             location.reload();
         }
     };
