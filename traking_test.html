@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.6.5 by Popolo App.com</title>
+    <title>虎キング v1.6.6 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -98,7 +98,7 @@
 </div>
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v1.6.5</span>
+    <span style="font-size:14px;">虎キング v1.6.6</span>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
 
@@ -361,23 +361,50 @@
 // マーカーを管理するための入れ物
 let markers = {}; 
 
-// --- 1. マーカーの見た目（色・タイトル）を更新する関数 ---
+
+
+
+
+// --- 1. マーカーの見た目（色・タイプ・コメント）を更新する関数 ---
 function updateMarkerAppearance(key) {
-    const container = document.querySelector(`.point-card[data-key="${key}"]`);
-    if (!container || !markers[key]) return;
+    const card = document.querySelector(`.point-card[data-key="${key}"]`);
+    if (!card || !markers[key]) return;
 
-    const type = container.querySelector('.type-select').value;
-    const color = container.querySelector('.color-select').value;
-    const comment = container.querySelector('.comment-input').value;
+    const type = card.querySelector('.type-select').value;
+    const color = card.querySelector('.color-select').value;
+    const comment = card.querySelector('.comment-input').value;
 
-    // マーカーのタイトルを更新（マウスを置いた時に表示される）
-    markers[key].setTitle(`${key}: ${comment}`);
+    // 1. アイコンの見た目を作る（既存の虎キングのルールに合わせる）
+    let iconHtml = "";
+    if (type === 'boat') {
+        iconHtml = `<div style="font-size:20px; filter: drop-shadow(0 0 2px white);">🚤</div>`;
+    } else {
+        // ブイ（マーク）の場合は、選んだ色で塗りつぶす
+        iconHtml = `<svg width="16" height="20" viewBox="0 0 100 120">
+            <path d="M50 5 L95 100 Q95 115 50 115 Q5 115 5 100 Z" fill="${color}" stroke="white" stroke-width="8" />
+        </svg>`;
+    }
 
-    // マーカーのアイコン色を変更（Google標準の色付きピン）
-    // red, blue, yellow, green, orange などに対応
-    const iconUrl = `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`;
-    markers[key].setIcon(iconUrl);
+    // 2. 地図上のマーカーに新しいアイコンをセット
+    markers[key].setIcon(L.divIcon({ 
+        html: iconHtml, 
+        className: 'custom-icon', 
+        iconSize: [20, 25], 
+        iconAnchor: [10, 22] 
+    }));
+
+    // 3. ツールチップ（ラベル）とポップアップ（詳細）を更新
+    // 常に表示されるラベルにコメントを反映
+    markers[key].setTooltipContent(`${key}: ${comment}`);
+    
+    // クリックした時の詳細画面も更新
+    markers[key].bindPopup(`<b>${key}地点</b><br>${type === 'boat' ? '本部船' : 'マーク'}<br>${comment}`);
 }
+
+
+
+
+
 
 // --- 2. 1点分の「設定カード」を画面に作る関数 ---
 function createPointCard(key, lat, lng) {
