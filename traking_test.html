@@ -157,7 +157,7 @@
                 const trail = L.circleMarker(latlng, { radius: 3, color: myColor, weight: 0, fillOpacity: 0.4 }).addTo(map);
                 setTimeout(() => map.removeLayer(trail), 5000);
 
-                const mySize = 40; 
+                const mySize = 30; 
                 if (!myMarker) {
                     myMarker = L.marker(latlng, { icon: createArrowIcon(myColor, heading, mySize) }).addTo(map);
                     myMarker.bindTooltip(myName, {permanent: true, direction: 'top', className: 'user-label'}).openTooltip();
@@ -205,7 +205,7 @@
             </div>`;
 
             if (!isMe) {
-                const otherSize = 30; 
+                const otherSize = 20; 
                 if (!userMarkers[id]) {
                     userMarkers[id] = L.marker([u.lat, u.lng], { icon: createArrowIcon(u.color, u.heading, otherSize) }).addTo(map);
                     userMarkers[id].bindTooltip(u.name, {permanent: true, direction: 'top', className: 'user-label'}).openTooltip();
