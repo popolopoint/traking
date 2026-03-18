@@ -3,39 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.5.3 by Popolo App.com</title>
+    <title>虎キング v1.6.1 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
         #header { background: #1a1a1a; color: #ff9900; padding: 10px; text-align: center; font-weight: bold; position: fixed; width: 100%; z-index: 3000; border-bottom: 2px solid #ff9900; display: flex; justify-content: center; align-items: center; gap: 10px; }
         #map { height: 100vh; width: 100vw; z-index: 1; background: #000; }
-        
-        /* 単位切り替えボタン */
         #unit-toggle { background: #333; color: #ff9900; border: 1px solid #ff9900; padding: 4px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: bold; min-width: 90px; }
-
         #setup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 4000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
         .setup-box { background: #222; padding: 30px; border-radius: 15px; border: 2px solid #ff9900; text-align: center; width: 80%; max-width: 300px; }
         .color-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
         .color-btn { width: 100%; aspect-ratio: 1/1; border-radius: 50%; border: 2px solid #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; text-shadow: 1px 1px 2px #000; color: #fff; }
-        
         #user-list { position: fixed; top: 65px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 10px; border-radius: 8px; width: 110px; max-height: 250px; overflow-y: auto; border: 1px solid #ff9900; font-size: 11px; }
         .list-title { color: #ff9900; font-weight: bold; border-bottom: 1px solid #ff9900; margin-bottom: 5px; }
         .user-item { border-bottom: 1px solid #444; padding: 6px 0; }
         .user-item.me { color: #00ff00; font-weight: bold; }
-        
-        .user-label { background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #ff9900; font-size: 11px; font-weight: bold; padding: 2px 5px; border-radius: 4px; white-space: nowrap; }
+        .user-label { background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #ff9900; font-size: 10px; font-weight: bold; padding: 2px 4px; border-radius: 3px; white-space: nowrap; }
         .status-panel { position: fixed; bottom: 20px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 8px; border-radius: 5px; font-size: 10px; }
-        
         #recenter-btn, #name-btn, #logout-btn { position: fixed; right: 10px; z-index: 2000; background: #fff; border: 2px solid #ff9900; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
         #recenter-btn { bottom: 80px; font-size: 20px; }
         #name-btn { bottom: 135px; font-size: 18px; color: #333; }
         #logout-btn { bottom: 190px; background: #ff4444; border-color: #fff; color: white; font-size: 18px; }
-
         .popup-form { color: #333; min-width: 150px; }
         .popup-form select, .popup-form input { width: 100%; margin: 5px 0; padding: 5px; box-sizing: border-box; }
         .btn-save { background: #ff9900; color: white; border: none; width: 100%; padding: 8px; cursor: pointer; border-radius: 4px; font-weight: bold; }
         .btn-del { background: #ff4444; color: white; border: none; width: 100%; padding: 6px; margin-top: 10px; cursor: pointer; border-radius: 4px; font-size: 11px; font-weight: bold; }
-        
         .arrow-icon-wrapper { transition: transform 0.2s linear; }
     </style>
 </head>
@@ -51,7 +43,7 @@
 </div>
 
 <div id="header">
-    <span>虎キング v1.5.3</span>
+    <span>虎キング v1.6.1</span>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">単位: kt</button>
 </div>
 
@@ -66,6 +58,8 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAHhxSJK-IhYiT9XBRwE1MX7DHhghBQQQk"></script>
+<script src="https://unpkg.com/leaflet.gridlayer.googlemutant@latest/dist/Leaflet.GoogleMutant.js"></script>
 
 <script>
     const firebaseConfig = { 
@@ -91,16 +85,14 @@
 
     let myName = localStorage.getItem('tora_king_name');
     let myColor = localStorage.getItem('tora_king_color');
-    
-    // 単位設定 (0: kt, 1: km/h, 2: m/s)
     let speedUnitMode = parseInt(localStorage.getItem('tora_king_unit') || "0");
     const units = ["kt", "km/h", "m/s"];
-    
     const colorPresets = {"赤":"#ff0000","青":"#0000ff","ピンク":"#ff66cc","紫":"#800080","橙":"#ff9900","黄":"#ffff00","緑":"#32cd32","黒":"#222222","白":"#ffffff"};
 
     const savedPos = JSON.parse(localStorage.getItem('tora_king_pos')) || { lat: 35.0, lng: 135.0, zoom: 15 };
     const map = L.map('map', {zoomControl: false}).setView([savedPos.lat, savedPos.lng], savedPos.zoom);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    L.gridLayer.googleMutant({ type: 'roadmap' }).addTo(map);
     L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
 
     let myMarker = null, isFollowing = false, watchId = null;
@@ -112,17 +104,15 @@
         return L.divIcon({ html: html, className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
     }
 
-    // 単位表示の更新
     function updateUnitButton() {
         document.getElementById('unit-toggle').innerText = "単位: " + units[speedUnitMode];
     }
     updateUnitButton();
 
     window.toggleSpeedUnit = () => {
-        speedUnitMode = (speedUnitMode + 1) % 3; // 0->1->2->0
+        speedUnitMode = (speedUnitMode + 1) % 3;
         localStorage.setItem('tora_king_unit', speedUnitMode);
         updateUnitButton();
-        // Firebaseの更新を待たずにリストを再描画させるためのトリガー
         db.ref('users').once('value', () => {}); 
     };
 
@@ -154,9 +144,10 @@
                     db.ref('users/'+myId).set({lat: latitude, lng: longitude, name: myName, color: myColor, speed: speed||0, heading: heading||0, ts: Date.now()});
                 }
                 const latlng = [latitude, longitude];
-                const trail = L.circleMarker(latlng, { radius: 3, color: myColor, weight: 0, fillOpacity: 0.4 }).addTo(map);
+                const trail = L.circleMarker(latlng, { radius: 2, color: myColor, weight: 0, fillOpacity: 0.4 }).addTo(map);
                 setTimeout(() => map.removeLayer(trail), 5000);
 
+                // --- 自分のサイズ: 30 ---
                 const mySize = 30; 
                 if (!myMarker) {
                     myMarker = L.marker(latlng, { icon: createArrowIcon(myColor, heading, mySize) }).addTo(map);
@@ -179,32 +170,23 @@
         for (let id in users) {
             const u = users[id];
             if (!u.name || !u.lat) continue;
-            // 10分更新なしで削除
             if (now - u.ts > 600000) {
                 if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
                 continue; 
             }
             const isMe = (id === myId);
             const speedMs = u.speed || 0;
-            
-            // 単位別計算
             let speedVal, unitLabel;
-            if (speedUnitMode === 0) { // kt
-                speedVal = (speedMs * 1.94384).toFixed(1);
-                unitLabel = "kt";
-            } else if (speedUnitMode === 1) { // km/h
-                speedVal = (speedMs * 3.6).toFixed(1);
-                unitLabel = "km/h";
-            } else { // m/s
-                speedVal = speedMs.toFixed(1);
-                unitLabel = "m/s";
-            }
+            if (speedUnitMode === 0) { speedVal = (speedMs * 1.94384).toFixed(1); unitLabel = "kt"; }
+            else if (speedUnitMode === 1) { speedVal = (speedMs * 3.6).toFixed(1); unitLabel = "km/h"; }
+            else { speedVal = speedMs.toFixed(1); unitLabel = "m/s"; }
 
             listHtml += `<div class="user-item ${isMe ? 'me' : ''}">
                 <span style="color:${u.color}">●</span> ${u.name}<br><span style="color:#aaa; font-size:9px;">${speedVal} ${unitLabel}</span>
             </div>`;
 
             if (!isMe) {
+                // --- 他人のサイズ: 20 ---
                 const otherSize = 20; 
                 if (!userMarkers[id]) {
                     userMarkers[id] = L.marker([u.lat, u.lng], { icon: createArrowIcon(u.color, u.heading, otherSize) }).addTo(map);
@@ -224,8 +206,8 @@
         if (!objects) return;
         for (let key in objects) {
             const obj = objects[key];
-            let iconHtml = (obj.type === 'ship') ? `<div style="font-size:18px;">🚤</div>` : `<svg width="15" height="18" viewBox="0 0 100 120"><path d="M50 5 L95 100 Q95 115 50 115 Q5 115 5 100 Z" fill="${obj.color||'#ff9900'}" stroke="white" stroke-width="6" /></svg>`;
-            const marker = L.marker([obj.lat, obj.lng], { icon: L.divIcon({ html: iconHtml, className: 'custom-icon', iconSize: [15, 18], iconAnchor: [7.5, 16] }) }).addTo(map);
+            let iconHtml = (obj.type === 'ship') ? `<div style="font-size:16px;">🚤</div>` : `<svg width="12" height="15" viewBox="0 0 100 120"><path d="M50 5 L95 100 Q95 115 50 115 Q5 115 5 100 Z" fill="${obj.color||'#ff9900'}" stroke="white" stroke-width="6" /></svg>`;
+            const marker = L.marker([obj.lat, obj.lng], { icon: L.divIcon({ html: iconHtml, className: 'custom-icon', iconSize: [12, 15], iconAnchor: [6, 14] }) }).addTo(map);
             marker.bindPopup(`<div class="popup-form" style="text-align:center;"><b>${obj.type==='ship'?'本部船':'ブイ'}</b><br>${obj.comment||''}<br><button class="btn-del" onclick="deleteObject('${key}')">🗑️ 削除</button></div>`);
             objectMarkers[key] = marker;
         }
