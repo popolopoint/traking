@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.7.6 by Popolo App.com</title>
+    <title>虎キング v1.7.7 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -99,7 +99,7 @@
 
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v1.7.6</span>
+    <span style="font-size:14px;">虎キング v1.7.7</span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -184,32 +184,36 @@
 
     // --- 1. パネルの出し入れ機能 ---
 // パネルの表示・非表示を切り替える関数（最新版）
+
+
+// パネルの表示・非表示を切り替える関数（スマート版）
 window.toggleSettingsPanel = () => {
     const panel = document.getElementById('pointSettingsPanel');
-    const btn = document.getElementById('panel-toggle');
     
-    // 現在のカードの数を数える（おまけ機能）
-    const count = document.querySelectorAll('.point-card').length;
-
     if (panel.style.display === 'none') {
+        // パネルを開く
         panel.style.display = 'block';
-        if (btn) {
-            btn.style.background = '#007AFF';
-            btn.innerText = "パネルを閉じる";
-        }
+        panel.style.width = '280px';
+        panel.style.height = 'auto';
+        panel.style.background = 'rgba(255, 255, 255, 0.95)';
     } else {
+        // パネルを閉じて「小さな旗ボタン」状態にする
+        panel.style.display = 'block'; // 要素自体は消さない
+        panel.style.width = '40px';
+        panel.style.height = '40px';
+        panel.style.overflow = 'hidden';
+        panel.style.background = '#007AFF'; // 青いボタンに見せる
+        // 中身を一時的に隠すための処理
+        setTimeout(() => {
+            if(panel.style.width === '40px') panel.style.display = 'none'; 
+            // 完全に消したい場合は display = 'none'、
+            // 小さなボタンとして残したい場合は専用のボタンを別に作るのが正解です。
+        }, 0);
+        
+        // シンプルに「完全に消す」だけなら以下の一行でOKです
         panel.style.display = 'none';
-        if (btn) {
-            btn.style.background = '#444';
-            btn.innerText = `設定パネル (${count})`;
-        }
     }
 };
-
-
-    
-
-
 
 
 
