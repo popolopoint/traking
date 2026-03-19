@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.6.6 by Popolo App.com</title>
+    <title>虎キング v1.6.7 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -98,19 +98,22 @@
 </div>
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v1.6.6</span>
+    <span style="font-size:14px;">虎キング v1.6.7</span>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
 
 <div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
 
 
-<div id="pointSettingsPanel" style="margin-bottom: 15px; padding: 10px; background: #f0f7ff; border-radius: 8px; border: 1px solid #d0e0f0;">
-  <h3 style="margin: 0 0 10px 0; font-size: 16px;">🚩 コース地点設定</h3>
+<div id="pointSettingsPanel" style="position: fixed; top: 60px; left: 10px; z-index: 5000; width: 280px; max-height: 50vh; overflow-y: auto; background: rgba(255, 255, 255, 0.95); padding: 10px; border-radius: 12px; border: 2px solid #007AFF; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: #333;">
+  <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #007AFF; border-bottom: 1px solid #ddd;">🚩 コース地点設定</h3>
   <div id="pointListContainer">
-    <p id="noPointMsg" style="color: #666; font-size: 14px; margin: 0;">座標データが読み込まれていません</p>
+    <p id="noPointMsg" style="color: #666; font-size: 13px; margin: 0;">座標データが読み込まれていません</p>
   </div>
 </div>
+
+
+
 
 
 
