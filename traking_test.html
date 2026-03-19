@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.7.5 by Popolo App.com</title>
+    <title>虎キング v1.7.6 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -99,7 +99,7 @@
 
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v1.7.5</span>
+    <span style="font-size:14px;">虎キング v1.7.6</span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -111,7 +111,20 @@
 
 
 <div id="pointSettingsPanel" style="position: fixed; top: 60px; left: 10px; z-index: 5000; width: 280px; max-height: 50vh; overflow-y: auto; background: rgba(255, 255, 255, 0.95); padding: 10px; border-radius: 12px; border: 2px solid #007AFF; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: #333;">
-  <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #007AFF; border-bottom: 1px solid #ddd;">🚩 コース地点設定</h3>
+  
+
+
+<h3 style="margin: 0 0 10px 0; font-size: 16px; color: #007AFF; border-bottom: 1px solid #ddd;">🚩 コース地点設定</h3>
+
+<h3 onclick="toggleSettingsPanel()" style="margin: 0 0 10px 0; padding-bottom: 5px; font-size: 16px; color: #007AFF; border-bottom: 1px solid #ddd; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+    <span>🚩 コース地点設定</span>
+    <span style="font-size: 10px; color: #999;">[ 閉じる ]</span>
+</h3>
+
+
+
+
+
   <div id="pointListContainer">
     <p id="noPointMsg" style="color: #666; font-size: 13px; margin: 0;">座標データが読み込まれていません</p>
   </div>
@@ -170,19 +183,38 @@
     const userMarkers = {}, objectMarkers = {};
 
     // --- 1. パネルの出し入れ機能 ---
-    window.toggleSettingsPanel = () => {
-        const panel = document.getElementById('pointSettingsPanel');
-        const btn = document.getElementById('panel-toggle');
-        if (panel.style.display === 'none') {
-            panel.style.display = 'block';
+// パネルの表示・非表示を切り替える関数（最新版）
+window.toggleSettingsPanel = () => {
+    const panel = document.getElementById('pointSettingsPanel');
+    const btn = document.getElementById('panel-toggle');
+    
+    // 現在のカードの数を数える（おまけ機能）
+    const count = document.querySelectorAll('.point-card').length;
+
+    if (panel.style.display === 'none') {
+        panel.style.display = 'block';
+        if (btn) {
             btn.style.background = '#007AFF';
             btn.innerText = "パネルを閉じる";
-        } else {
-            panel.style.display = 'none';
-            btn.style.background = '#444';
-            btn.innerText = "設定パネル";
         }
-    };
+    } else {
+        panel.style.display = 'none';
+        if (btn) {
+            btn.style.background = '#444';
+            btn.innerText = `設定パネル (${count})`;
+        }
+    }
+};
+
+
+    
+
+
+
+
+
+
+
 
     // --- 2. 地点設定パネルのカード作成 ---
     function createPointCard(key, obj) {
