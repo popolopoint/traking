@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.7.3 by Popolo App.com</title>
+    <title>虎キング v1.7.5 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -99,7 +99,7 @@
 
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v1.7.3</span>
+    <span style="font-size:14px;">虎キング v1.7.5</span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -162,114 +162,135 @@
     const colorPresets = {"赤":"#ff0000","青":"#0000ff","ピンク":"#ff66cc","紫":"#800080","橙":"#ff9900","黄":"#ffff00","緑":"#32cd32","黒":"#222222","白":"#ffffff"};
     const savedPos = JSON.parse(localStorage.getItem('tora_king_pos')) || { lat: 26.3, lng: 127.8, zoom: 12 };
 
-    // --- 地図初期化 ---
     const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([savedPos.lat, savedPos.lng], savedPos.zoom);
-    
-    // 地図レイヤーの読み込み
-    try {
-        L.gridLayer.googleMutant({ type: 'roadmap' }).addTo(map);
-    } catch(e) {
-        console.warn("Google Maps initial load delayed...");
-    }
-
+    try { L.gridLayer.googleMutant({ type: 'roadmap' }).addTo(map); } catch(e) {}
     L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
+
     let myMarker = null, isFollowing = false, watchId = null;
     const userMarkers = {}, objectMarkers = {};
 
-    // --- コース地点設定用の関数群 ---
-
-    // 1. パネルで変更した値をFirebase（全員の画面）へ送る
-    window.updateMarkerAppearance = (key) => {
-        const card = document.querySelector(`.point-card[data-key="${key}"]`);
-        if (!card) return;
-
-        const type = card.querySelector('.type-select').value;
-        const colorName = card.querySelector('.color-select').value;
-        const comment = card.querySelector('.comment-input').value;
-
-        const colorMap = { red: "#ff0000", blue: "#0000ff", yellow: "#ffff00", green: "#32cd32", orange: "#ff9900" };
-
-        // Firebaseを更新（ここが重要！）
-        db.ref('objects/' + key).update({
-            type: type === 'boat' ? 'ship' : 'buoy',
-            color: colorMap[colorName] || colorName,
-            comment: comment
-        });
+    // --- 1. パネルの出し入れ機能 ---
+    window.toggleSettingsPanel = () => {
+        const panel = document.getElementById('pointSettingsPanel');
+        const btn = document.getElementById('panel-toggle');
+        if (panel.style.display === 'none') {
+            panel.style.display = 'block';
+            btn.style.background = '#007AFF';
+            btn.innerText = "パネルを閉じる";
+        } else {
+            panel.style.display = 'none';
+            btn.style.background = '#444';
+            btn.innerText = "設定パネル";
+        }
     };
 
-    // 2. 設定パネルに地点カードを作る
-    function createPointCard(key, lat, lng) {
+    // --- 2. 地点設定パネルのカード作成 ---
+    function createPointCard(key, obj) {
         const listContainer = document.getElementById('pointListContainer');
         const msg = document.getElementById('noPointMsg');
         if (msg) msg.style.display = 'none';
 
-        if (document.querySelector(`.point-card[data-key="${key}"]`)) return;
+        // 既にカードがある場合は中身を更新するだけ
+        let card = document.querySelector(`.point-card[data-key="${key}"]`);
+        if (card) {
+            card.querySelector('.comment-input').value = obj.comment || '';
+            card.querySelector('.type-select').value = obj.type === 'ship' ? 'boat' : 'buoy';
+            return;
+        }
 
         const div = document.createElement('div');
         div.className = 'point-card';
         div.dataset.key = key; 
         div.innerHTML = `
-            <span class="point-label">${key}</span>
+            <span class="point-label">${key.length > 4 ? '点' : key}</span>
             <select class="type-select" onchange="updateMarkerAppearance('${key}')">
-                <option value="buoy">マーク</option>
-                <option value="boat">船</option>
+                <option value="buoy" ${obj.type!=='ship'?'selected':''}>マーク</option>
+                <option value="boat" ${obj.type==='ship'?'selected':''}>船</option>
             </select>
             <select class="color-select" onchange="updateMarkerAppearance('${key}')">
-                <option value="red">赤</option>
-                <option value="blue">青</option>
-                <option value="yellow">黄</option>
-                <option value="green">緑</option>
+                <option value="red">赤</option><option value="blue">青</option>
+                <option value="yellow">黄</option><option value="green">緑</option>
                 <option value="orange" selected>橙</option>
             </select>
-            <input type="text" class="comment-input" placeholder="メモ" oninput="updateMarkerAppearance('${key}')">
+            <input type="text" class="comment-input" value="${obj.comment||''}" placeholder="メモ" oninput="updateMarkerAppearance('${key}')">
             <button class="delete-btn" onclick="deleteObject('${key}')">削除</button>
         `;
         listContainer.appendChild(div);
     }
 
-    // --- Firebase連携 (ブイ・船の表示) ---
+    // --- 3. パネルでの変更をFirebaseへ保存 ---
+    window.updateMarkerAppearance = (key) => {
+        const card = document.querySelector(`.point-card[data-key="${key}"]`);
+        if (!card) return;
+        const type = card.querySelector('.type-select').value;
+        const colorName = card.querySelector('.color-select').value;
+        const comment = card.querySelector('.comment-input').value;
+        const colorMap = { red: "#ff0000", blue: "#0000ff", yellow: "#ffff00", green: "#32cd32", orange: "#ff9900" };
+
+        db.ref('objects/' + key).update({
+            type: type === 'boat' ? 'ship' : 'buoy',
+            color: colorMap[colorName],
+            comment: comment
+        });
+    };
+
+    // --- 4. Firebase監視：地図への表示 ---
     db.ref('objects').on('value', snap => {
-        // 一旦既存のマーカーを消す
         for (let key in objectMarkers) map.removeLayer(objectMarkers[key]);
         const objects = snap.val();
         if (!objects) return;
 
         for (let key in objects) {
             const obj = objects[key];
-            let iconHtml = (obj.type === 'ship') 
+            const isShip = obj.type === 'ship';
+            
+            // アイコン作成
+            let iconHtml = isShip 
                 ? `<div style="font-size:24px; filter: drop-shadow(0 0 2px white);">🚤</div>` 
                 : `<svg width="18" height="22" viewBox="0 0 100 120"><path d="M50 5 L95 100 Q95 115 50 115 Q5 115 5 100 Z" fill="${obj.color||'#ff9900'}" stroke="white" stroke-width="8" /></svg>`;
             
             const marker = L.marker([obj.lat, obj.lng], { 
-                icon: L.divIcon({ html: iconHtml, className: '', iconSize: [20, 25], iconAnchor: [10, 20] }) 
+                icon: L.divIcon({ html: iconHtml, className: '', iconSize: [24, 24], iconAnchor: [12, 12] }) 
             }).addTo(map);
-            
-            marker.bindTooltip(`${key}: ${obj.comment || ''}`, { permanent: true, direction: 'top', className: 'user-label' });
+
+            // 文字が邪魔な「Tooltip」は廃止し、クリックした時のPopupのみにする
+            marker.bindPopup(`<b>${key.length>5?'地点':key}</b><br>${obj.comment||''}<br><button class="btn-del" onclick="deleteObject('${key}')">削除</button>`);
             objectMarkers[key] = marker;
 
-          
-          
-          // パネルにカードを表示する条件：
-            // キーが1文字（A, Bなど）または S, Start, Finish などの特定の名前を含む場合のみ
-            const isMainPoint = key.length <= 2 || ['Start', 'Finish', 'ship'].some(word => key.includes(word));
-            
-            if (isMainPoint) {
-                createPointCard(key, obj.lat, obj.lng);
+            // パネル表示条件：短い名前か、船データのみ
+            if (key.length <= 4 || isShip) {
+                createPointCard(key, obj);
             }
-          
-          
-          
-            
-            
-
-
-            
         }
     });
 
-    // --- コース作るくんURL連携 ---
-    const urlParams = new URLSearchParams(window.location.search);
-    const pointsData = urlParams.get('points');
+    // --- 5. 基本機能：地図クリックで設置 (復活！) ---
+    map.on('click', e => {
+        const { lat, lng } = e.latlng;
+        const popupContent = `
+            <div class="popup-form">
+                <b>新規設置</b>
+                <select id="new_type"><option value="buoy">🚩 マーク</option><option value="ship">🚤 本部船</option></select>
+                <input type="text" id="new_comment" placeholder="コメント">
+                <button class="btn-save" onclick="manualSave(${lat}, ${lng})">設置</button>
+            </div>`;
+        L.popup().setLatLng(e.latlng).setContent(popupContent).openOn(map);
+    });
+
+    window.manualSave = (lat, lng) => {
+        const type = document.getElementById('new_type').value;
+        const comment = document.getElementById('new_comment').value;
+        db.ref('objects').push({
+            type: type,
+            color: type === 'ship' ? '' : '#ff9900',
+            lat: lat, lng: lng,
+            comment: comment, ts: Date.now()
+        });
+        map.closePopup();
+    };
+
+    // --- 6. コース作るくん連携 ---
+    const pointsData = new URLSearchParams(window.location.search).get('points');
     if (pointsData) {
         pointsData.split('|').forEach(p => {
             const [label, coords] = p.split(':');
@@ -284,10 +305,10 @@
         window.history.replaceState({}, '', location.pathname);
     }
 
-    // --- その他基本機能 (GPS/参加者) ---
+    // --- その他GPS/参加者リスト (省略せずに維持) ---
     function createArrowIcon(color, heading, size = 30) {
         const rotate = heading || 0;
-        const html = `<div class="arrow-icon-wrapper" style="transform: rotate(${rotate}deg); width:${size}px; height:${size}px;"><svg viewBox="0 0 100 100" width="${size}" height="${size}"><path d="M50 5 L90 90 L50 75 L10 90 Z" fill="${color}" stroke="white" stroke-width="5" stroke-linejoin="round" /></svg></div>`;
+        const html = `<div class="arrow-icon-wrapper" style="transform: rotate(${rotate}deg);"><svg viewBox="0 0 100 100" width="${size}" height="${size}"><path d="M50 5 L90 90 L50 75 L10 90 Z" fill="${color}" stroke="white" stroke-width="5" /></svg></div>`;
         return L.divIcon({ html: html, className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
     }
 
@@ -299,10 +320,8 @@
                 const latlng = [latitude, longitude];
                 if (!myMarker) {
                     myMarker = L.marker(latlng, { icon: createArrowIcon(myColor, heading, 30) }).addTo(map);
-                    myMarker.bindTooltip(myName, {permanent: true, direction: 'top', className: 'user-label'}).openTooltip();
                 } else {
-                    myMarker.setLatLng(latlng);
-                    myMarker.setIcon(createArrowIcon(myColor, heading, 30));
+                    myMarker.setLatLng(latlng).setIcon(createArrowIcon(myColor, heading, 30));
                 }
                 if (isFollowing) map.panTo(latlng);
                 document.getElementById('status').innerText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
@@ -310,8 +329,7 @@
         }
     }
 
-    // ユーザー設定オーバーレイ
-    if (!myName || !myColor) {
+    if (!myName) {
         document.getElementById('setup-overlay').style.display = 'flex';
         const grid = document.getElementById('color-grid');
         for (let label in colorPresets) {
@@ -321,7 +339,7 @@
             btn.innerText = label;
             btn.onclick = () => {
                 const nameInp = document.getElementById('setup-name').value;
-                if (!nameInp) return alert("名前を入力してください");
+                if (!nameInp) return alert("名無しの権兵衛...");
                 myName = nameInp; myColor = colorPresets[label];
                 localStorage.setItem('tora_king_name', myName); localStorage.setItem('tora_king_color', myColor);
                 document.getElementById('setup-overlay').style.display = 'none'; startTracking();
@@ -330,7 +348,6 @@
         }
     } else { startTracking(); }
 
-    // 参加者リスト更新
     db.ref('users').on('value', snap => {
         const users = snap.val();
         let listHtml = "";
@@ -342,61 +359,25 @@
                 continue;
             }
             const isMe = (id === myId);
-            const speed = (u.speed * (speedUnitMode === 0 ? 1.94384 : (speedUnitMode === 1 ? 3.6 : 1))).toFixed(1);
-            listHtml += `<div class="user-item ${isMe ? 'me' : ''}"><span style="color:${u.color}">●</span> ${u.name} ${speed}${units[speedUnitMode]}</div>`;
+            const s = (u.speed * (speedUnitMode === 0 ? 1.94384 : (speedUnitMode === 1 ? 3.6 : 1))).toFixed(1);
+            listHtml += `<div class="user-item ${isMe ? 'me' : ''}"><span style="color:${u.color}">●</span> ${u.name} ${s}${units[speedUnitMode]}</div>`;
             if (!isMe) {
                 if (!userMarkers[id]) {
                     userMarkers[id] = L.marker([u.lat, u.lng], { icon: createArrowIcon(u.color, u.heading, 20) }).addTo(map);
-                    userMarkers[id].bindTooltip(u.name, {permanent: true, direction: 'top', className: 'user-label'});
                 } else {
-                    userMarkers[id].setLatLng([u.lat, u.lng]);
-                    userMarkers[id].setIcon(createArrowIcon(u.color, u.heading, 20));
+                    userMarkers[id].setLatLng([u.lat, u.lng]).setIcon(createArrowIcon(u.color, u.heading, 20));
                 }
             }
         }
         document.getElementById('list-content').innerHTML = listHtml;
     });
 
-    // 削除・操作系
-    window.deleteObject = (key) => { if(confirm("削除しますか？")) {
-        db.ref('objects/' + key).remove();
-        const card = document.querySelector(`.point-card[data-key="${key}"]`);
-        if (card) card.remove();
-    }};
-    window.logout = () => { if (confirm("ログアウトしますか？")) { db.ref('users/' + myId).remove(); localStorage.clear(); location.reload(); }};
+    window.deleteObject = (key) => { if(confirm("消去しますか？")) { db.ref('objects/' + key).remove(); const c = document.querySelector(`.point-card[data-key="${key}"]`); if(c) c.remove(); }};
+    window.logout = () => { if(confirm("ログアウト？")) { db.ref('users/'+myId).remove(); localStorage.clear(); location.reload(); }};
     window.goMe = () => { isFollowing = true; if(myMarker) map.panTo(myMarker.getLatLng()); };
     window.resetUser = () => { localStorage.removeItem('tora_king_name'); location.reload(); };
     map.on('movestart', () => isFollowing = false);
     map.on('moveend', () => { const c = map.getCenter(); localStorage.setItem('tora_king_pos', JSON.stringify({lat:c.lat, lng:c.lng, zoom:map.getZoom()})); });
-
-
-
-
-
-
-// パネルの表示・非表示を切り替える関数
-window.toggleSettingsPanel = () => {
-    const panel = document.getElementById('pointSettingsPanel');
-    const btn = document.getElementById('panel-toggle');
-    
-    if (panel.style.display === 'none') {
-        panel.style.display = 'block';
-        btn.style.background = '#007AFF'; // 開いている時は青
-    } else {
-        panel.style.display = 'none';
-        btn.style.background = '#444';    // 閉じている時はグレー
-    }
-};
-
-// 初期状態は「非表示」にしておきたい場合は、ここに追加
-document.getElementById('pointSettingsPanel').style.display = 'none';
-document.getElementById('panel-toggle').style.background = '#444';
-
-
-
-
-
-
 </script>
 </body>
 </html>
