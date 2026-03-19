@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.7.0 by Popolo App.com</title>
+    <title>虎キング v1.7.1 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -98,7 +98,7 @@
 </div>
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v1.7.0</span>
+    <span style="font-size:14px;">虎キング v1.7.1</span>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
 
@@ -144,120 +144,156 @@
         appId: "1:355068381368:web:440efbe59649791404cc4d" 
     };
 
-
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-
-
-// --- 修正版：コース作るくん連携処理 ---
-    const urlParams = new URLSearchParams(window.location.search);
-    const pointsData = urlParams.get('points');
-
-    if (pointsData) {
-        const pts = pointsData.split('|');
-        pts.forEach(p => {
-            const [label, coords] = p.split(':');
-            if (label && coords) {
-                const [lat, lng] = coords.split(',');
-                const latNum = parseFloat(lat);
-                const lngNum = parseFloat(lng);
-
-                // 1. Firebaseに保存（地図にマークを出すため）
-                db.ref('objects/' + label).set({
-                    type: (label === 'S' || label.includes('ship')) ? 'ship' : 'buoy',
-                    color: (label === 'A' ? '#ff3b30' : '#ff9900'), 
-                    lat: latNum,
-                    lng: lngNum,
-                    comment: label + "点 (連携データ)",
-                    ts: Date.now()
-                });
-
-                // 2. パネルにカードを追加（編集できるようにするため）
-                // ※ ここで関数を呼び出すのがポイントです
-                createPointCard(label, latNum, lngNum);
-            }
-        });
-        
-        // 完了後にURLを綺麗にする
-        window.history.replaceState({}, '', location.pathname);
-        alert("コースデータ（" + pts.length + "地点）を同期しました！");
-    }
-
-
-
-       
-       
-            
-            
-              
-              
-       
-   
-  
-
-
-
-
-
-
-
     let myId = localStorage.getItem('tora_king_id') || "tiger_" + Math.floor(Math.random()*10000);
     localStorage.setItem('tora_king_id', myId);
-
-    if (localStorage.getItem('tora_king_logout_pending') === 'true') {
-        db.ref('users/' + myId).remove().then(() => { localStorage.clear(); location.href = location.pathname; });
-        document.body.innerHTML = "<div style='color:white;text-align:center;padding:50px;'>Logout...</div>";
-        throw new Error("Logout");
-    }
 
     let myName = localStorage.getItem('tora_king_name');
     let myColor = localStorage.getItem('tora_king_color');
     let speedUnitMode = parseInt(localStorage.getItem('tora_king_unit') || "0");
     const units = ["kt", "km/h", "m/s"];
     const colorPresets = {"赤":"#ff0000","青":"#0000ff","ピンク":"#ff66cc","紫":"#800080","橙":"#ff9900","黄":"#ffff00","緑":"#32cd32","黒":"#222222","白":"#ffffff"};
+    const savedPos = JSON.parse(localStorage.getItem('tora_king_pos')) || { lat: 26.3, lng: 127.8, zoom: 12 };
 
-    const savedPos = JSON.parse(localStorage.getItem('tora_king_pos')) || { lat: 35.0, lng: 135.0, zoom: 15 };
-    
-    // 地図初期化
+    // --- 地図初期化 ---
     const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([savedPos.lat, savedPos.lng], savedPos.zoom);
-
-    // Google Maps読み込み。エラー回避のためMutantプラグインを使用
+    
+    // 地図レイヤーの読み込み
     try {
         L.gridLayer.googleMutant({ type: 'roadmap' }).addTo(map);
     } catch(e) {
-        console.error("Google Maps Load Error:", e);
-        alert("地図の読み込みに失敗しました。APIキーまたはネットワークを確認してください。");
+        console.warn("Google Maps initial load delayed...");
     }
 
     L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
-
     let myMarker = null, isFollowing = false, watchId = null;
     const userMarkers = {}, objectMarkers = {};
 
+    // --- コース地点設定用の関数群 ---
+
+    // 1. パネルで変更した値をFirebase（全員の画面）へ送る
+    window.updateMarkerAppearance = (key) => {
+        const card = document.querySelector(`.point-card[data-key="${key}"]`);
+        if (!card) return;
+
+        const type = card.querySelector('.type-select').value;
+        const colorName = card.querySelector('.color-select').value;
+        const comment = card.querySelector('.comment-input').value;
+
+        const colorMap = { red: "#ff0000", blue: "#0000ff", yellow: "#ffff00", green: "#32cd32", orange: "#ff9900" };
+
+        // Firebaseを更新（ここが重要！）
+        db.ref('objects/' + key).update({
+            type: type === 'boat' ? 'ship' : 'buoy',
+            color: colorMap[colorName] || colorName,
+            comment: comment
+        });
+    };
+
+    // 2. 設定パネルに地点カードを作る
+    function createPointCard(key, lat, lng) {
+        const listContainer = document.getElementById('pointListContainer');
+        const msg = document.getElementById('noPointMsg');
+        if (msg) msg.style.display = 'none';
+
+        if (document.querySelector(`.point-card[data-key="${key}"]`)) return;
+
+        const div = document.createElement('div');
+        div.className = 'point-card';
+        div.dataset.key = key; 
+        div.innerHTML = `
+            <span class="point-label">${key}</span>
+            <select class="type-select" onchange="updateMarkerAppearance('${key}')">
+                <option value="buoy">マーク</option>
+                <option value="boat">船</option>
+            </select>
+            <select class="color-select" onchange="updateMarkerAppearance('${key}')">
+                <option value="red">赤</option>
+                <option value="blue">青</option>
+                <option value="yellow">黄</option>
+                <option value="green">緑</option>
+                <option value="orange" selected>橙</option>
+            </select>
+            <input type="text" class="comment-input" placeholder="メモ" oninput="updateMarkerAppearance('${key}')">
+            <button class="delete-btn" onclick="deleteObject('${key}')">削除</button>
+        `;
+        listContainer.appendChild(div);
+    }
+
+    // --- Firebase連携 (ブイ・船の表示) ---
+    db.ref('objects').on('value', snap => {
+        // 一旦既存のマーカーを消す
+        for (let key in objectMarkers) map.removeLayer(objectMarkers[key]);
+        const objects = snap.val();
+        if (!objects) return;
+
+        for (let key in objects) {
+            const obj = objects[key];
+            let iconHtml = (obj.type === 'ship') 
+                ? `<div style="font-size:24px; filter: drop-shadow(0 0 2px white);">🚤</div>` 
+                : `<svg width="18" height="22" viewBox="0 0 100 120"><path d="M50 5 L95 100 Q95 115 50 115 Q5 115 5 100 Z" fill="${obj.color||'#ff9900'}" stroke="white" stroke-width="8" /></svg>`;
+            
+            const marker = L.marker([obj.lat, obj.lng], { 
+                icon: L.divIcon({ html: iconHtml, className: '', iconSize: [20, 25], iconAnchor: [10, 20] }) 
+            }).addTo(map);
+            
+            marker.bindTooltip(`${key}: ${obj.comment || ''}`, { permanent: true, direction: 'top', className: 'user-label' });
+            objectMarkers[key] = marker;
+
+            // パネルにカードがなければ作成（同期）
+            createPointCard(key, obj.lat, obj.lng);
+        }
+    });
+
+    // --- コース作るくんURL連携 ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const pointsData = urlParams.get('points');
+    if (pointsData) {
+        pointsData.split('|').forEach(p => {
+            const [label, coords] = p.split(':');
+            if (label && coords) {
+                const [lat, lng] = coords.split(',');
+                db.ref('objects/' + label).set({
+                    type: (label === 'S' || label.includes('ship')) ? 'ship' : 'buoy',
+                    color: '#ff9900', lat: parseFloat(lat), lng: parseFloat(lng), comment: label, ts: Date.now()
+                });
+            }
+        });
+        window.history.replaceState({}, '', location.pathname);
+    }
+
+    // --- その他基本機能 (GPS/参加者) ---
     function createArrowIcon(color, heading, size = 30) {
         const rotate = heading || 0;
         const html = `<div class="arrow-icon-wrapper" style="transform: rotate(${rotate}deg); width:${size}px; height:${size}px;"><svg viewBox="0 0 100 100" width="${size}" height="${size}"><path d="M50 5 L90 90 L50 75 L10 90 Z" fill="${color}" stroke="white" stroke-width="5" stroke-linejoin="round" /></svg></div>`;
         return L.divIcon({ html: html, className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
     }
 
-    function updateUnitButton() {
-        document.getElementById('unit-toggle').innerText = units[speedUnitMode];
+    function startTracking() {
+        if (navigator.geolocation) {
+            watchId = navigator.geolocation.watchPosition(pos => {
+                const {latitude, longitude, speed, heading} = pos.coords;
+                db.ref('users/'+myId).set({lat: latitude, lng: longitude, name: myName, color: myColor, speed: speed||0, heading: heading||0, ts: Date.now()});
+                const latlng = [latitude, longitude];
+                if (!myMarker) {
+                    myMarker = L.marker(latlng, { icon: createArrowIcon(myColor, heading, 30) }).addTo(map);
+                    myMarker.bindTooltip(myName, {permanent: true, direction: 'top', className: 'user-label'}).openTooltip();
+                } else {
+                    myMarker.setLatLng(latlng);
+                    myMarker.setIcon(createArrowIcon(myColor, heading, 30));
+                }
+                if (isFollowing) map.panTo(latlng);
+                document.getElementById('status').innerText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+            }, null, {enableHighAccuracy: true});
+        }
     }
-    updateUnitButton();
 
-    window.toggleSpeedUnit = () => {
-        speedUnitMode = (speedUnitMode + 1) % 3;
-        localStorage.setItem('tora_king_unit', speedUnitMode);
-        updateUnitButton();
-        db.ref('users').once('value', () => {}); 
-    };
-
+    // ユーザー設定オーバーレイ
     if (!myName || !myColor) {
-        const overlay = document.getElementById('setup-overlay');
+        document.getElementById('setup-overlay').style.display = 'flex';
         const grid = document.getElementById('color-grid');
-        overlay.style.display = 'flex';
         for (let label in colorPresets) {
             const btn = document.createElement('div');
             btn.className = 'color-btn';
@@ -268,238 +304,51 @@
                 if (!nameInp) return alert("名前を入力してください");
                 myName = nameInp; myColor = colorPresets[label];
                 localStorage.setItem('tora_king_name', myName); localStorage.setItem('tora_king_color', myColor);
-                overlay.style.display = 'none'; startTracking();
+                document.getElementById('setup-overlay').style.display = 'none'; startTracking();
             };
             grid.appendChild(btn);
         }
     } else { startTracking(); }
 
-    function startTracking() {
-        if (navigator.geolocation) {
-            watchId = navigator.geolocation.watchPosition(pos => {
-                const {latitude, longitude, speed, heading} = pos.coords;
-                if (localStorage.getItem('tora_king_logout_pending') !== 'true') {
-                    db.ref('users/'+myId).set({lat: latitude, lng: longitude, name: myName, color: myColor, speed: speed||0, heading: heading||0, ts: Date.now()});
-                }
-                const latlng = [latitude, longitude];
-                const trail = L.circleMarker(latlng, { radius: 2, color: myColor, weight: 0, fillOpacity: 0.4 }).addTo(map);
-                setTimeout(() => map.removeLayer(trail), 5000);
-
-                const mySize = 30; 
-                if (!myMarker) {
-                    myMarker = L.marker(latlng, { icon: createArrowIcon(myColor, heading, mySize) }).addTo(map);
-                    myMarker.bindTooltip(myName, {permanent: true, direction: 'top', className: 'user-label'}).openTooltip();
-                } else {
-                    myMarker.setLatLng(latlng);
-                    myMarker.setIcon(createArrowIcon(myColor, heading, mySize));
-                }
-                if (isFollowing) map.panTo(latlng);
-                document.getElementById('status').innerText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-            }, e => {
-                console.warn(e.message);
-                document.getElementById('status').innerText = "GPS Error: " + e.message;
-            }, {enableHighAccuracy: true, timeout: 10000, maximumAge: 0});
-        }
-    }
-
+    // 参加者リスト更新
     db.ref('users').on('value', snap => {
         const users = snap.val();
-        if (!users) { document.getElementById('list-content').innerHTML = ""; return; }
         let listHtml = "";
         const now = Date.now();
         for (let id in users) {
             const u = users[id];
-            if (!u.name || !u.lat) continue;
-            if (now - u.ts > 600000) {
+            if (!u.name || now - u.ts > 600000) {
                 if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
-                continue; 
+                continue;
             }
             const isMe = (id === myId);
-            const speedMs = u.speed || 0;
-            let speedVal, unitLabel;
-            if (speedUnitMode === 0) { speedVal = (speedMs * 1.94384).toFixed(1); unitLabel = "kt"; }
-            else if (speedUnitMode === 1) { speedVal = (speedMs * 3.6).toFixed(1); unitLabel = "km/h"; }
-            else { speedVal = speedMs.toFixed(1); unitLabel = "m/s"; }
-
-            listHtml += `<div class="user-item ${isMe ? 'me' : ''}">
-                <span style="color:${u.color}">●</span> ${u.name} ${speedVal}${unitLabel}
-            </div>`;
-
+            const speed = (u.speed * (speedUnitMode === 0 ? 1.94384 : (speedUnitMode === 1 ? 3.6 : 1))).toFixed(1);
+            listHtml += `<div class="user-item ${isMe ? 'me' : ''}"><span style="color:${u.color}">●</span> ${u.name} ${speed}${units[speedUnitMode]}</div>`;
             if (!isMe) {
-                const otherSize = 20; 
                 if (!userMarkers[id]) {
-                    userMarkers[id] = L.marker([u.lat, u.lng], { icon: createArrowIcon(u.color, u.heading, otherSize) }).addTo(map);
-                    userMarkers[id].bindTooltip(u.name, {permanent: true, direction: 'top', className: 'user-label'}).openTooltip();
+                    userMarkers[id] = L.marker([u.lat, u.lng], { icon: createArrowIcon(u.color, u.heading, 20) }).addTo(map);
+                    userMarkers[id].bindTooltip(u.name, {permanent: true, direction: 'top', className: 'user-label'});
                 } else {
                     userMarkers[id].setLatLng([u.lat, u.lng]);
-                    userMarkers[id].setIcon(createArrowIcon(u.color, u.heading, otherSize));
+                    userMarkers[id].setIcon(createArrowIcon(u.color, u.heading, 20));
                 }
             }
         }
         document.getElementById('list-content').innerHTML = listHtml;
     });
 
-    db.ref('objects').on('value', snap => {
-        for (let key in objectMarkers) map.removeLayer(objectMarkers[key]);
-        const objects = snap.val();
-        if (!objects) return;
-        for (let key in objects) {
-            const obj = objects[key];
-            let iconHtml = (obj.type === 'ship') ? `<div style="font-size:16px;">🚤</div>` : `<svg width="12" height="15" viewBox="0 0 100 120"><path d="M50 5 L95 100 Q95 115 50 115 Q5 115 5 100 Z" fill="${obj.color||'#ff9900'}" stroke="white" stroke-width="6" /></svg>`;
-            const marker = L.marker([obj.lat, obj.lng], { icon: L.divIcon({ html: iconHtml, className: 'custom-icon', iconSize: [12, 15], iconAnchor: [6, 14] }) }).addTo(map);
-            marker.bindPopup(`<div class="popup-form" style="text-align:center;"><b>${obj.type==='ship'?'本部船':'ブイ'}</b><br>${obj.comment||''}<br><button class="btn-del" onclick="deleteObject('${key}')">🗑️ 削除</button></div>`);
-            objectMarkers[key] = marker;
-        }
-    });
-
-    map.on('click', e => {
-        const { lat, lng } = e.latlng;
-        const popupContent = `<div class="popup-form"><b>新規設置</b><select id="new_type" onchange="toggleColorSelect()"><option value="buoy">🚩 マークブイ</option><option value="ship">🚤 本部船</option></select><div id="color_area">色: <select id="new_color"><option value="pink">ピンク</option><option value="orange" selected>オレンジ</option><option value="red">赤</option><option value="green">緑</option><option value="yellow">黄色</option></select></div><input type="text" id="new_comment" placeholder="コメント"><button class="btn-save" onclick="saveObject(${lat}, ${lng})">共有</button></div>`;
-        L.popup().setLatLng(e.latlng).setContent(popupContent).openOn(map);
-    });
-    window.toggleColorSelect = () => { document.getElementById('color_area').style.display = (document.getElementById('new_type').value === 'ship') ? 'none' : 'block'; };
-    window.saveObject = (lat, lng) => {
-        const type = document.getElementById('new_type').value, cMap = { pink: "#ff66cc", orange: "#ff9900", red: "#ff0000", green: "#00ff00", yellow: "#ffff00" };
-        const color = cMap[document.getElementById('new_color').value], comment = document.getElementById('new_comment').value;
-        db.ref('objects').push({ type, color, lat, lng, comment, ts: Date.now() });
-        map.closePopup();
-    };
-    window.deleteObject = (key) => { if(confirm("削除しますか？")) db.ref('objects/' + key).remove().then(() => map.closePopup()); };
-    window.resetUser = () => { localStorage.removeItem('tora_king_name'); localStorage.removeItem('tora_king_color'); location.reload(); };
+    // 削除・操作系
+    window.deleteObject = (key) => { if(confirm("削除しますか？")) {
+        db.ref('objects/' + key).remove();
+        const card = document.querySelector(`.point-card[data-key="${key}"]`);
+        if (card) card.remove();
+    }};
+    window.logout = () => { if (confirm("ログアウトしますか？")) { db.ref('users/' + myId).remove(); localStorage.clear(); location.reload(); }};
     window.goMe = () => { isFollowing = true; if(myMarker) map.panTo(myMarker.getLatLng()); };
-    map.on('movestart', e => { if(!e.hard) isFollowing = false; });
-    window.logout = () => { if (confirm("ログアウトして地図から消えますか？")) { if (watchId !== null) navigator.geolocation.clearWatch(watchId); localStorage.setItem('tora_king_logout_pending', 'true'); location.reload(); } };
-    map.on('moveend', () => { const center = map.getCenter(); localStorage.setItem('tora_king_pos', JSON.stringify({ lat: center.lat, lng: center.lng, zoom: map.getZoom() })); });
+    window.resetUser = () => { localStorage.removeItem('tora_king_name'); location.reload(); };
+    map.on('movestart', () => isFollowing = false);
+    map.on('moveend', () => { const c = map.getCenter(); localStorage.setItem('tora_king_pos', JSON.stringify({lat:c.lat, lng:c.lng, zoom:map.getZoom()})); });
 
-
-// マーカーを管理するための入れ物
-let markers = {}; 
-
-
-
-
-
-// --- 1. マーカーの見た目（色・タイプ・コメント）を更新する関数 ---
-function updateMarkerAppearance(key) {
-    const card = document.querySelector(`.point-card[data-key="${key}"]`);
-    if (!card || !markers[key]) return;
-
-    const type = card.querySelector('.type-select').value;
-    const color = card.querySelector('.color-select').value;
-    const comment = card.querySelector('.comment-input').value;
-
-    // 1. アイコンの見た目を作る（既存の虎キングのルールに合わせる）
-    let iconHtml = "";
-    if (type === 'boat') {
-        iconHtml = `<div style="font-size:20px; filter: drop-shadow(0 0 2px white);">🚤</div>`;
-    } else {
-        // ブイ（マーク）の場合は、選んだ色で塗りつぶす
-        iconHtml = `<svg width="16" height="20" viewBox="0 0 100 120">
-            <path d="M50 5 L95 100 Q95 115 50 115 Q5 115 5 100 Z" fill="${color}" stroke="white" stroke-width="8" />
-        </svg>`;
-    }
-
-    // 2. 地図上のマーカーに新しいアイコンをセット
-    markers[key].setIcon(L.divIcon({ 
-        html: iconHtml, 
-        className: 'custom-icon', 
-        iconSize: [20, 25], 
-        iconAnchor: [10, 22] 
-    }));
-
-    // 3. ツールチップ（ラベル）とポップアップ（詳細）を更新
-    // 常に表示されるラベルにコメントを反映
-    markers[key].setTooltipContent(`${key}: ${comment}`);
-    
-    // クリックした時の詳細画面も更新
-    markers[key].bindPopup(`<b>${key}地点</b><br>${type === 'boat' ? '本部船' : 'マーク'}<br>${comment}`);
-}
-
-
-
-
-
-
-// --- 2. 1点分の「設定カード」を画面に作る関数 ---
-// --- 2. 1点分の「設定カード」を画面に作る関数 ---
-function createPointCard(key, lat, lng) {
-    const listContainer = document.getElementById('pointListContainer');
-    const msg = document.getElementById('noPointMsg');
-    if (msg) msg.style.display = 'none'; // メッセージを隠す
-
-    // --- ここが「前後」で入れ替えるポイント ---
-    // 地図上のマーカー実体は Firebase の監視 (240行目付近) が作ってくれるので、
-    // ここではパネル操作でエラーが出ないよう「入れ物」だけ準備します
-    if (!markers[key]) {
-        markers[key] = {
-            setIcon: function() {}, 
-            setTooltipContent: function() {},
-            bindPopup: function() {}
-        };
-    }
-
-    // HTMLカードの作成（中身はそのままですが、idとの連動を確実に行います）
-    const div = document.createElement('div');
-    div.className = 'point-card';
-    div.dataset.key = key; 
-    div.innerHTML = `
-        <span class="point-label">${key}</span>
-        <select class="type-select" onchange="updateMarkerAppearance('${key}')">
-            <option value="buoy">マーク</option>
-            <option value="boat">船</option>
-        </select>
-        <select class="color-select" onchange="updateMarkerAppearance('${key}')">
-            <option value="red">赤</option>
-            <option value="blue">青</option>
-            <option value="yellow">黄</option>
-            <option value="green">緑</option>
-            <option value="orange">橙</option>
-        </select>
-        <input type="text" class="comment-input" placeholder="コメント入力" oninput="updateMarkerAppearance('${key}')">
-        <button class="delete-btn" onclick="deletePoint('${key}')">削除</button>
-    `;
-    listContainer.appendChild(div);
-}
-
-
-
-// 地点削除の関数
-function deletePoint(key) {
-    if (markers[key]) {
-        markers[key].setMap(null);
-        delete markers[key];
-    }
-    const card = document.querySelector(`.point-card[data-key="${key}"]`);
-    if (card) card.remove();
-}
-
-// --- 3. ページ読み込み時にURLを解析して実行する ---
-function initPointsFromUrl() {
-    const params = new URLSearchParams(window.location.search);
-    const pointsParam = params.get('points');
-    
-    if (!pointsParam) return; // データがなければ何もしない
-
-    // "A:26.1,127.1|B:26.2,127.2" という文字を分解する
-    const pointPairs = pointsParam.split('|');
-
-    pointPairs.forEach(pair => {
-        const [label, coords] = pair.split(':');
-        if (label && coords) {
-            const [lat, lng] = coords.split(',');
-            // 先ほど作った「カードとマーカーを作る関数」を呼び出す
-            createPointCard(label, parseFloat(lat), parseFloat(lng));
-        }
-    });
-}
-
-// Google Mapsの初期化（initMap）が終わるタイミングで実行
-// もし既存の initMap 関数がある場合は、その最後の一行に 
-// initPointsFromUrl(); を書き加えるだけでもOKです。
-window.addEventListener('load', () => {
-    // 地図が読み込まれるまで少し待ってから実行（エラー防止）
-    setTimeout(initPointsFromUrl, 1000); 
-});
 </script>
 </body>
 </html>
