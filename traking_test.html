@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.7.1 by Popolo App.com</title>
+    <title>虎キング v1.7.2 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -98,7 +98,7 @@
 </div>
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v1.7.1</span>
+    <span style="font-size:14px;">虎キング v1.7.2</span>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
 
@@ -242,8 +242,23 @@
             marker.bindTooltip(`${key}: ${obj.comment || ''}`, { permanent: true, direction: 'top', className: 'user-label' });
             objectMarkers[key] = marker;
 
-            // パネルにカードがなければ作成（同期）
-            createPointCard(key, obj.lat, obj.lng);
+          
+          
+          // パネルにカードを表示する条件：
+            // キーが1文字（A, Bなど）または S, Start, Finish などの特定の名前を含む場合のみ
+            const isMainPoint = key.length <= 2 || ['Start', 'Finish', 'ship'].some(word => key.includes(word));
+            
+            if (isMainPoint) {
+                createPointCard(key, obj.lat, obj.lng);
+            }
+          
+          
+          
+            
+            
+
+
+            
         }
     });
 
