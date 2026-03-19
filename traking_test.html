@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.6.8 by Popolo App.com</title>
+    <title>虎キング v1.7.0 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -98,7 +98,7 @@
 </div>
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v1.6.8</span>
+    <span style="font-size:14px;">虎キング v1.7.0</span>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
 
@@ -421,24 +421,27 @@ function updateMarkerAppearance(key) {
 
 
 // --- 2. 1点分の「設定カード」を画面に作る関数 ---
+// --- 2. 1点分の「設定カード」を画面に作る関数 ---
 function createPointCard(key, lat, lng) {
     const listContainer = document.getElementById('pointListContainer');
     const msg = document.getElementById('noPointMsg');
     if (msg) msg.style.display = 'none'; // メッセージを隠す
 
-    // 地図にマーカーを設置（初期値は赤）
-    const marker = new google.maps.Marker({
-        position: { lat, lng },
-        map: map,
-        title: key,
-        icon: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
-    });
-    markers[key] = marker;
+    // --- ここが「前後」で入れ替えるポイント ---
+    // 地図上のマーカー実体は Firebase の監視 (240行目付近) が作ってくれるので、
+    // ここではパネル操作でエラーが出ないよう「入れ物」だけ準備します
+    if (!markers[key]) {
+        markers[key] = {
+            setIcon: function() {}, 
+            setTooltipContent: function() {},
+            bindPopup: function() {}
+        };
+    }
 
-    // HTMLカードの作成
+    // HTMLカードの作成（中身はそのままですが、idとの連動を確実に行います）
     const div = document.createElement('div');
     div.className = 'point-card';
-    div.dataset.key = key; // どの地点か判別用
+    div.dataset.key = key; 
     div.innerHTML = `
         <span class="point-label">${key}</span>
         <select class="type-select" onchange="updateMarkerAppearance('${key}')">
@@ -457,6 +460,8 @@ function createPointCard(key, lat, lng) {
     `;
     listContainer.appendChild(div);
 }
+
+
 
 // 地点削除の関数
 function deletePoint(key) {
