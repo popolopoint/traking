@@ -266,8 +266,8 @@
     };
 
     function createBuoyIcon(color) {
-        const svg = `<svg viewBox="0 0 100 120" width="30" height="36"><path d="M50 5 Q55 5 90 110 L10 110 Q45 5 50 5 Z" fill="${color}" stroke="#000" stroke-width="5" stroke-linejoin="round"/></svg>`;
-        return L.divIcon({ html: svg, className: '', iconSize: [30, 36], iconAnchor: [15, 36] });
+        const svg = `<svg viewBox="0 0 100 120" width="20" height="24"><path d="M50 5 Q55 5 90 110 L10 110 Q45 5 50 5 Z" fill="${color}" stroke="#000" stroke-width="5" stroke-linejoin="round"/></svg>`;
+        return L.divIcon({ html: svg, className: '', iconSize: [20, 24], iconAnchor: [10, 12] });
     }
 
     db.ref('objects').on('child_added', snap => {
