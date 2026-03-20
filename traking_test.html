@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.9.2 by Popolo App.com</title>
+    <title>虎キング v1.9.3 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -33,8 +33,8 @@
 <body>
 
 <div id="header">
-    <span>虎キング v1.9.2</span>
-    <button onclick="togglePanel()" style="background:#007AFF; color:#white; padding:4px 8px;">地点設定</button>
+    <span>虎キング v1.9.3</span>
+    <button onclick="togglePanel()" style="background:#007AFF; color:white; padding:4px 8px;">地点設定</button>
     <button id="unit-btn" onclick="nextUnit()" style="background:#333; color:#ff9900; border:1px solid #ff9900; padding:4px 8px;">kt</button>
 </div>
 
@@ -59,6 +59,7 @@
 <button id="recenter-btn" class="f-btn" onclick="goMe()">🎯</button>
 <button id="admin-btn" class="f-btn" onclick="adminMenu()">管理</button>
 
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB_OOgXiE1YkFzQK0Nujhnx3lNM_7dp66U"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -78,7 +79,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-  // --- 状態管理 ---
+    // --- 状態管理 ---
     let myId = localStorage.getItem('tora_king_id') || "user_" + Date.now();
     localStorage.setItem('tora_king_id', myId);
     let myName = localStorage.getItem('tora_king_name');
@@ -87,12 +88,16 @@
     const units = ["kt", "km/h", "m/s"];
     const conv = [1.94384, 3.6, 1];
 
-    // --- マップ初期化 (明るさ改善 & 安全版) ---
+    // --- マップ初期化 (真っ暗防止・明るさ改善) ---
     const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([26.3, 127.8], 13);
+    
+    // 予備地図を表示せずGoogleMutantのみを試行（二重表示による暗さを回避）
     try {
-        if (typeof L.gridLayer.googleMutant === 'function') {
+        if (typeof google !== 'undefined' && L.gridLayer.googleMutant) {
             L.gridLayer.googleMutant({ type: 'roadmap' }).addTo(map);
-        } else { throw new Error(); }
+        } else {
+            throw new Error();
+        }
     } catch(e) {
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     }
@@ -101,14 +106,10 @@
     const userMarkers = {}, userTrails = {}, objectMarkers = {};
     let myMarker = null, isFollowing = false;
 
-    // --- 1. ユーザー初期設定 (色と名前) ---
+    // --- 1. ユーザー初期設定 ---
     const colors = { "赤":"#ff0000","青":"#0000ff","ピンク":"#ff66cc","紫":"#800080","緑":"#32cd32","黄":"#ffff00","黒":"#222222","白":"#ffffff" };
     if (!myName) {
         const grid = document.getElementById('setup-colors');
-        if(!grid) { // setup-colorsがない場合の予備処理
-             const div = document.createElement('div'); div.id="setup-colors"; div.className="color-grid";
-             document.querySelector('.setup-box').appendChild(div);
-        }
         for (let name in colors) {
             const b = document.createElement('div');
             b.className = 'color-btn'; b.style.background = colors[name]; b.innerText = name;
@@ -120,25 +121,26 @@
                 document.getElementById('setup-overlay').style.display = 'none';
                 startGPS();
             };
-            document.getElementById('setup-colors').appendChild(b);
+            grid.appendChild(b);
         }
     } else {
         document.getElementById('setup-overlay').style.display = 'none';
         startGPS();
     }
 
-    // --- 2. GPS & アイコン生成 ---
+    // --- 2. GPS処理 ---
     function startGPS() {
         navigator.geolocation.watchPosition(pos => {
             const {latitude: lat, longitude: lng, speed, heading} = pos.coords;
             const now = Date.now();
             db.ref('users/' + myId).set({ lat, lng, name: myName, color: myColor, speed: speed||0, heading: heading||0, ts: now });
 
+            const iconSize = 30;
             if (!myMarker) {
-                myMarker = L.marker([lat, lng], { icon: createArrow(myColor, heading, 30) }).addTo(map);
+                myMarker = L.marker([lat, lng], { icon: createArrow(myColor, heading, iconSize) }).addTo(map);
                 myMarker.bindTooltip(myName, { permanent: true, direction: 'top', className: 'user-label' });
             } else {
-                myMarker.setLatLng([lat, lng]).setIcon(createArrow(myColor, heading, 30));
+                myMarker.setLatLng([lat, lng]).setIcon(createArrow(myColor, heading, iconSize));
             }
             if (isFollowing) map.panTo([lat, lng]);
         }, null, { enableHighAccuracy: true });
@@ -151,7 +153,7 @@
         });
     }
 
-    // --- 3. ユーザー監視 & 軌跡(10秒維持+5秒フェード) ---
+    // --- 3. ユーザー監視 & 軌跡 ---
     db.ref('users').on('value', snap => {
         const users = snap.val();
         const now = Date.now();
@@ -160,9 +162,7 @@
 
         for (let id in users) {
             const u = users[id];
-            // 12時間自動消去
             if (u.ts && now - u.ts > 43200000) { if(id !== myId) db.ref('users/' + id).remove(); continue; }
-            // 10分更新なしで非表示
             if (now - u.ts > 600000) { if(userMarkers[id]){map.removeLayer(userMarkers[id]); delete userMarkers[id];} continue; }
 
             const isMe = (id === myId);
@@ -177,14 +177,13 @@
                     userMarkers[id] = L.marker([u.lat, u.lng], { icon: createArrow(u.color, u.heading, 20) }).addTo(map);
                     userMarkers[id].bindTooltip(u.name, { permanent: true, direction: 'top', className: 'user-label' });
                 } else {
-                    userMarkers[id].setLatLng([u.lat, lng]).setIcon(createArrow(u.color, u.heading, 20));
+                    userMarkers[id].setLatLng([u.lat, u.lng]).setIcon(createArrow(u.color, u.heading, 20));
                 }
             }
 
-            // 軌跡の更新
             if (!userTrails[id]) userTrails[id] = [];
             userTrails[id].push({ latlng: [u.lat, u.lng], ts: now });
-            userTrails[id] = userTrails[id].filter(t => now - t.ts < 15000); // 15秒分保持
+            userTrails[id] = userTrails[id].filter(t => now - t.ts < 15000);
 
             if (userMarkers[id + '_trail']) map.removeLayer(userMarkers[id + '_trail']);
             const latlngs = userTrails[id].map(t => t.latlng);
@@ -196,7 +195,7 @@
         document.getElementById('list-content').innerHTML = html;
     });
 
-    // --- 4. 地点設置（ポップアップ & 縦長ブイ） ---
+    // --- 4. 地点設置 ---
     map.on('click', e => {
         const lat = e.latlng.lat; const lng = e.latlng.lng;
         const formHtml = `
@@ -243,7 +242,6 @@
         const card = document.querySelector(`[data-key="${key}"]`); if (card) card.remove();
     });
 
-    // --- 5. 地点管理パネル & 外部連携 ---
     function addPointCard(key, obj) {
         const container = document.getElementById('point-list');
         if(!container) return;
@@ -256,6 +254,7 @@
     window.delObj = (key) => { if(confirm("削除しますか？")) db.ref('objects/' + key).remove(); };
     window.clearAllObjects = () => { if(confirm("全マークを削除しますか？")) db.ref('objects').remove(); };
 
+    // --- 5. 外部連携 ---
     window.addEventListener('load', () => {
         const params = new URLSearchParams(window.location.search);
         const data = params.get('points');
@@ -270,7 +269,6 @@
         }
     });
 
-    // --- 6. ユーティリティ ---
     window.nextUnit = () => {
         unitIdx = (unitIdx + 1) % 3;
         localStorage.setItem('tora_unit', unitIdx);
