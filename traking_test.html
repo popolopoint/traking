@@ -280,32 +280,70 @@ window.toggleSettingsPanel = () => {
     };
 
     // --- 4. Firebase監視：地図への表示 ---
-    db.ref('objects').on('value', snap => {
-        for (let key in objectMarkers) map.removeLayer(objectMarkers[key]);
-        const objects = snap.val();
-        if (!objects) return;
+// --- 参加者リストの更新とマーカー表示の修正（強化版） ---
+    db.ref('users').on('value', snap => {
+        const users = snap.val();
+        let listHtml = "";
+        const now = Date.now();
+        
+        if (!users) {
+            console.log("No users found in DB");
+            document.getElementById('list-content').innerHTML = "";
+            return;
+        }
 
-        for (let key in objects) {
-            const obj = objects[key];
-            const isShip = obj.type === 'ship';
+        // speedUnitModeが正しく取得できていない場合の予備処理
+        const currentMode = isNaN(speedUnitMode) ? 0 : speedUnitMode;
+
+        for (let id in users) {
+            const u = users[id];
             
-            // アイコン作成
-            let iconHtml = isShip 
-                ? `<div style="font-size:24px; filter: drop-shadow(0 0 2px white);">🚤</div>` 
-                : `<svg width="18" height="22" viewBox="0 0 100 120"><path d="M50 5 L95 100 Q95 115 50 115 Q5 115 5 100 Z" fill="${obj.color||'#ff9900'}" stroke="white" stroke-width="8" /></svg>`;
-            
-            const marker = L.marker([obj.lat, obj.lng], { 
-                icon: L.divIcon({ html: iconHtml, className: '', iconSize: [24, 24], iconAnchor: [12, 12] }) 
-            }).addTo(map);
-
-            // 文字が邪魔な「Tooltip」は廃止し、クリックした時のPopupのみにする
-            marker.bindPopup(`<b>${key.length>5?'地点':key}</b><br>${obj.comment||''}<br><button class="btn-del" onclick="deleteObject('${key}')">削除</button>`);
-            objectMarkers[key] = marker;
-
-            // パネル表示条件：短い名前か、船データのみ
-            if (key.length <= 4 || isShip) {
-                createPointCard(key, obj);
+            // データの妥当性チェック（名前がない、または10分以上更新がない場合は除外）
+            if (!u || !u.name || (now - (u.ts || 0) > 600000)) {
+                if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
+                continue;
             }
+
+            // 自分の判定をより確実に（型変換含め）
+            const isMe = (String(id) === String(myId));
+            
+            // 速度計算
+            const rawSpeed = parseFloat(u.speed) || 0;
+            const conversion = [1.94384, 3.6, 1]; // kt, km/h, m/s
+            const s = (rawSpeed * conversion[currentMode]).toFixed(1);
+            const unitLabel = units[currentMode];
+
+            // 1. 右上の参加者リスト用HTMLを作成
+            listHtml += `
+                <div class="user-item ${isMe ? 'me' : ''}" style="margin-bottom:5px; border-bottom:1px solid #444;">
+                    <span style="color:${u.color || '#fff'}">●</span> <b>${u.name}</b><br>
+                    <span style="color:#ccc; font-size:10px; margin-left:12px;">${s} ${unitLabel}</span>
+                </div>`;
+
+            // 2. 地図上のマーカー処理
+            if (!isMe) {
+                if (!userMarkers[id]) {
+                    userMarkers[id] = L.marker([u.lat, u.lng], { 
+                        icon: createArrowIcon(u.color, u.heading, 20) 
+                    }).addTo(map);
+                    userMarkers[id].bindTooltip(u.name, {permanent: true, direction: 'top', className: 'user-label'}).openTooltip();
+                } else {
+                    userMarkers[id].setLatLng([u.lat, u.lng]).setIcon(createArrowIcon(u.color, u.heading, 20));
+                }
+            } else {
+                // 自分のTooltip（名前）が消えていたら再表示
+                if (myMarker && !myMarker.getTooltip()) {
+                    myMarker.bindTooltip(myName, {permanent: true, direction: 'top', className: 'user-label'}).openTooltip();
+                }
+            }
+        }
+        
+        // HTMLの書き出し
+        const container = document.getElementById('list-content');
+        if (container) {
+            container.innerHTML = listHtml;
+        } else {
+            console.error("Element #list-content not found!");
         }
     });
 
