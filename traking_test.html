@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.9.0 by Popolo App.com</title>
+    <title>虎キング v1.9.1 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -33,7 +33,7 @@
 <body>
 
 <div id="header">
-    <span>虎キング v1.9.0</span>
+    <span>虎キング v1.9.1</span>
     <button onclick="togglePanel()" style="background:#007AFF; color:#white; padding:4px 8px;">地点設定</button>
     <button id="unit-btn" onclick="nextUnit()" style="background:#333; color:#ff9900; border:1px solid #ff9900; padding:4px 8px;">kt</button>
 </div>
@@ -79,20 +79,39 @@
     const db = firebase.database();
 
     // --- 状態管理 ---
-    let myId = localStorage.getItem('tora_king_id') || "user_" + Date.now();
-    localStorage.setItem('tora_king_id', myId);
-    let myName = localStorage.getItem('tora_king_name');
-    let myColor = localStorage.getItem('tora_king_color');
-    let unitIdx = parseInt(localStorage.getItem('tora_unit') || "0");
-    const units = ["kt", "km/h", "m/s"];
-    const conv = [1.94384, 3.6, 1];
+let myId = localStorage.getItem('tora_king_id') || "user_" + Date.now();
+localStorage.setItem('tora_king_id', myId);
+let myName = localStorage.getItem('tora_king_name');
+let myColor = localStorage.getItem('tora_king_color');
+let unitIdx = parseInt(localStorage.getItem('tora_unit') || "0");
+const units = ["kt", "km/h", "m/s"];
+const conv = [1.94384, 3.6, 1];
 
-    const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([26.3, 127.8], 13);
-    L.gridLayer.googleMutant({ type: 'roadmap' }).addTo(map);
-    L.control.scale({ imperial: false }).addTo(map);
+// --- マップ初期化 (安全版) ---
+const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([26.3, 127.8], 13);
 
-    const userMarkers = {}, userTrails = {}, objectMarkers = {};
-    let myMarker = null, isFollowing = false;
+// 1. 万が一のために標準地図(OSM)を薄く敷いておく（真っ暗防止）
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { opacity: 0.5 }).addTo(map);
+
+// 2. Googleマップを読み込む（エラーが出ても無視して進む設定）
+try {
+    if (typeof L.gridLayer.googleMutant === 'function') {
+        L.gridLayer.googleMutant({ type: 'roadmap' }).addTo(map);
+    } else {
+        console.warn("GoogleMutant library not found.");
+    }
+} catch(e) {
+    console.error("Google Maps Error:", e);
+}
+
+L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
+
+const userMarkers = {}, userTrails = {}, objectMarkers = {};
+let myMarker = null, isFollowing = false;
+
+
+
+
 
     // --- 1. ユーザー設定 (色・名前) ---
     const colors = { "赤":"#ff0000","青":"#0000ff","ピンク":"#ff66cc","紫":"#800080","緑":"#32cd32","黄":"#ffff00","黒":"#222222","白":"#ffffff" };
