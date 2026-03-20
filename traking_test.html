@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.9.3 by Popolo App.com</title>
+    <title>虎キング v1.9.4 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -33,7 +33,7 @@
 <body>
 
 <div id="header">
-    <span>虎キング v1.9.3</span>
+    <span>虎キング v1.9.4</span>
     <button onclick="togglePanel()" style="background:#007AFF; color:white; padding:4px 8px;">地点設定</button>
     <button id="unit-btn" onclick="nextUnit()" style="background:#333; color:#ff9900; border:1px solid #ff9900; padding:4px 8px;">kt</button>
 </div>
@@ -89,18 +89,21 @@
     const conv = [1.94384, 3.6, 1];
 
     // --- マップ初期化 (真っ暗防止・明るさ改善) ---
+// --- マップ初期化 (以前のように必ず地図が出る設定) ---
     const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([26.3, 127.8], 13);
     
-    // 予備地図を表示せずGoogleMutantのみを試行（二重表示による暗さを回避）
+    // 【重要】まず標準地図(OSM)を表示する。これで真っ暗を回避。
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    // その上にGoogleマップを重ねる。設定が生きていればこちらが優先される。
     try {
-        if (typeof google !== 'undefined' && L.gridLayer.googleMutant) {
+        if (typeof L.gridLayer.googleMutant === 'function') {
             L.gridLayer.googleMutant({ type: 'roadmap' }).addTo(map);
-        } else {
-            throw new Error();
         }
     } catch(e) {
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        console.warn("Google Mapsの設定待ちです。現在は標準地図を表示しています。");
     }
+
     L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
 
     const userMarkers = {}, userTrails = {}, objectMarkers = {};
