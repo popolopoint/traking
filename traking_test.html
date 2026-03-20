@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.7.7 by Popolo App.com</title>
+    <title>虎キング v1.7.8 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -99,7 +99,7 @@
 
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v1.7.7</span>
+    <span style="font-size:14px;">虎キング v1.7.8</span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -384,29 +384,68 @@ window.toggleSettingsPanel = () => {
         }
     } else { startTracking(); }
 
+
+    // --- 参加者リストの更新とマーカー表示の修正 ---
     db.ref('users').on('value', snap => {
         const users = snap.val();
         let listHtml = "";
         const now = Date.now();
+        
+        if (!users) {
+            document.getElementById('list-content').innerHTML = "";
+            return;
+        }
+
         for (let id in users) {
             const u = users[id];
+            // 10分（600000ms）更新がない、または名前がないデータはスキップ
             if (!u.name || now - u.ts > 600000) {
                 if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
                 continue;
             }
+
             const isMe = (id === myId);
-            const s = (u.speed * (speedUnitMode === 0 ? 1.94384 : (speedUnitMode === 1 ? 3.6 : 1))).toFixed(1);
-            listHtml += `<div class="user-item ${isMe ? 'me' : ''}"><span style="color:${u.color}">●</span> ${u.name} ${s}${units[speedUnitMode]}</div>`;
+            
+            // 速度計算（選択されている単位に合わせて計算）
+            const rawSpeed = u.speed || 0;
+            const s = (rawSpeed * (speedUnitMode === 0 ? 1.94384 : (speedUnitMode === 1 ? 3.6 : 1))).toFixed(1);
+            const unitLabel = units[speedUnitMode];
+
+            // 1. 右上の参加者リスト用HTMLを作成 (名前 <br> 速度)
+            listHtml += `
+                <div class="user-item ${isMe ? 'me' : ''}">
+                    <span style="color:${u.color}">●</span> ${u.name}<br>
+                    <span style="color:#aaa; font-size:9px;">${s} ${unitLabel}</span>
+                </div>`;
+
+            // 2. 地図上のマーカー処理
             if (!isMe) {
+                // 他人のマーカー
                 if (!userMarkers[id]) {
-                    userMarkers[id] = L.marker([u.lat, u.lng], { icon: createArrowIcon(u.color, u.heading, 20) }).addTo(map);
+                    userMarkers[id] = L.marker([u.lat, u.lng], { 
+                        icon: createArrowIcon(u.color, u.heading, 20) 
+                    }).addTo(map);
+                    // 名前を常時表示
+                    userMarkers[id].bindTooltip(u.name, {permanent: true, direction: 'top', className: 'user-label'}).openTooltip();
                 } else {
                     userMarkers[id].setLatLng([u.lat, u.lng]).setIcon(createArrowIcon(u.color, u.heading, 20));
                 }
+            } else {
+                // 自分のマーカー（startTrackingで生成されますが、ここでもTooltipを確認）
+                if (myMarker) {
+                    if (!myMarker.getTooltip()) {
+                        myMarker.bindTooltip(myName, {permanent: true, direction: 'top', className: 'user-label'}).openTooltip();
+                    }
+                }
             }
         }
+        // リストを画面に反映
         document.getElementById('list-content').innerHTML = listHtml;
     });
+
+
+
+
 
     window.deleteObject = (key) => { if(confirm("消去しますか？")) { db.ref('objects/' + key).remove(); const c = document.querySelector(`.point-card[data-key="${key}"]`); if(c) c.remove(); }};
     window.logout = () => { if(confirm("ログアウト？")) { db.ref('users/'+myId).remove(); localStorage.clear(); location.reload(); }};
