@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.8.2 by Popolo App.com</title>
+    <title>虎キング v1.8.3 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -99,7 +99,7 @@
 
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v1.8.2</span>
+    <span style="font-size:14px;">虎キング v1.8.3</span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -279,173 +279,89 @@ window.toggleSettingsPanel = () => {
         });
     };
 
-    // --- 4. Firebase監視：地図への表示 ---
-// --- 参加者リストの更新とマーカー表示の修正（強化版） ---
-    db.ref('users').on('value', snap => {
-        const users = snap.val();
-        let listHtml = "";
-        const now = Date.now();
-        
-        if (!users) {
-            console.log("No users found in DB");
-            document.getElementById('list-content').innerHTML = "";
-            return;
-        }
+ // --- 4. Firebase監視：地図への表示 ＆ 12時間自動消去 ---
+db.ref('objects').on('child_added', snap => {
+    const key = snap.key;
+    const obj = snap.val();
+    const now = Date.now();
 
-        // speedUnitModeが正しく取得できていない場合の予備処理
-        const currentMode = isNaN(speedUnitMode) ? 0 : speedUnitMode;
+    // 【12時間自動消去ロジック】
+    // 設置から12時間(43200000ms)経過していたらFirebaseから削除
+    if (obj.ts && (now - obj.ts > 43200000)) {
+        db.ref('objects/' + key).remove();
+        return; 
+    }
 
-        for (let id in users) {
-            const u = users[id];
-            
-            // データの妥当性チェック（名前がない、または10分以上更新がない場合は除外）
-            if (!u || !u.name || (now - (u.ts || 0) > 600000)) {
-                if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
-                continue;
-            }
+    const icon = obj.type === 'ship' ? 
+        L.divIcon({ html: '<div style="font-size:24px;">🚤</div>', className: '', iconSize: [30, 30], iconAnchor: [15, 15] }) :
+        L.divIcon({ html: `<div style="background:${obj.color || '#ff9900'}; width:12px; height:12px; border:2px solid white; border-radius:50%; box-shadow:0 0 4px rgba(0,0,0,0.5);"></div>`, className: '', iconSize: [12, 12], iconAnchor: [6, 6] });
 
-            // 自分の判定をより確実に（型変換含め）
-            const isMe = (String(id) === String(myId));
-            
-            // 速度計算
-            const rawSpeed = parseFloat(u.speed) || 0;
-            const conversion = [1.94384, 3.6, 1]; // kt, km/h, m/s
-            const s = (rawSpeed * conversion[currentMode]).toFixed(1);
-            const unitLabel = units[currentMode];
+    objectMarkers[key] = L.marker([obj.lat, obj.lng], { icon: icon }).addTo(map);
+    objectMarkers[key].bindTooltip(obj.comment || key, { permanent: true, direction: 'top', className: 'user-label' });
 
-            // 1. 右上の参加者リスト用HTMLを作成
-            listHtml += `
-                <div class="user-item ${isMe ? 'me' : ''}" style="margin-bottom:5px; border-bottom:1px solid #444;">
-                    <span style="color:${u.color || '#fff'}">●</span> <b>${u.name}</b><br>
-                    <span style="color:#ccc; font-size:10px; margin-left:12px;">${s} ${unitLabel}</span>
-                </div>`;
+    createPointCard(key, obj);
+});
 
-            // 2. 地図上のマーカー処理
-            if (!isMe) {
-                if (!userMarkers[id]) {
-                    userMarkers[id] = L.marker([u.lat, u.lng], { 
-                        icon: createArrowIcon(u.color, u.heading, 20) 
-                    }).addTo(map);
-                    userMarkers[id].bindTooltip(u.name, {permanent: true, direction: 'top', className: 'user-label'}).openTooltip();
-                } else {
-                    userMarkers[id].setLatLng([u.lat, u.lng]).setIcon(createArrowIcon(u.color, u.heading, 20));
-                }
-            } else {
-                // 自分のTooltip（名前）が消えていたら再表示
-                if (myMarker && !myMarker.getTooltip()) {
-                    myMarker.bindTooltip(myName, {permanent: true, direction: 'top', className: 'user-label'}).openTooltip();
-                }
-            }
-        }
-        
-        // HTMLの書き出し
-        const container = document.getElementById('list-content');
-        if (container) {
-            container.innerHTML = listHtml;
-        } else {
-            console.error("Element #list-content not found!");
-        }
+db.ref('objects').on('child_removed', snap => {
+    const key = snap.key;
+    if (objectMarkers[key]) {
+        map.removeLayer(objectMarkers[key]);
+        delete objectMarkers[key];
+    }
+    const card = document.querySelector(`.point-card[data-key="${key}"]`);
+    if (card) card.remove();
+});
+
+// --- 5. 基本機能：地図クリックで設置 (ts追加) ---
+window.manualSave = (lat, lng) => {
+    const type = document.getElementById('new_type').value;
+    const color = document.getElementById('new_color').value;
+    const comment = document.getElementById('new_comment').value;
+    
+    db.ref('objects').push({
+        type: type,
+        color: type === 'ship' ? '' : color,
+        lat: lat, 
+        lng: lng,
+        comment: comment, 
+        ts: Date.now() // ここで時間を記録することで自動消去が可能になります
     });
+    map.closePopup();
+};
 
+// --- 6. コース作るくん連携 (完全復活版) ---
+window.addEventListener('load', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const pointsData = urlParams.get('points');
 
+    if (pointsData) {
+        pointsData.split('|').forEach(p => {
+            const parts = p.split(':');
+            if (parts.length < 2) return;
+            const label = parts[0];
+            const coords = parts[1].split(',');
+            if (coords.length < 2) return;
+            const lat = parseFloat(coords[0]);
+            const lng = parseFloat(coords[1]);
 
+            if (!isNaN(lat) && !isNaN(lng)) {
+                const safeLabel = label.replace(/[\.\$\#\[\]\/]/g, "_");
+                const isShip = (safeLabel === 'S' || safeLabel.toLowerCase().includes('ship') || safeLabel.includes('本部'));
 
-// --- 5. 基本機能：地図クリックで設置 (色選択を追加) ---
-    map.on('click', e => {
-        const { lat, lng } = e.latlng;
-        const popupContent = `
-            <div class="popup-form">
-                <b style="color:#ff9900;">🚩 新規設置</b><br>
-                <select id="new_type">
-                    <option value="buoy">🚩 マーク</option>
-                    <option value="ship">🚤 本部船</option>
-                </select>
-                <select id="new_color">
-                    <option value="#ff0000">🔴 赤</option>
-                    <option value="#ffff00">🟡 黄</option>
-                    <option value="#ff9900" selected>🟠 オレンジ</option>
-                    <option value="#ff66cc">💗 ピンク</option>
-                    <option value="#0000ff">🔵 青</option>
-                    <option value="#32cd32">🟢 緑</option>
-                </select>
-                <input type="text" id="new_comment" placeholder="名前やメモ">
-                <button class="btn-save" onclick="manualSave(${lat}, ${lng})">この地点に設置</button>
-            </div>`;
-        L.popup().setLatLng(e.latlng).setContent(popupContent).openOn(map);
-    });
-
-    window.manualSave = (lat, lng) => {
-        const type = document.getElementById('new_type').value;
-        const color = document.getElementById('new_color').value;
-        const comment = document.getElementById('new_comment').value;
-        
-        // Firebaseへ保存（IDは自動生成）
-        db.ref('objects').push({
-            type: type,
-            color: type === 'ship' ? '' : color, // 船の場合は色指定なし（絵文字なので）
-            lat: lat, 
-            lng: lng,
-            comment: comment, 
-            ts: Date.now()
+                db.ref('objects/' + safeLabel).set({
+                    type: isShip ? 'ship' : 'buoy',
+                    color: isShip ? '' : '#ff9900',
+                    lat: lat,
+                    lng: lng,
+                    comment: label,
+                    ts: Date.now() // 連携データにも時間を記録
+                });
+            }
         });
-        map.closePopup();
-    };
-
-
-
-
-   
-
-
-
-
-
-// --- 6. コース作るくん連携 (復活・強化版) ---
-    // ページ読み込み完了後に実行するようにします
-    window.addEventListener('load', () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const pointsData = urlParams.get('points');
-
-        if (pointsData) {
-            console.log("座標データを受信:", pointsData);
-            
-            // 複数の地点(A:lat,lng|B:lat,lng)を分割
-            pointsData.split('|').forEach(p => {
-                const parts = p.split(':');
-                if (parts.length < 2) return;
-
-                const label = parts[0];
-                const coords = parts[1].split(',');
-                if (coords.length < 2) return;
-
-                const lat = parseFloat(coords[0]);
-                const lng = parseFloat(coords[1]);
-
-                if (!isNaN(lat) && !isNaN(lng)) {
-                    // Firebaseのキーに使えない文字を除去
-                    const safeLabel = label.replace(/[\.\$\#\[\]\/]/g, "_");
-                    
-                    // 船(S)かマークか判定
-                    const isShip = (safeLabel === 'S' || safeLabel.toLowerCase().includes('ship') || safeLabel.includes('本部'));
-
-                    // Firebaseへ保存
-                    db.ref('objects/' + safeLabel).set({
-                        type: isShip ? 'ship' : 'buoy',
-                        color: isShip ? '' : '#ff9900',
-                        lat: lat,
-                        lng: lng,
-                        comment: label,
-                        ts: Date.now()
-                    });
-                }
-            });
-
-            // 処理が終わったらURLを綺麗にする（リロード時の重複登録を防ぐ）
-            const cleanUrl = window.location.origin + window.location.pathname;
-            window.history.replaceState({}, '', cleanUrl);
-        }
-    });
-
+        const cleanUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, '', cleanUrl);
+    }
+});
 
 
 
