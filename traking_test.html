@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.9.4 by Popolo App.com</title>
+    <title>虎キング v2.0.0 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -11,34 +11,34 @@
         #map { height: 100vh; width: 100vw; z-index: 1; background: #222; }
         button { cursor: pointer; border-radius: 4px; font-weight: bold; border: none; }
         
-        /* UI Panels */
         #user-list { position: fixed; top: 55px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 8px; border-radius: 8px; width: 110px; max-height: 250px; overflow-y: auto; border: 1px solid #ff9900; font-size: 11px; }
         #pointSettingsPanel { position: fixed; top: 55px; left: 10px; z-index: 2000; width: 280px; max-height: 60vh; overflow-y: auto; background: rgba(255, 255, 255, 0.95); padding: 10px; border-radius: 12px; border: 2px solid #007AFF; display: none; color: #333; }
         
-        /* Setup Overlay */
         #setup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 4000; display: flex; align-items: center; justify-content: center; color: white; }
         .setup-box { background: #222; padding: 20px; border-radius: 15px; border: 2px solid #ff9900; width: 85%; max-width: 320px; text-align: center; }
         .color-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 15px; }
         .color-btn { aspect-ratio: 1/1; border-radius: 50%; border: 2px solid #fff; font-size: 9px; display: flex; align-items: center; justify-content: center; color: #fff; text-shadow: 1px 1px 1px #000; }
 
-        /* Floating Buttons */
         .f-btn { position: fixed; right: 10px; z-index: 2000; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); border-radius: 50%; }
         #recenter-btn { bottom: 20px; background: #fff; color: #333; font-size: 20px; }
-        #admin-btn { bottom: 80px; background: #ff4444; color: #fff; font-size: 12px; display: none; }
+        #admin-btn { bottom: 80px; background: #ff4444; color: #fff; font-size: 12px; }
         
-        .user-label { background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #ff9900; font-size: 10px; padding: 1px 3px; border-radius: 3px; }
+        .user-label { background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #ff9900; font-size: 10px; padding: 1px 3px; border-radius: 3px; white-space: nowrap; }
         .point-card { background: #f9f9f9; border: 1px solid #ddd; padding: 8px; margin-bottom: 5px; border-radius: 6px; font-size: 12px; }
     </style>
 </head>
 <body>
 
 <div id="header">
-    <span>虎キング v1.9.4</span>
+    <span>虎キング v2.0.0</span>
     <button onclick="togglePanel()" style="background:#007AFF; color:white; padding:4px 8px;">地点設定</button>
     <button id="unit-btn" onclick="nextUnit()" style="background:#333; color:#ff9900; border:1px solid #ff9900; padding:4px 8px;">kt</button>
 </div>
 
-<div id="user-list"><div style="color:#ff9900; border-bottom:1px solid #ff9900; margin-bottom:5px;">参加者</div><div id="list-content"></div></div>
+<div id="user-list">
+    <div style="color:#ff9900; border-bottom:1px solid #ff9900; margin-bottom:5px;">参加者</div>
+    <div id="list-content"></div>
+</div>
 
 <div id="pointSettingsPanel">
     <h4 style="margin:0 0 10px 0;">🚩 地点設定</h4>
@@ -59,14 +59,11 @@
 <button id="recenter-btn" class="f-btn" onclick="goMe()">🎯</button>
 <button id="admin-btn" class="f-btn" onclick="adminMenu()">管理</button>
 
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB_OOgXiE1YkFzQK0Nujhnx3lNM_7dp66U"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.gridlayer.googlemutant@latest/dist/Leaflet.GoogleMutant.js"></script>
 
 <script>
-    // --- Firebase設定 ---
     const firebaseConfig = { 
         apiKey: "AIzaSyB_OOgXiE1YkFzQK0Nujhnx3lNM_7dp66U", 
         authDomain: "tra-king.firebaseapp.com", 
@@ -79,7 +76,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // --- 状態管理 ---
     let myId = localStorage.getItem('tora_king_id') || "user_" + Date.now();
     localStorage.setItem('tora_king_id', myId);
     let myName = localStorage.getItem('tora_king_name');
@@ -88,22 +84,9 @@
     const units = ["kt", "km/h", "m/s"];
     const conv = [1.94384, 3.6, 1];
 
-    // --- マップ初期化 (真っ暗防止・明るさ改善) ---
-// --- マップ初期化 (以前のように必ず地図が出る設定) ---
+    // --- マップ初期化 ---
     const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([26.3, 127.8], 13);
-    
-    // 【重要】まず標準地図(OSM)を表示する。これで真っ暗を回避。
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-    // その上にGoogleマップを重ねる。設定が生きていればこちらが優先される。
-    try {
-        if (typeof L.gridLayer.googleMutant === 'function') {
-            L.gridLayer.googleMutant({ type: 'roadmap' }).addTo(map);
-        }
-    } catch(e) {
-        console.warn("Google Mapsの設定待ちです。現在は標準地図を表示しています。");
-    }
-
     L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
 
     const userMarkers = {}, userTrails = {}, objectMarkers = {};
@@ -131,19 +114,18 @@
         startGPS();
     }
 
-    // --- 2. GPS処理 ---
+    // --- 2. GPS & アイコン生成 ---
     function startGPS() {
         navigator.geolocation.watchPosition(pos => {
             const {latitude: lat, longitude: lng, speed, heading} = pos.coords;
             const now = Date.now();
             db.ref('users/' + myId).set({ lat, lng, name: myName, color: myColor, speed: speed||0, heading: heading||0, ts: now });
 
-            const iconSize = 30;
             if (!myMarker) {
-                myMarker = L.marker([lat, lng], { icon: createArrow(myColor, heading, iconSize) }).addTo(map);
+                myMarker = L.marker([lat, lng], { icon: createArrow(myColor, heading, 30) }).addTo(map);
                 myMarker.bindTooltip(myName, { permanent: true, direction: 'top', className: 'user-label' });
             } else {
-                myMarker.setLatLng([lat, lng]).setIcon(createArrow(myColor, heading, iconSize));
+                myMarker.setLatLng([lat, lng]).setIcon(createArrow(myColor, heading, 30));
             }
             if (isFollowing) map.panTo([lat, lng]);
         }, null, { enableHighAccuracy: true });
@@ -151,12 +133,12 @@
 
     function createArrow(color, heading, size) {
         return L.divIcon({
-            html: `<div style="transform:rotate(${heading||0}deg);"><svg viewBox="0 0 100 100" width="${size}" height="${size}"><path d="M50 5 L90 90 L50 75 L10 90 Z" fill="${color}" stroke="white" stroke-width="5"/></svg></div>`,
+            html: `<div style="transform:rotate(${heading||0}deg);"><svg viewBox="0 0 100 100" width="${size}" height="${size}"><path d="M50 5 L90 90 L50 75 L10 90 Z" fill="${color}" stroke="white" stroke-width="3"/></svg></div>`,
             className: '', iconSize: [size, size], iconAnchor: [size/2, size/2]
         });
     }
 
-    // --- 3. ユーザー監視 & 軌跡 ---
+    // --- 3. 参加者監視 & 軌跡 ---
     db.ref('users').on('value', snap => {
         const users = snap.val();
         const now = Date.now();
@@ -165,14 +147,16 @@
 
         for (let id in users) {
             const u = users[id];
-            if (u.ts && now - u.ts > 43200000) { if(id !== myId) db.ref('users/' + id).remove(); continue; }
+            // 12時間自動消去
+            if (u.ts && now - u.ts > 43200000) { db.ref('users/' + id).remove(); continue; }
+            // 10分更新なしで非表示
             if (now - u.ts > 600000) { if(userMarkers[id]){map.removeLayer(userMarkers[id]); delete userMarkers[id];} continue; }
 
             const isMe = (id === myId);
-            const s = ((u.speed || 0) * conv[unitIdx]).toFixed(1);
+            const speedVal = ((u.speed || 0) * conv[unitIdx]).toFixed(1);
             html += `<div style="border-bottom:1px solid #444; padding:3px 0; color:${isMe?'#0f0':'#fff'}">
                 <span style="color:${u.color}">●</span> ${u.name}<br>
-                <span style="color:#0f0; font-size:10px; margin-left:12px;">${s} ${units[unitIdx]}</span>
+                <span style="color:#0f0; font-size:10px; margin-left:12px;">${speedVal} ${units[unitIdx]}</span>
             </div>`;
 
             if (!isMe) {
@@ -184,6 +168,7 @@
                 }
             }
 
+            // 軌跡ロジック (15秒保持、10秒でフェード)
             if (!userTrails[id]) userTrails[id] = [];
             userTrails[id].push({ latlng: [u.lat, u.lng], ts: now });
             userTrails[id] = userTrails[id].filter(t => now - t.ts < 15000);
@@ -191,14 +176,21 @@
             if (userMarkers[id + '_trail']) map.removeLayer(userMarkers[id + '_trail']);
             const latlngs = userTrails[id].map(t => t.latlng);
             if (latlngs.length > 1) {
-                const opacity = (now - userTrails[id][0].ts > 10000) ? 0.3 : 0.8;
+                const age = now - userTrails[id][0].ts;
+                const opacity = age > 10000 ? 0.2 : 0.7;
                 userMarkers[id + '_trail'] = L.polyline(latlngs, { color: u.color, weight: 2, opacity: opacity }).addTo(map);
             }
         }
         document.getElementById('list-content').innerHTML = html;
     });
 
-    // --- 4. 地点設置 ---
+    db.ref('users').on('child_removed', snap => {
+        const id = snap.key;
+        if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
+        if(userMarkers[id + '_trail']) { map.removeLayer(userMarkers[id + '_trail']); }
+    });
+
+    // --- 4. 地点設置 (ポップアップ & 縦長ブイ) ---
     map.on('click', e => {
         const lat = e.latlng.lat; const lng = e.latlng.lng;
         const formHtml = `
@@ -257,7 +249,7 @@
     window.delObj = (key) => { if(confirm("削除しますか？")) db.ref('objects/' + key).remove(); };
     window.clearAllObjects = () => { if(confirm("全マークを削除しますか？")) db.ref('objects').remove(); };
 
-    // --- 5. 外部連携 ---
+    // --- 5. 外部連携 (コース作くん) ---
     window.addEventListener('load', () => {
         const params = new URLSearchParams(window.location.search);
         const data = params.get('points');
@@ -272,6 +264,7 @@
         }
     });
 
+    // --- 6. ユーティリティ ---
     window.nextUnit = () => {
         unitIdx = (unitIdx + 1) % 3;
         localStorage.setItem('tora_unit', unitIdx);
@@ -284,9 +277,13 @@
     };
     window.goMe = () => { isFollowing = true; if(myMarker) map.panTo(myMarker.getLatLng()); };
     window.adminMenu = () => {
-        const action = prompt("管理者コマンド: 1:全ユーザー消去, 2:全データ消去");
-        if (action === "1") db.ref('users').remove();
-        if (action === "2") { db.ref('users').remove(); db.ref('objects').remove(); }
+        const action = prompt("管理者コマンド\n1: 自分以外の全ユーザー消去\n2: 全データ(ユーザー&マーク)消去");
+        if (action === "1") {
+            db.ref('users').once('value', snap => {
+                snap.forEach(child => { if(child.key !== myId) db.ref('users/' + child.key).remove(); });
+            });
+        }
+        if (action === "2") { if(confirm("本当にすべて消去しますか？")) { db.ref('users').remove(); db.ref('objects').remove(); } }
     };
     map.on('movestart', () => isFollowing = false);
 
