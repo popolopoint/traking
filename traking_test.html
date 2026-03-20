@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.7.9 by Popolo App.com</title>
+    <title>虎キング v1.8.0 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -99,7 +99,7 @@
 
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v1.7.9</span>
+    <span style="font-size:14px;">虎キング v1.8.0</span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -347,30 +347,59 @@ window.toggleSettingsPanel = () => {
         }
     });
 
-    // --- 5. 基本機能：地図クリックで設置 (復活！) ---
+
+
+
+// --- 5. 基本機能：地図クリックで設置 (色選択を追加) ---
     map.on('click', e => {
         const { lat, lng } = e.latlng;
         const popupContent = `
             <div class="popup-form">
-                <b>新規設置</b>
-                <select id="new_type"><option value="buoy">🚩 マーク</option><option value="ship">🚤 本部船</option></select>
-                <input type="text" id="new_comment" placeholder="コメント">
-                <button class="btn-save" onclick="manualSave(${lat}, ${lng})">設置</button>
+                <b style="color:#ff9900;">🚩 新規設置</b><br>
+                <select id="new_type">
+                    <option value="buoy">🚩 マーク</option>
+                    <option value="ship">🚤 本部船</option>
+                </select>
+                <select id="new_color">
+                    <option value="#ff0000">🔴 赤</option>
+                    <option value="#ffff00">🟡 黄</option>
+                    <option value="#ff9900" selected>🟠 オレンジ</option>
+                    <option value="#ff66cc">💗 ピンク</option>
+                    <option value="#0000ff">🔵 青</option>
+                    <option value="#32cd32">🟢 緑</option>
+                </select>
+                <input type="text" id="new_comment" placeholder="名前やメモ">
+                <button class="btn-save" onclick="manualSave(${lat}, ${lng})">この地点に設置</button>
             </div>`;
         L.popup().setLatLng(e.latlng).setContent(popupContent).openOn(map);
     });
 
     window.manualSave = (lat, lng) => {
         const type = document.getElementById('new_type').value;
+        const color = document.getElementById('new_color').value;
         const comment = document.getElementById('new_comment').value;
+        
+        // Firebaseへ保存（IDは自動生成）
         db.ref('objects').push({
             type: type,
-            color: type === 'ship' ? '' : '#ff9900',
-            lat: lat, lng: lng,
-            comment: comment, ts: Date.now()
+            color: type === 'ship' ? '' : color, // 船の場合は色指定なし（絵文字なので）
+            lat: lat, 
+            lng: lng,
+            comment: comment, 
+            ts: Date.now()
         });
         map.closePopup();
     };
+
+
+
+
+   
+
+
+
+
+
 
     // --- 6. コース作るくん連携 ---
     const pointsData = new URLSearchParams(window.location.search).get('points');
