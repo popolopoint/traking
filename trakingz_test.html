@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>虎キングZ v1.1.1 by Popolo App.com</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        #map { height: 600px; width: 100%; background: #eee; }
+        .info-panel { position: absolute; top: 10px; right: 10px; z-index: 1000; background: white; padding: 10px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .admin-panel { position: absolute; bottom: 20px; left: 10px; z-index: 1000; background: #fff0f0; padding: 10px; border: 1px solid red; }
+        /* 矢印マーカーのスタイル */
+        .arrow-marker {
+            transition: transform 0.2s linear;
+        }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div class="info-panel">
+    <strong>虎キングZ v1.1.1</strong><br>by Popolo App.com<hr>
+    速度単位: 
+    <select id="unit-selector" onchange="updateSpeedDisplay()">
+        <option value="kmh">km/h</option>
+        <option value="knot">knot</option>
+        <option value="ms">m/s</option>
+    </select>
+    <div id="speed-val">速度: 0.0</div>
+</div>
+
+<div class="admin-panel">
+    <strong>管理者操作</strong><br>
+    <button onclick="clearAllUsers()">全ユーザー一括削除</button>
+    <button onclick="clearAllMarks()">全マーク一括削除</button>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    const map = L.map('map').setView([26.33, 127.8], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    L.control.scale({ imperial: false, metric: true }).addTo(map);
+
+    let currentUnit = 'kmh';
+    let rawSpeed = 5.5; // m/s 想定
+
+    // 選手データ（本来はFirebaseから取得）
+    const users = {
+        'me': { name: '自分', color: 'blue', size: 30, pos: [26.33, 127.8], heading: 45, history: [] },
+        'other1': { name: '選手A', color: 'red', size: 20, pos: [26.331, 127.805], heading: 120, history: [] }
+    };
+
+    const markers = {};
+    const polylines = {};
+
+    function initMap() {
+        Object.keys(users).forEach(id => {
+            const user = users[id];
+            
+            // 1. 矢印マーカーの作成（SVGで作成し回転させる）
+            const arrowIcon = L.divIcon({
+                className: 'arrow-marker',
+                html: `<svg viewBox="0 0 100 100" width="${user.size}" height="${user.size}" style="transform: rotate(${user.heading}deg)">
+                        <path d="M50 0 L90 90 L50 70 L10 90 Z" fill="${user.color}" stroke="black" stroke-width="5"/>
+                       </svg>`,
+                iconSize: [user.size, user.size],
+                iconAnchor: [user.size/2, user.size/2]
+            });
+
+            markers[id] = L.marker(user.pos, { icon: arrowIcon }).addTo(map).bindTooltip(user.name);
+            polylines[id] = [];
+        });
+    }
+
+    // 軌跡の更新とフェードアウト処理
+    function updateTracks() {
+        const now = Date.now();
+        
+        Object.keys(users).forEach(id => {
+            const user = users[id];
+            
+            // 現在位置を履歴に追加
+            user.history.push({ latlng: [...user.pos], time: now });
+
+            // 15秒以上前の履歴を削除
+            user.history = user.history.filter(h => now - h.time < 15000);
+
+            // 既存の線をクリア（描画更新のため）
+            if (polylines[id].length > 0) {
+                polylines[id].forEach(line => map.removeLayer(line));
+                polylines[id] = [];
+            }
+
+            // 軌跡を1秒ずつのセグメントで描画して不透明度を変える
+            for (let i = 0; i < user.history.length - 1; i++) {
+                const p1 = user.history[i];
+                const p2 = user.history[i+1];
+                const age = (now - p1.time) / 1000; // 秒数
+
+                let opacity = 1.0;
+                if (age > 10) {
+                    opacity = Math.max(0, 1 - (age - 10) / 5); // 10秒〜15秒で1→0へ
+                }
+
+                const line = L.polyline([p1.latlng, p2.latlng], {
+                    color: user.color,
+                    weight: 2,
+                    opacity: opacity
+                }).addTo(map);
+                
+                polylines[id].push(line);
+            }
+        });
+    }
+
+    // 速度単位変換
+    function updateSpeedDisplay() {
+        currentUnit = document.getElementById('unit-selector').value;
+        let displaySpeed = rawSpeed;
+        if (currentUnit === 'kmh') displaySpeed = rawSpeed * 3.6;
+        if (currentUnit === 'knot') displaySpeed = rawSpeed * 1.94384;
+        
+        document.getElementById('speed-val').innerText = `速度: ${displaySpeed.toFixed(1)} ${currentUnit}`;
+    }
+
+    // 管理者用削除機能（モック）
+    function clearAllUsers() {
+        alert("全ユーザーデータをFirebaseから削除します（v1.1.1）");
+        // Firebaseの参照先をremove()する処理をここに記述
+    }
+
+    // メインループ（デモ用に少しずつ動かす）
+    initMap();
+    setInterval(() => {
+        // デモ：自分を少しずつ北東へ動かす
+        users['me'].pos[0] += 0.0001;
+        users['me'].pos[1] += 0.0001;
+        markers['me'].setLatLng(users['me'].pos);
+        
+        updateTracks();
+        updateSpeedDisplay();
+    }, 1000);
+
+</script>
+</body>
+</html>
