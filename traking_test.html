@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.7.8 by Popolo App.com</title>
+    <title>虎キング v1.7.9 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -99,7 +99,7 @@
 
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v1.7.8</span>
+    <span style="font-size:14px;">虎キング v1.7.9</span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -182,11 +182,20 @@
     let myMarker = null, isFollowing = false, watchId = null;
     const userMarkers = {}, objectMarkers = {};
 
+// --- 追加：速度単位を切り替える関数 ---
+    window.toggleSpeedUnit = () => {
+        speedUnitMode = (speedUnitMode + 1) % units.length;
+        localStorage.setItem('tora_king_unit', speedUnitMode);
+        document.getElementById('unit-toggle').innerText = units[speedUnitMode];
+        // リスト表示を即座に更新するためにFirebaseの値を再読み込みさせる（または次の更新を待つ）
+    };
+
+
+
     // --- 1. パネルの出し入れ機能 ---
 // パネルの表示・非表示を切り替える関数（最新版）
 
 
-// パネルの表示・非表示を切り替える関数（スマート版）
 window.toggleSettingsPanel = () => {
     const panel = document.getElementById('pointSettingsPanel');
     
@@ -348,22 +357,35 @@ window.toggleSettingsPanel = () => {
         return L.divIcon({ html: html, className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
     }
 
-    function startTracking() {
+    
+
+
+function startTracking() {
         if (navigator.geolocation) {
             watchId = navigator.geolocation.watchPosition(pos => {
                 const {latitude, longitude, speed, heading} = pos.coords;
                 db.ref('users/'+myId).set({lat: latitude, lng: longitude, name: myName, color: myColor, speed: speed||0, heading: heading||0, ts: Date.now()});
                 const latlng = [latitude, longitude];
+                
                 if (!myMarker) {
+                    // 初回作成時にTooltip（名前）を紐付け
                     myMarker = L.marker(latlng, { icon: createArrowIcon(myColor, heading, 30) }).addTo(map);
+                    myMarker.bindTooltip(myName, {permanent: true, direction: 'top', className: 'user-label'}).openTooltip();
                 } else {
                     myMarker.setLatLng(latlng).setIcon(createArrowIcon(myColor, heading, 30));
+                    // もしTooltipが消えていたら再表示
+                    if (!myMarker.getTooltip()) {
+                        myMarker.bindTooltip(myName, {permanent: true, direction: 'top', className: 'user-label'}).openTooltip();
+                    }
                 }
                 if (isFollowing) map.panTo(latlng);
                 document.getElementById('status').innerText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
             }, null, {enableHighAccuracy: true});
         }
     }
+
+
+
 
     if (!myName) {
         document.getElementById('setup-overlay').style.display = 'flex';
@@ -453,6 +475,8 @@ window.toggleSettingsPanel = () => {
     window.resetUser = () => { localStorage.removeItem('tora_king_name'); location.reload(); };
     map.on('movestart', () => isFollowing = false);
     map.on('moveend', () => { const c = map.getCenter(); localStorage.setItem('tora_king_pos', JSON.stringify({lat:c.lat, lng:c.lng, zoom:map.getZoom()})); });
+
+
 </script>
 </body>
 </html>
