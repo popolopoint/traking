@@ -30,10 +30,13 @@
 <body>
 
 <div id="header">
-    <span>虎キング v2.0.0</span>
-    <button onclick="togglePanel()" style="background:#007AFF; color:white; padding:4px 8px;">地点設定</button>
-    <button id="unit-btn" onclick="nextUnit()" style="background:#333; color:#ff9900; border:1px solid #ff9900; padding:4px 8px;">kt</button>
+    <span style="font-size:14px;">虎キング v2.0.1</span>
+    <button onclick="openSetup()" style="background:#007AFF; color:white; padding:4px 6px;">設定</button>
+    <button onclick="togglePanel()" style="background:#444; color:white; padding:4px 6px;">地点</button>
+    <button id="unit-btn" onclick="nextUnit()" style="background:#333; color:#ff9900; border:1px solid #ff9900; padding:4px 6px;">kt</button>
 </div>
+
+
 
 <div id="user-list">
     <div style="color:#ff9900; border-bottom:1px solid #ff9900; margin-bottom:5px;">参加者</div>
@@ -48,13 +51,17 @@
 
 <div id="map"></div>
 
-<div id="setup-overlay">
+
+<div id="setup-overlay" style="display:none;">
     <div class="setup-box">
         <h3>虎キング 設定</h3>
         <input type="text" id="user-name" placeholder="名前を入力" style="width:90%; padding:10px; margin-bottom:10px;">
         <div class="color-grid" id="setup-colors"></div>
+        <button onclick="closeSetup()" style="margin-top:15px; background:#555; color:white; padding:5px 10px; font-size:10px;">キャンセル</button>
     </div>
 </div>
+
+
 
 <button id="recenter-btn" class="f-btn" onclick="goMe()">🎯</button>
 <button id="admin-btn" class="f-btn" onclick="adminMenu()">管理</button>
@@ -92,27 +99,47 @@
     const userMarkers = {}, userTrails = {}, objectMarkers = {};
     let myMarker = null, isFollowing = false;
 
-    // --- 1. ユーザー初期設定 ---
+// --- 設定画面の制御 ---
     const colors = { "赤":"#ff0000","青":"#0000ff","ピンク":"#ff66cc","紫":"#800080","緑":"#32cd32","黄":"#ffff00","黒":"#222222","白":"#ffffff" };
-    if (!myName) {
+    
+    // 色ボタンの生成
+    function initSetupUI() {
         const grid = document.getElementById('setup-colors');
+        grid.innerHTML = "";
         for (let name in colors) {
             const b = document.createElement('div');
             b.className = 'color-btn'; b.style.background = colors[name]; b.innerText = name;
-            b.onclick = () => {
-                const n = document.getElementById('user-name').value;
-                if (!n) return alert("名前を入力してください");
-                myName = n; myColor = colors[name];
-                localStorage.setItem('tora_king_name', n); localStorage.setItem('tora_king_color', myColor);
-                document.getElementById('setup-overlay').style.display = 'none';
-                startGPS();
-            };
+            b.onclick = () => saveProfile(colors[name]);
             grid.appendChild(b);
         }
-    } else {
-        document.getElementById('setup-overlay').style.display = 'none';
-        startGPS();
     }
+
+    // 設定画面を開く
+    function openSetup() {
+        document.getElementById('user-name').value = myName || "";
+        document.getElementById('setup-overlay').style.display = 'flex';
+    }
+
+    // 設定画面を閉じる
+    function closeSetup() {
+        if (!myName) return alert("最初に名前と色を設定してください");
+        document.getElementById('setup-overlay').style.display = 'none';
+    }
+
+    // プロフィール保存
+    function saveProfile(color) {
+        const n = document.getElementById('user-name').value;
+        if (!n) return alert("名前を入力してください");
+        myName = n; myColor = color;
+        localStorage.setItem('tora_king_name', n);
+        localStorage.setItem('tora_king_color', color);
+        document.getElementById('setup-overlay').style.display = 'none';
+        startGPS(); // 設定完了後にGPSを開始
+    }
+
+    // 初回起動時のチェック
+    initSetupUI();
+    if (!myName) openSetup(); else startGPS();
 
     // --- 2. GPS & アイコン生成 ---
     function startGPS() {
@@ -276,16 +303,32 @@
         p.style.display = (p.style.display === 'block') ? 'none' : 'block';
     };
     window.goMe = () => { isFollowing = true; if(myMarker) map.panTo(myMarker.getLatLng()); };
-    window.adminMenu = () => {
-        const action = prompt("管理者コマンド\n1: 自分以外の全ユーザー消去\n2: 全データ(ユーザー&マーク)消去");
+   
+   
+   
+ 
+window.adminMenu = () => {
+        const action = prompt("管理者コマンド\n1: 自分以外の全ユーザー消去\n2: 全データ消去\n3: 自分の情報を初期化して再設定");
         if (action === "1") {
             db.ref('users').once('value', snap => {
                 snap.forEach(child => { if(child.key !== myId) db.ref('users/' + child.key).remove(); });
             });
         }
         if (action === "2") { if(confirm("本当にすべて消去しますか？")) { db.ref('users').remove(); db.ref('objects').remove(); } }
+        if (action === "3") { localStorage.clear(); location.reload(); } // これで最初からやり直せます
     };
+  
+  
+  
+  
     map.on('movestart', () => isFollowing = false);
+
+
+
+
+
+
+
 
 </script>
 </body>
