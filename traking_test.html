@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.8.3 by Popolo App.com</title>
+    <title>虎キング v1.8.4 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -99,7 +99,7 @@
 
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v1.8.3</span>
+    <span style="font-size:14px;">虎キング v1.8.4</span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -183,12 +183,20 @@
     const userMarkers = {}, objectMarkers = {};
 
 // --- 追加：速度単位を切り替える関数 ---
-    window.toggleSpeedUnit = () => {
-        speedUnitMode = (speedUnitMode + 1) % units.length;
-        localStorage.setItem('tora_king_unit', speedUnitMode);
-        document.getElementById('unit-toggle').innerText = units[speedUnitMode];
-        // リスト表示を即座に更新するためにFirebaseの値を再読み込みさせる（または次の更新を待つ）
-    };
+  
+// --- 速度単位を切り替えて即座に反映 ---
+window.toggleSpeedUnit = () => {
+    speedUnitMode = (speedUnitMode + 1) % units.length;
+    localStorage.setItem('tora_king_unit', speedUnitMode);
+    document.getElementById('unit-toggle').innerText = units[speedUnitMode];
+    
+    // 単位を変えた瞬間にリストを更新するためにFirebaseの読み込みを1回キックする
+    db.ref('users').once('value', snap => {
+        // これで下の db.ref('users').on('value', ...) が連動して動きます
+    });
+};
+
+
 
 
 
@@ -278,6 +286,12 @@ window.toggleSettingsPanel = () => {
             comment: comment
         });
     };
+
+
+
+
+
+
 
  // --- 4. Firebase監視：地図への表示 ＆ 12時間自動消去 ---
 db.ref('objects').on('child_added', snap => {
