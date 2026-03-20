@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v1.9.1 by Popolo App.com</title>
+    <title>虎キング v1.9.2 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -33,7 +33,7 @@
 <body>
 
 <div id="header">
-    <span>虎キング v1.9.1</span>
+    <span>虎キング v1.9.2</span>
     <button onclick="togglePanel()" style="background:#007AFF; color:#white; padding:4px 8px;">地点設定</button>
     <button id="unit-btn" onclick="nextUnit()" style="background:#333; color:#ff9900; border:1px solid #ff9900; padding:4px 8px;">kt</button>
 </div>
@@ -78,70 +78,61 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // --- 状態管理 ---
-let myId = localStorage.getItem('tora_king_id') || "user_" + Date.now();
-localStorage.setItem('tora_king_id', myId);
-let myName = localStorage.getItem('tora_king_name');
-let myColor = localStorage.getItem('tora_king_color');
-let unitIdx = parseInt(localStorage.getItem('tora_unit') || "0");
-const units = ["kt", "km/h", "m/s"];
-const conv = [1.94384, 3.6, 1];
+  // --- 状態管理 ---
+    let myId = localStorage.getItem('tora_king_id') || "user_" + Date.now();
+    localStorage.setItem('tora_king_id', myId);
+    let myName = localStorage.getItem('tora_king_name');
+    let myColor = localStorage.getItem('tora_king_color');
+    let unitIdx = parseInt(localStorage.getItem('tora_unit') || "0");
+    const units = ["kt", "km/h", "m/s"];
+    const conv = [1.94384, 3.6, 1];
 
-// --- マップ初期化 (安全版) ---
-const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([26.3, 127.8], 13);
-
-// 1. 万が一のために標準地図(OSM)を薄く敷いておく（真っ暗防止）
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { opacity: 0.5 }).addTo(map);
-
-// 2. Googleマップを読み込む（エラーが出ても無視して進む設定）
-try {
-    if (typeof L.gridLayer.googleMutant === 'function') {
-        L.gridLayer.googleMutant({ type: 'roadmap' }).addTo(map);
-    } else {
-        console.warn("GoogleMutant library not found.");
+    // --- マップ初期化 (明るさ改善 & 安全版) ---
+    const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([26.3, 127.8], 13);
+    try {
+        if (typeof L.gridLayer.googleMutant === 'function') {
+            L.gridLayer.googleMutant({ type: 'roadmap' }).addTo(map);
+        } else { throw new Error(); }
+    } catch(e) {
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     }
-} catch(e) {
-    console.error("Google Maps Error:", e);
-}
+    L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
 
-L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
+    const userMarkers = {}, userTrails = {}, objectMarkers = {};
+    let myMarker = null, isFollowing = false;
 
-const userMarkers = {}, userTrails = {}, objectMarkers = {};
-let myMarker = null, isFollowing = false;
-
-
-
-
-
-    // --- 1. ユーザー設定 (色・名前) ---
+    // --- 1. ユーザー初期設定 (色と名前) ---
     const colors = { "赤":"#ff0000","青":"#0000ff","ピンク":"#ff66cc","紫":"#800080","緑":"#32cd32","黄":"#ffff00","黒":"#222222","白":"#ffffff" };
     if (!myName) {
         const grid = document.getElementById('setup-colors');
+        if(!grid) { // setup-colorsがない場合の予備処理
+             const div = document.createElement('div'); div.id="setup-colors"; div.className="color-grid";
+             document.querySelector('.setup-box').appendChild(div);
+        }
         for (let name in colors) {
             const b = document.createElement('div');
             b.className = 'color-btn'; b.style.background = colors[name]; b.innerText = name;
             b.onclick = () => {
                 const n = document.getElementById('user-name').value;
-                if (!n) return alert("名前を入れてね");
+                if (!n) return alert("名前を入力してください");
                 myName = n; myColor = colors[name];
                 localStorage.setItem('tora_king_name', n); localStorage.setItem('tora_king_color', myColor);
                 document.getElementById('setup-overlay').style.display = 'none';
                 startGPS();
             };
-            grid.appendChild(b);
+            document.getElementById('setup-colors').appendChild(b);
         }
     } else {
         document.getElementById('setup-overlay').style.display = 'none';
         startGPS();
     }
 
-    // --- 2. GPS & 軌跡ロジック ---
+    // --- 2. GPS & アイコン生成 ---
     function startGPS() {
         navigator.geolocation.watchPosition(pos => {
             const {latitude: lat, longitude: lng, speed, heading} = pos.coords;
             const now = Date.now();
-            const data = { lat, lng, name: myName, color: myColor, speed: speed||0, heading: heading||0, ts: now };
-            db.ref('users/' + myId).set(data);
+            db.ref('users/' + myId).set({ lat, lng, name: myName, color: myColor, speed: speed||0, heading: heading||0, ts: now });
 
             if (!myMarker) {
                 myMarker = L.marker([lat, lng], { icon: createArrow(myColor, heading, 30) }).addTo(map);
@@ -160,140 +151,126 @@ let myMarker = null, isFollowing = false;
         });
     }
 
-    // --- 3. ユーザー監視 & 軌跡描画 ---
+    // --- 3. ユーザー監視 & 軌跡(10秒維持+5秒フェード) ---
     db.ref('users').on('value', snap => {
         const users = snap.val();
         const now = Date.now();
         let html = "";
-        
+        if(!users) return;
+
         for (let id in users) {
             const u = users[id];
-            if (!u.ts || now - u.ts > 43200000) { // 12時間で自動消去
-                if (id !== myId) db.ref('users/' + id).remove(); 
-                continue; 
-            }
+            // 12時間自動消去
+            if (u.ts && now - u.ts > 43200000) { if(id !== myId) db.ref('users/' + id).remove(); continue; }
+            // 10分更新なしで非表示
+            if (now - u.ts > 600000) { if(userMarkers[id]){map.removeLayer(userMarkers[id]); delete userMarkers[id];} continue; }
 
-            // 10分更新なければリストから消す
-            if (now - u.ts > 600000) {
-                if (userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
-                continue;
-            }
-
-            // 速度表示
+            const isMe = (id === myId);
             const s = ((u.speed || 0) * conv[unitIdx]).toFixed(1);
-            html += `<div style="border-bottom:1px solid #444; padding:3px 0;">
+            html += `<div style="border-bottom:1px solid #444; padding:3px 0; color:${isMe?'#0f0':'#fff'}">
                 <span style="color:${u.color}">●</span> ${u.name}<br>
-                <span style="color:#0f0; font-size:10px;">${s} ${units[unitIdx]}</span>
+                <span style="color:#0f0; font-size:10px; margin-left:12px;">${s} ${units[unitIdx]}</span>
             </div>`;
 
-            // 他人のマーカー
-            if (id !== myId) {
+            if (!isMe) {
                 if (!userMarkers[id]) {
                     userMarkers[id] = L.marker([u.lat, u.lng], { icon: createArrow(u.color, u.heading, 20) }).addTo(map);
                     userMarkers[id].bindTooltip(u.name, { permanent: true, direction: 'top', className: 'user-label' });
                 } else {
-                    userMarkers[id].setLatLng([u.lat, u.lng]).setIcon(createArrow(u.color, u.heading, 20));
+                    userMarkers[id].setLatLng([u.lat, lng]).setIcon(createArrow(u.color, u.heading, 20));
                 }
             }
 
-            // --- 軌跡(Trail)ロジック ---
+            // 軌跡の更新
             if (!userTrails[id]) userTrails[id] = [];
             userTrails[id].push({ latlng: [u.lat, u.lng], ts: now });
+            userTrails[id] = userTrails[id].filter(t => now - t.ts < 15000); // 15秒分保持
 
-            // 15秒以上前の軌跡データを削除
-            userTrails[id] = userTrails[id].filter(t => now - t.ts < 15000);
-            
-            // 描画
             if (userMarkers[id + '_trail']) map.removeLayer(userMarkers[id + '_trail']);
-            
             const latlngs = userTrails[id].map(t => t.latlng);
             if (latlngs.length > 1) {
-                userMarkers[id + '_trail'] = L.polyline(latlngs, {
-                    color: u.color, weight: 2, opacity: 0.8
-                }).addTo(map);
-                
-                // 10秒後から薄くするアニメーション（簡易）
-                setTimeout(() => {
-                    if(userMarkers[id + '_trail']) userMarkers[id + '_trail'].setStyle({opacity: 0.2});
-                }, 10000);
+                const opacity = (now - userTrails[id][0].ts > 10000) ? 0.3 : 0.8;
+                userMarkers[id + '_trail'] = L.polyline(latlngs, { color: u.color, weight: 2, opacity: opacity }).addTo(map);
             }
         }
         document.getElementById('list-content').innerHTML = html;
     });
 
-    // --- 4. 地点設置 (タップ & 連携) ---
+    // --- 4. 地点設置（ポップアップ & 縦長ブイ） ---
     map.on('click', e => {
-        const comment = prompt("コメントを入力してください");
-        if (comment === null) return;
-        saveObject(e.latlng.lat, e.latlng.lng, 'buoy', '#ff9900', comment);
+        const lat = e.latlng.lat; const lng = e.latlng.lng;
+        const formHtml = `
+            <div style="font-size:12px; color:#333; min-width:140px;">
+                <b>🚩 地点設置</b><br>
+                種別: <select id="pop_type" style="width:100%; margin:4px 0;">
+                    <option value="buoy">マーク</option><option value="ship">船</option>
+                </select><br>
+                色: <select id="pop_color" style="width:100%; margin:4px 0;">
+                    <option value="#ff0000">赤</option><option value="#ffff00">黄</option>
+                    <option value="#ff9900" selected>オレンジ</option><option value="#ff66cc">ピンク</option>
+                </select><br>
+                メモ: <input type="text" id="pop_comment" style="width:100%; box-sizing:border-box; margin:4px 0;"><br>
+                <button onclick="confirmSave(${lat}, ${lng})" style="width:100%; background:#007AFF; color:white; padding:5px; border-radius:4px; font-weight:bold; margin-top:5px;">保存</button>
+            </div>`;
+        L.popup().setLatLng(e.latlng).setContent(formHtml).openOn(map);
     });
 
-    function saveObject(lat, lng, type, color, comment) {
+    window.confirmSave = (lat, lng) => {
+        const type = document.getElementById('pop_type').value;
+        const color = document.getElementById('pop_color').value;
+        const comment = document.getElementById('pop_comment').value;
         db.ref('objects').push({ lat, lng, type, color, comment, ts: Date.now() });
+        map.closePopup();
+    };
+
+    function createBuoyIcon(color) {
+        const svg = `<svg viewBox="0 0 100 120" width="30" height="36"><path d="M50 5 Q55 5 90 110 L10 110 Q45 5 50 5 Z" fill="${color}" stroke="#000" stroke-width="5" stroke-linejoin="round"/></svg>`;
+        return L.divIcon({ html: svg, className: '', iconSize: [30, 36], iconAnchor: [15, 36] });
     }
 
     db.ref('objects').on('child_added', snap => {
         const key = snap.key, obj = snap.val();
         if (Date.now() - obj.ts > 43200000) { db.ref('objects/' + key).remove(); return; }
-
-        const icon = obj.type === 'ship' ? 
-            L.divIcon({ html: '🚤', className: '', iconSize:[30,30], iconAnchor:[15,15] }) :
-            L.divIcon({ html: `<div style="background:${obj.color}; width:12px; height:12px; border:2px solid white; border-radius:50%;"></div>`, className: '', iconSize:[12,12], iconAnchor:[6,6] });
-
+        const icon = obj.type === 'ship' ? L.divIcon({ html: '<div style="font-size:24px;">🚤</div>', className: '', iconSize:[30,30], iconAnchor:[15,15] }) : createBuoyIcon(obj.color);
         objectMarkers[key] = L.marker([obj.lat, obj.lng], { icon: icon }).addTo(map);
         objectMarkers[key].bindTooltip(obj.comment || '', { permanent: true, direction: 'top', className: 'user-label' });
-        
         addPointCard(key, obj);
     });
 
     db.ref('objects').on('child_removed', snap => {
         const key = snap.key;
         if (objectMarkers[key]) { map.removeLayer(objectMarkers[key]); delete objectMarkers[key]; }
-        const card = document.querySelector(`[data-key="${key}"]`);
-        if (card) card.remove();
+        const card = document.querySelector(`[data-key="${key}"]`); if (card) card.remove();
     });
 
-    // --- 5. 地点設定パネル ---
+    // --- 5. 地点管理パネル & 外部連携 ---
     function addPointCard(key, obj) {
         const container = document.getElementById('point-list');
-        const div = document.createElement('div');
-        div.className = 'point-card'; div.dataset.key = key;
-        div.innerHTML = `
-            <select onchange="updObj('${key}', 'type', this.value)">
-                <option value="buoy" ${obj.type==='buoy'?'selected':''}>マーク</option>
-                <option value="ship" ${obj.type==='ship'?'selected':''}>船</option>
-            </select>
-            <select onchange="updObj('${key}', 'color', this.value)">
-                <option value="#ff0000" ${obj.color==='#ff0000'?'selected':''}>赤</option>
-                <option value="#ffff00" ${obj.color==='#ffff00'?'selected':''}>黄</option>
-                <option value="#ff9900" ${obj.color==='#ff9900'?'selected':''}>橙</option>
-                <option value="#ff66cc" ${obj.color==='#ff66cc'?'selected':''}>桃</option>
-            </select><br>
-            <input type="text" value="${obj.comment||''}" onchange="updObj('${key}', 'comment', this.value)" style="width:120px;">
-            <button onclick="delObj('${key}')" style="background:#ff4444; color:white;">消</button>
-        `;
+        if(!container) return;
+        const div = document.createElement('div'); div.className = 'point-card'; div.dataset.key = key;
+        div.innerHTML = `<span style="font-weight:bold; color:#007AFF;">${obj.comment||'地点'}</span> 
+            <button onclick="delObj('${key}')" style="background:#ff4444; color:white; border-radius:4px; padding:2px 5px; float:right;">削除</button>`;
         container.appendChild(div);
     }
 
-    window.updObj = (key, field, val) => { db.ref('objects/' + key).update({ [field]: val }); };
     window.delObj = (key) => { if(confirm("削除しますか？")) db.ref('objects/' + key).remove(); };
-    window.clearAllObjects = () => { if(confirm("【管理者】全マークを削除しますか？")) db.ref('objects').remove(); };
+    window.clearAllObjects = () => { if(confirm("全マークを削除しますか？")) db.ref('objects').remove(); };
 
-    // --- 6. 外部連携 (コース作くん) ---
     window.addEventListener('load', () => {
         const params = new URLSearchParams(window.location.search);
         const data = params.get('points');
         if (data) {
             data.split('|').forEach(p => {
-                const [label, coord] = p.split(':');
-                const [lat, lng] = coord.split(',').map(Number);
-                if (!isNaN(lat)) saveObject(lat, lng, 'buoy', '#ff9900', label);
+                const parts = p.split(':'); if(parts.length < 2) return;
+                const label = parts[0]; const coords = parts[1].split(',');
+                if(coords.length < 2) return;
+                db.ref('objects').push({ lat: parseFloat(coords[0]), lng: parseFloat(coords[1]), type: 'buoy', color: '#ff9900', comment: label, ts: Date.now() });
             });
             window.history.replaceState({}, '', window.location.pathname);
         }
     });
 
-    // --- 7. 管理機能 & 便利機能 ---
+    // --- 6. ユーティリティ ---
     window.nextUnit = () => {
         unitIdx = (unitIdx + 1) % 3;
         localStorage.setItem('tora_unit', unitIdx);
@@ -302,20 +279,15 @@ let myMarker = null, isFollowing = false;
     };
     window.togglePanel = () => {
         const p = document.getElementById('pointSettingsPanel');
-        p.style.display = p.style.display === 'block' ? 'none' : 'block';
+        p.style.display = (p.style.display === 'block') ? 'none' : 'block';
     };
     window.goMe = () => { isFollowing = true; if(myMarker) map.panTo(myMarker.getLatLng()); };
-    
-    // 管理者判定 (あなたのIDをここにメモしておくと便利です)
-    db.ref('users/' + myId).on('value', snap => {
-        if (snap.exists()) document.getElementById('admin-btn').style.display = 'flex';
-    });
-
     window.adminMenu = () => {
         const action = prompt("管理者コマンド: 1:全ユーザー消去, 2:全データ消去");
         if (action === "1") db.ref('users').remove();
         if (action === "2") { db.ref('users').remove(); db.ref('objects').remove(); }
     };
+    map.on('movestart', () => isFollowing = false);
 
 </script>
 </body>
