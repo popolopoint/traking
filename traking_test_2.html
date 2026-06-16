@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v2.1.9 by Popolo App.com</title>
+    <title>虎キング v2.2.0 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -30,11 +30,11 @@
         #recenter-btn { bottom: 70px; font-size: 20px; }
         #menu-toggle-btn { bottom: 125px; background: #ff9900; color: #fff; border-color: #fff; font-size: 20px; font-weight: bold; transition: background 0.2s; }
         
-        /* メニュー内格納ボタン群（初期状態は非表示・アニメーション用） */
+        /* メニュー内格納ボタン群 */
         .menu-child { opacity: 0; transform: translateY(20px) scale(0.8); pointer-events: none; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
         .menu-active .menu-child { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
         
-        /* 格納ボタンの個別位置（メニューオープン時に展開） */
+        /* 格納ボタンの個別位置 */
         #add-point-btn { bottom: 185px; font-size: 20px; background: #007AFF; color: #fff; border-color: #fff; }
         #gps-retry-btn { bottom: 240px; font-size: 20px; color: #ff9900; }
         #hosei-btn { bottom: 295px; background: #ff9900; color: white; }
@@ -48,7 +48,7 @@
         .arrow-icon-wrapper { transition: transform 0.2s linear; }
 
         .point-card { display: flex; align-items: center; gap: 8px; padding: 10px; background: white; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 14px; }
-        .point-label { font-weight: bold; min-width: 25px; color: #007AFF; }
+        .point-label { font-weight: bold; min-width: 25px; color: #007AFF; text-align: center; }
         
         #toast-notice { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 6000; border: 1px solid #ff9900; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: center; pointer-events: none; }
     </style>
@@ -68,7 +68,7 @@
 </div>
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v2.1.9</span>
+    <span style="font-size:14px;">虎キング v2.2.0</span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -89,16 +89,13 @@
 
 <div class="status-panel" id="status">GPSシグナル待機中...</div>
 
-<!-- ボタンコンテナ（Menuクラス制御用） -->
 <div id="button-container">
-    <!-- 格納されるボタン群 -->
     <button id="logout-btn" class="action-btn menu-child" onclick="triggerLogout()" title="ログアウト">🏃</button>
     <button id="name-btn" class="action-btn menu-child" onclick="triggerSetup()" title="再設定">👤</button>
     <button id="hosei-btn" class="action-btn menu-child" onclick="triggerHoseiMode()" title="位置補正">🔧</button>
     <button id="gps-retry-btn" class="action-btn menu-child" onclick="triggerGPSRetry()" title="GPS再接続">🔄</button>
     <button id="add-point-btn" class="action-btn menu-child" onclick="triggerAddPointMode()" title="マーク追加">🚩</button>
     
-    <!-- 常時表示ボタン -->
     <button id="menu-toggle-btn" class="action-btn" onclick="toggleMenu()" title="メニュー">☰</button>
     <button id="recenter-btn" class="action-btn" onclick="triggerRecenter()" title="現在地追従">🎯</button>
 </div>
@@ -144,7 +141,7 @@
     let offsetLng = parseFloat(localStorage.getItem('tora_king_offset_lng') || "0");
     let isHoseiMode = false; 
     let isAddPointMode = false; 
-    let isMenuOpen = false; // メニュー開閉状態フラグ
+    let isMenuOpen = false;
 
     const userMarkers = {}, objectMarkers = {};
 
@@ -169,11 +166,14 @@
         let card = document.querySelector(`.point-card[data-key="${key}"]`);
         if (card) return;
 
+        // 表示用の短いラベル（プッシュキーなら'点'、手入力などの短い文字ならそのまま表示）
+        const labelText = key.length > 5 ? '🚩' : key;
+
         const div = document.createElement('div');
         div.className = 'point-card';
         div.dataset.key = key; 
         div.innerHTML = `
-            <span class="point-label">${key.length > 4 ? '点' : key}</span>
+            <span class="point-label">${labelText}</span>
             <select class="type-select" onchange="updateMarkerAppearance('${key}')" style="padding:4px;border-radius:4px;font-size:11px;">
                 <option value="buoy" ${obj.type!=='ship'?'selected':''}>マーク</option>
                 <option value="boat" ${obj.type==='ship'?'selected':''}>船</option>
@@ -197,6 +197,10 @@
     };
 
     db.ref('objects').on('value', snap => {
+        // 一旦リストコンテナを初期化して、最新の状態に再構築する（古いゴミが残るのを防止）
+        const listContainer = document.getElementById('pointListContainer');
+        listContainer.innerHTML = '<p id="noPointMsg" style="color: #666; font-size: 13px; margin: 0;">座標データが読み込まれていません</p>';
+        
         for (let key in objectMarkers) map.removeLayer(objectMarkers[key]);
         const objects = snap.val();
         if (!objects) return;
@@ -213,12 +217,12 @@
                 icon: L.divIcon({ html: iconHtml, className: '', iconSize: [24, 24], iconAnchor: [12, 12] }) 
             }).addTo(map);
 
-            marker.bindPopup(`<b>${key.length>5?'地点':key}</b><br>${obj.comment||''}<br><button class="btn-del" onclick="deleteObject('${key}')">削除</button>`);
+            const displayTitle = isShip ? '本部船' : (key.length > 5 ? 'マーク' : key);
+            marker.bindPopup(`<b>${displayTitle}</b><br>${obj.comment||''}<br><button class="btn-del" onclick="deleteObject('${key}')">削除</button>`);
             objectMarkers[key] = marker;
 
-            if (key.length <= 4 || isShip) {
-                createPointCard(key, obj);
-            }
+            // 修正：船かマークかに関わらず、すべての登録オブジェクトを管理パネルにカードとして生成する
+            createPointCard(key, obj);
         }
     });
 
@@ -251,7 +255,7 @@
             L.popup().setLatLng(e.latlng).setContent(popupContent).openOn(map);
             
             setAddPointMode(false);
-            toggleMenu(); // 設置が始まったらメニューも閉じる
+            toggleMenu();
             return;
         }
     });
@@ -261,6 +265,9 @@
         const comment = document.getElementById('new_comment').value;
         db.ref('objects').push({ type: type, color: '#ff9900', lat: lat, lng: lng, comment: comment, ts: Date.now() });
         map.closePopup();
+        
+        // 設置完了後、すぐ確認・編集できるように設定パネルを強制的に表示状態にする
+        document.getElementById('pointSettingsPanel').style.display = 'block';
     };
 
     function initSetupUI() {
@@ -358,7 +365,6 @@
         { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 });
     }
 
-    // --- メニュー表示切り替え ---
     window.toggleMenu = () => {
         isMenuOpen = !isMenuOpen;
         const container = document.getElementById('button-container');
@@ -373,13 +379,10 @@
             toggleBtn.innerText = "☰";
             toggleBtn.style.background = "#ff9900";
             
-            // 安全のためメニューを閉じた時は全稼働モードをリセット
             if (isAddPointMode) setAddPointMode(false);
             if (isHoseiMode) { isHoseiMode = false; document.getElementById('hosei-btn').style.background = "#ff9900"; }
         }
     };
-
-    // --- ボタンアクション関連群 ---
 
     window.triggerAddPointMode = () => {
         if (isHoseiMode) { isHoseiMode = false; document.getElementById('hosei-btn').style.background = "#ff9900"; }
