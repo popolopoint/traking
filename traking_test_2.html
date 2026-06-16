@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v2.1.7 by Popolo App.com</title>
+    <title>虎キング v2.1.8 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -23,12 +23,13 @@
         .user-label { background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #ff9900; font-size: 10px; font-weight: bold; padding: 2px 4px; border-radius: 3px; white-space: nowrap; }
         .status-panel { position: fixed; bottom: 10px; left: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 11px; max-width: 80%; border: 1px solid #ff9900; }
         
-        #recenter-btn, #gps-retry-btn, #name-btn, #hosei-btn, #logout-btn { position: fixed; right: 10px; z-index: 2000; background: #fff; border: 2px solid #ff9900; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
-        #recenter-btn { bottom: 70px; font-size: 20px; }
-        #gps-retry-btn { bottom: 125px; font-size: 20px; color: #ff9900; }
-        #hosei-btn { bottom: 180px; background: #ff9900; color: white; font-size: 18px; }
-        #name-btn { bottom: 235px; font-size: 18px; color: #333; }
-        #logout-btn { bottom: 290px; background: #ff4444; border-color: #fff; color: white; font-size: 18px; }
+        #add-point-btn, #recenter-btn, #gps-retry-btn, #hosei-btn, #name-btn, #logout-btn { position: fixed; right: 10px; z-index: 2000; background: #fff; border: 2px solid #ff9900; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        #add-point-btn { bottom: 70px; font-size: 20px; background: #007AFF; color: #fff; border-color: #fff; }
+        #recenter-btn { bottom: 125px; font-size: 20px; }
+        #gps-retry-btn { bottom: 180px; font-size: 20px; color: #ff9900; }
+        #hosei-btn { bottom: 235px; background: #ff9900; color: white; font-size: 18px; }
+        #name-btn { bottom: 290px; font-size: 18px; color: #333; }
+        #logout-btn { bottom: 345px; background: #ff4444; border-color: #fff; color: white; font-size: 18px; }
         
         .popup-form { color: #333; min-width: 140px; font-size: 12px; }
         .popup-form select, .popup-form input { width: 100%; margin: 4px 0; padding: 4px; box-sizing: border-box; }
@@ -39,7 +40,6 @@
         .point-card { display: flex; align-items: center; gap: 8px; padding: 10px; background: white; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 14px; }
         .point-label { font-weight: bold; min-width: 25px; color: #007AFF; }
         
-        /* 簡易トースト通知用スタイル */
         #toast-notice { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 6000; border: 1px solid #ff9900; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: center; pointer-events: none; }
     </style>
 </head>
@@ -58,7 +58,7 @@
 </div>
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v2.1.7</span>
+    <span style="font-size:14px;">虎キング v2.1.8</span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -84,6 +84,7 @@
 <button id="hosei-btn" onclick="triggerHoseiMode()" title="位置補正">🔧</button>
 <button id="gps-retry-btn" onclick="triggerGPSRetry()" title="GPS再接続">🔄</button>
 <button id="recenter-btn" onclick="triggerRecenter()" title="現在地追従">🎯</button>
+<button id="add-point-btn" onclick="triggerAddPointMode()" title="マーク追加">🚩</button>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -125,16 +126,16 @@
     let offsetLat = parseFloat(localStorage.getItem('tora_king_offset_lat') || "0");
     let offsetLng = parseFloat(localStorage.getItem('tora_king_offset_lng') || "0");
     let isHoseiMode = false; 
+    let isAddPointMode = false; // マーク追加待機フラグ
 
     const userMarkers = {}, objectMarkers = {};
 
-    // 画面中央ポップアップ通知用関数
     function showToast(message) {
         const toast = document.getElementById('toast-notice');
         toast.innerText = message;
         toast.style.display = 'block';
         if (window.toastTimeout) clearTimeout(window.toastTimeout);
-        window.toastTimeout = setTimeout(() => { toast.style.display = 'none'; }, 2000);
+        window.toastTimeout = setTimeout(() => { toast.style.display = 'none'; }, 2500);
     }
 
     window.toggleSettingsPanel = () => {
@@ -203,8 +204,11 @@
         }
     });
 
+    // 地図タップ時の処理
     map.on('click', e => {
         const { lat, lng } = e.latlng;
+        
+        // 1. 位置補正モード稼働時
         if (isHoseiMode) {
             if (confirm("現在地をこの場所に補正しますか？")) {
                 navigator.geolocation.getCurrentPosition(pos => {
@@ -219,14 +223,24 @@
             }
             return;
         }
-        const popupContent = `
-            <div class="popup-form">
-                <b>新規設置</b>
-                <select id="new_type"><option value="buoy">🚩 マーク</option><option value="ship">🚤 本部船</option></select>
-                <input type="text" id="new_comment" placeholder="コメント">
-                <button class="btn-save" onclick="manualSave(${lat}, ${lng})">設置</button>
-            </div>`;
-        L.popup().setLatLng(e.latlng).setContent(popupContent).openOn(map);
+        
+        // 2. マーク追加モード稼働時のみ設置フォームを開く
+        if (isAddPointMode) {
+            const popupContent = `
+                <div class="popup-form">
+                    <b>新規設置</b>
+                    <select id="new_type"><option value="buoy">🚩 マーク</option><option value="ship">🚤 本部船</option></select>
+                    <input type="text" id="new_comment" placeholder="コメント">
+                    <button class="btn-save" onclick="manualSave(${lat}, ${lng})">設置</button>
+                </div>`;
+            L.popup().setLatLng(e.latlng).setContent(popupContent).openOn(map);
+            
+            // フォームを開いたら追加モードのロックを復帰
+            setAddPointMode(false);
+            return;
+        }
+        
+        // 通常時はタップしても何も起きない（誤タップガード）
     });
 
     window.manualSave = (lat, lng) => {
@@ -331,7 +345,28 @@
         { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 });
     }
 
-    // --- 各ボタンのトリガー処理（ポップアップ案内付き） ---
+    // --- ボタンアクション関連群 ---
+
+    // マーク追加ボタンの制御
+    window.triggerAddPointMode = () => {
+        if (isHoseiMode) triggerHoseiMode(); // 補正モードがONなら切る
+        setAddPointMode(!isAddPointMode);
+    };
+
+    function setAddPointMode(active) {
+        isAddPointMode = active;
+        const btn = document.getElementById('add-point-btn');
+        if (isAddPointMode) {
+            btn.style.background = "#ff9900";
+            btn.style.borderColor = "#fff";
+            showToast("🚩 マーク追加モード：ON (設置したい地図上を1回タップしてください)");
+        } else {
+            btn.style.background = "#007AFF";
+            btn.style.borderColor = "#fff";
+            showToast("🚩 マーク追加モード：OFF (誤タップ防止ロック)");
+        }
+    }
+
     window.triggerRecenter = () => {
         showToast("🎯 現在地を画面の中心に追従します");
         isFollowing = true; 
@@ -350,6 +385,7 @@
     };
 
     window.triggerHoseiMode = () => {
+        if (isAddPointMode) setAddPointMode(false); // マーク追加がONなら切る
         isHoseiMode = !isHoseiMode;
         document.getElementById('hosei-btn').style.background = isHoseiMode ? "#ff3b30" : "#ff9900";
         if(isHoseiMode) {
