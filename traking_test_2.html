@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v2.1.1 by Popolo App.com</title>
+    <title>虎キング v2.1.2 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -23,10 +23,11 @@
         .user-label { background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #ff9900; font-size: 10px; font-weight: bold; padding: 2px 4px; border-radius: 3px; white-space: nowrap; }
         .status-panel { position: fixed; bottom: 10px; left: 10px; z-index: 2000; background: rgba(0,0,0,0.7); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 9px; }
         
-        #recenter-btn, #name-btn, #logout-btn { position: fixed; right: 10px; z-index: 2000; background: #fff; border: 2px solid #ff9900; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        #recenter-btn, #name-btn, #logout-btn, #hosei-btn { position: fixed; right: 10px; z-index: 2000; background: #fff; border: 2px solid #ff9900; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
         #recenter-btn { bottom: 70px; font-size: 20px; }
         #name-btn { bottom: 125px; font-size: 18px; color: #333; }
         #logout-btn { bottom: 180px; background: #ff4444; border-color: #fff; color: white; font-size: 18px; }
+        #hosei-btn { bottom: 235px; background: #ff9900; color: white; font-size: 18px; }
         
         .popup-form { color: #333; min-width: 140px; font-size: 12px; }
         .popup-form select, .popup-form input { width: 100%; margin: 4px 0; padding: 4px; box-sizing: border-box; }
@@ -56,7 +57,7 @@
 </div>
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v2.1.1</span>
+    <span style="font-size:14px;">虎キング v2.1.2</span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -79,7 +80,7 @@
 
 <button id="logout-btn" onclick="logout()" title="ログアウト">🏃</button>
 <button id="name-btn" onclick="openSetup()" title="再設定">👤</button>
-<button id="hosei-btn" onclick="toggleHoseiMode()" style="bottom: 180px; background: #ff9900; color: white;" title="位置補正">🔧</button>
+<button id="hosei-btn" onclick="toggleHoseiMode()" title="位置補正">🔧</button>
 <button id="recenter-btn" onclick="goMe()">🎯</button>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -118,9 +119,9 @@
 
     let myMarker = null, isFollowing = false, watchId = null, isInitialFocus = true;
 
-let offsetLat = parseFloat(localStorage.getItem('tora_king_offset_lat') || "0");
+    let offsetLat = parseFloat(localStorage.getItem('tora_king_offset_lat') || "0");
     let offsetLng = parseFloat(localStorage.getItem('tora_king_offset_lng') || "0");
-    let isHoseiMode = false; // 補正位置タップ待ち状態フラグ
+    let isHoseiMode = false; 
 
     const userMarkers = {}, objectMarkers = {};
 
@@ -207,32 +208,26 @@ let offsetLat = parseFloat(localStorage.getItem('tora_king_offset_lat') || "0");
     });
 
     // --- 5. 基本機能：地図クリックで設置 ---
-    // 地図クリック時の挙動（設置 or 位置補正）
     map.on('click', e => {
         const { lat, lng } = e.latlng;
 
-        // 補正モード中の場合
         if (isHoseiMode) {
             if (confirm("今いる現在地を、タップしたこの場所に補正しますか？")) {
-                // 最新のGPSの生位置を一時的に取得するために一瞬現在地を計算
                 navigator.geolocation.getCurrentPosition(pos => {
-                    // タップされた位置（理想）と、GPSの生位置（現実）の差分を計算
                     offsetLat = lat - pos.coords.latitude;
                     offsetLng = lng - pos.coords.longitude;
                     
-                    // ローカルストレージに保存
                     localStorage.setItem('tora_king_offset_lat', offsetLat);
                     localStorage.setItem('tora_king_offset_lng', offsetLng);
                     
                     alert("位置補正を完了しました！");
-                    toggleHoseiMode(); // モード終了
-                    startTracking();   // GPS更新を即座に反映
+                    toggleHoseiMode(); 
+                    startTracking();   
                 });
             }
             return;
         }
 
-        // 通常時は新規マーク設置のポップアップ
         const popupContent = `
             <div class="popup-form">
                 <b>新規設置</b>
@@ -243,15 +238,14 @@ let offsetLat = parseFloat(localStorage.getItem('tora_king_offset_lat') || "0");
         L.popup().setLatLng(e.latlng).setContent(popupContent).openOn(map);
     });
 
-    // 補正モードのON/OFF切り替え関数
     window.toggleHoseiMode = () => {
         isHoseiMode = !isHoseiMode;
         const btn = document.getElementById('hosei-btn');
         if (isHoseiMode) {
-            btn.style.background = "#ff3b30"; // モード中は赤くする
+            btn.style.background = "#ff3b30"; 
             alert("補正モード：地図上で【自分が今本当にいる正しい位置】をタップしてください。補正を解除したい場合はもう一度🔧を押してリセットできます。");
         } else {
-            btn.style.background = "#ff9900"; // 通常色に戻す
+            btn.style.background = "#ff9900"; 
         }
     };
 
@@ -317,7 +311,6 @@ let offsetLat = parseFloat(localStorage.getItem('tora_king_offset_lat') || "0");
         localStorage.setItem('tora_king_name', myName); 
         localStorage.setItem('tora_king_color', myColor);
         
-        // 即座に既存の自分のアイコンとツールチップ（ラベル）を更新
         if (myMarker) {
             myMarker.setIcon(createArrowIcon(myColor, myMarker.options.heading || 0, 30));
             myMarker.getTooltip().setContent(myName);
@@ -335,12 +328,10 @@ let offsetLat = parseFloat(localStorage.getItem('tora_king_offset_lat') || "0");
     }
 
     function startTracking() {
-      function startTracking() {
         if (!navigator.geolocation) return;
         if (watchId) navigator.geolocation.clearWatch(watchId);
         
         watchId = navigator.geolocation.watchPosition(pos => {
-            // GPSの生データに補正値を加算する
             const latitude = pos.coords.latitude + offsetLat;
             const longitude = pos.coords.longitude + offsetLng;
             const speed = pos.coords.speed;
@@ -365,7 +356,6 @@ let offsetLat = parseFloat(localStorage.getItem('tora_king_offset_lat') || "0");
             
             document.getElementById('status').innerText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)} (補正適用中)`;
         }, null, {enableHighAccuracy: true});
-    }
     }
 
     // 初期起動ロジック
@@ -393,10 +383,11 @@ let offsetLat = parseFloat(localStorage.getItem('tora_king_offset_lat') || "0");
             
             if (!isMe) {
                 if (!userMarkers[id]) {
-                    userMarkers[id] = L.marker([u.lat, u.lng], { icon: createArrowIcon(u.color, u.heading, 20) }).addTo(map);
+                    userMarkers[id] = L.marker([u.lat, u.lng], { icon: createArrowIcon(u.color, u.heading, 20), heading: u.heading }).addTo(map);
                     userMarkers[id].bindTooltip(u.name, { permanent: true, direction: 'top', className: 'user-label' });
                 } else {
                     userMarkers[id].setLatLng([u.lat, u.lng]).setIcon(createArrowIcon(u.color, u.heading, 20));
+                    userMarkers[id].options.heading = u.heading;
                     userMarkers[id].getTooltip().setContent(u.name);
                 }
             }
