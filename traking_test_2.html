@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v2.1.3 by Popolo App.com</title>
+    <title>虎キング v2.1.5 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -37,10 +37,6 @@
 
         .point-card { display: flex; align-items: center; gap: 8px; padding: 10px; background: white; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 14px; }
         .point-label { font-weight: bold; min-width: 25px; color: #007AFF; }
-        .type-select, .color-select { padding: 6px; border: 1px solid #ccc; border-radius: 6px; background: #fff; }
-        .comment-input { flex-grow: 1; padding: 6px; border: 1px solid #ccc; border-radius: 6px; }
-        .delete-btn { background: #ff3b30; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .delete-btn:hover { background: #d32f2f; }
     </style>
 </head>
 <body>
@@ -56,7 +52,7 @@
 </div>
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v2.1.3</span>
+    <span style="font-size:14px;">虎キング v2.1.5</span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -75,7 +71,7 @@
 
 <div id="map"></div>
 
-<div class="status-panel" id="status">GPS初期化中...</div>
+<div class="status-panel" id="status">GPSシグナル待機中...</div>
 
 <button id="logout-btn" onclick="logout()" title="ログアウト">🏃</button>
 <button id="name-btn" onclick="openSetup()" title="再設定">👤</button>
@@ -116,7 +112,7 @@
     try { L.gridLayer.googleMutant({ type: 'roadmap' }).addTo(map); } catch(e) {}
     L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
 
-    let myMarker = null, isFollowing = true, watchId = null, isInitialFocus = true;
+    let myMarker = null, isFollowing = true, watchId = null;
 
     let offsetLat = parseFloat(localStorage.getItem('tora_king_offset_lat') || "0");
     let offsetLng = parseFloat(localStorage.getItem('tora_king_offset_lng') || "0");
@@ -135,28 +131,19 @@
         if (msg) msg.style.display = 'none';
 
         let card = document.querySelector(`.point-card[data-key="${key}"]`);
-        if (card) {
-            card.querySelector('.comment-input').value = obj.comment || '';
-            card.querySelector('.type-select').value = obj.type === 'ship' ? 'boat' : 'buoy';
-            return;
-        }
+        if (card) return;
 
         const div = document.createElement('div');
         div.className = 'point-card';
         div.dataset.key = key; 
         div.innerHTML = `
             <span class="point-label">${key.length > 4 ? '点' : key}</span>
-            <select class="type-select" onchange="updateMarkerAppearance('${key}')">
+            <select class="type-select" onchange="updateMarkerAppearance('${key}')" style="padding:4px;border-radius:4px;font-size:11px;">
                 <option value="buoy" ${obj.type!=='ship'?'selected':''}>マーク</option>
                 <option value="boat" ${obj.type==='ship'?'selected':''}>船</option>
             </select>
-            <select class="color-select" onchange="updateMarkerAppearance('${key}')">
-                <option value="red">赤</option><option value="blue">青</option>
-                <option value="yellow">黄</option><option value="green">緑</option>
-                <option value="orange" selected>橙</option>
-            </select>
-            <input type="text" class="comment-input" value="${obj.comment||''}" placeholder="メモ" oninput="updateMarkerAppearance('${key}')">
-            <button class="delete-btn" onclick="deleteObject('${key}')">削除</button>
+            <input type="text" class="comment-input" value="${obj.comment||''}" placeholder="メモ" oninput="updateMarkerAppearance('${key}')" style="padding:4px;border-radius:4px;font-size:11px;flex-grow:1;margin:0 4px;">
+            <button class="delete-btn" onclick="deleteObject('${key}')" style="background:#ff3b30;color:white;border:none;padding:4px 8px;border-radius:4px;font-size:11px;">削除</button>
         `;
         listContainer.appendChild(div);
     }
@@ -165,13 +152,10 @@
         const card = document.querySelector(`.point-card[data-key="${key}"]`);
         if (!card) return;
         const type = card.querySelector('.type-select').value;
-        const colorName = card.querySelector('.color-select').value;
         const comment = card.querySelector('.comment-input').value;
-        const colorMap = { red: "#ff0000", blue: "#0000ff", yellow: "#ffff00", green: "#32cd32", orange: "#ff9900" };
 
         db.ref('objects/' + key).update({
             type: type === 'boat' ? 'ship' : 'buoy',
-            color: colorMap[colorName],
             comment: comment
         });
     };
@@ -204,26 +188,20 @@
 
     map.on('click', e => {
         const { lat, lng } = e.latlng;
-
         if (isHoseiMode) {
-            if (confirm("今いる現在地を、タップしたこの場所に補正しますか？")) {
+            if (confirm("現在地をこの場所に補正しますか？")) {
                 navigator.geolocation.getCurrentPosition(pos => {
                     offsetLat = lat - pos.coords.latitude;
                     offsetLng = lng - pos.coords.longitude;
-                    
                     localStorage.setItem('tora_king_offset_lat', offsetLat);
                     localStorage.setItem('tora_king_offset_lng', offsetLng);
-                    
-                    alert("位置補正を完了しました！");
+                    alert("位置補正完了");
                     toggleHoseiMode(); 
                     startTracking();   
-                }, err => {
-                    alert("補正用の位置情報取得に失敗しました。");
-                });
+                }, err => { alert("位置の取得に失敗しました。"); }, {enableHighAccuracy: false, timeout: 5000});
             }
             return;
         }
-
         const popupContent = `
             <div class="popup-form">
                 <b>新規設置</b>
@@ -236,41 +214,15 @@
 
     window.toggleHoseiMode = () => {
         isHoseiMode = !isHoseiMode;
-        const btn = document.getElementById('hosei-btn');
-        if (isHoseiMode) {
-            btn.style.background = "#ff3b30"; 
-            alert("補正モード：地図上で【自分が今本当にいる正しい位置】をタップしてください。");
-        } else {
-            btn.style.background = "#ff9900"; 
-        }
+        document.getElementById('hosei-btn').style.background = isHoseiMode ? "#ff3b30" : "#ff9900";
     };
 
     window.manualSave = (lat, lng) => {
         const type = document.getElementById('new_type').value;
         const comment = document.getElementById('new_comment').value;
-        db.ref('objects').push({
-            type: type,
-            color: type === 'ship' ? '' : '#ff9900',
-            lat: lat, lng: lng,
-            comment: comment, ts: Date.now()
-        });
+        db.ref('objects').push({ type: type, color: '#ff9900', lat: lat, lng: lng, comment: comment, ts: Date.now() });
         map.closePopup();
     };
-
-    const pointsData = new URLSearchParams(window.location.search).get('points');
-    if (pointsData) {
-        pointsData.split('|').forEach(p => {
-            const [label, coords] = p.split(':');
-            if (label && coords) {
-                const [lat, lng] = coords.split(',');
-                db.ref('objects/' + label).set({
-                    type: (label === 'S' || label.includes('ship')) ? 'ship' : 'buoy',
-                    color: '#ff9900', lat: parseFloat(lat), lng: parseFloat(lng), comment: label, ts: Date.now()
-                });
-            }
-        });
-        window.history.replaceState({}, '', location.pathname);
-    }
 
     function initSetupUI() {
         const grid = document.getElementById('color-grid');
@@ -291,96 +243,81 @@
     }
 
     function closeSetup() {
-        if (!myName) return alert("最初に名前と色を設定してください");
+        if (!myName) return alert("名前と色を設定してください");
         document.getElementById('setup-overlay').style.display = 'none';
     }
 
     function saveProfile(color) {
         const nameInp = document.getElementById('setup-name').value;
         if (!nameInp) return alert("名前を入力してください");
-        
-        myName = nameInp; 
-        myColor = color;
-        
+        myName = nameInp; myColor = color;
         localStorage.setItem('tora_king_name', myName); 
         localStorage.setItem('tora_king_color', myColor);
-        
-        if (myMarker) {
-            myMarker.setIcon(createArrowIcon(myColor, myMarker.options.heading || 0, 30));
-            myMarker.getTooltip().setContent(myName);
-        }
-        
         document.getElementById('setup-overlay').style.display = 'none'; 
         startTracking();
     }
 
     function createArrowIcon(color, heading, size = 30) {
-        const rotate = heading || 0;
-        const html = `<div class="arrow-icon-wrapper" style="transform: rotate(${rotate}deg);"><svg viewBox="0 0 100 100" width="${size}" height="${size}"><path d="M50 5 L90 90 L50 75 L10 90 Z" fill="${color}" stroke="white" stroke-width="5" /></svg></div>`;
+        const html = `<div class="arrow-icon-wrapper" style="transform: rotate(${heading||0}deg);"><svg viewBox="0 0 100 100" width="${size}" height="${size}"><path d="M50 5 L90 90 L50 75 L10 90 Z" fill="${color}" stroke="white" stroke-width="5" /></svg></div>`;
         return L.divIcon({ html: html, className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
     }
 
-    // --- GPSエラーハンドリングの強化 ---
     function handleGPSError(error) {
         let msg = "Error: ";
         switch(error.code) {
-            case error.PERMISSION_DENIED: msg += "位置情報の許可が拒否されました"; break;
-            case error.POSITION_UNAVAILABLE: msg += "位置情報が利用できません(GPS信号等)"; break;
-            case error.TIMEOUT: msg += "タイムアウトしました"; break;
-            default: msg += "不明なGPSエラー"; break;
+            case error.PERMISSION_DENIED: msg += "許可が拒否されました"; break;
+            case error.POSITION_UNAVAILABLE: msg += "信号を受信できません"; break;
+            case error.TIMEOUT: msg += "応答タイムアウト"; break;
+            default: msg += "GPSエラー(" + error.code + ")"; break;
         }
         document.getElementById('status').style.background = "rgba(255,0,0,0.8)";
         document.getElementById('status').innerText = msg;
     }
 
+    // --- GPS取得処理の徹底的な軽量・安定化 ---
+    function updateLocation(pos) {
+        const latitude = pos.coords.latitude + offsetLat;
+        const longitude = pos.coords.longitude + offsetLng;
+        const speed = pos.coords.speed || 0;
+        const heading = pos.coords.heading || 0;
+        
+        db.ref('users/'+myId).set({lat: latitude, lng: longitude, name: myName, color: myColor, speed: speed, heading: heading, ts: Date.now()});
+        
+        const latlng = [latitude, longitude];
+        if (!myMarker) {
+            myMarker = L.marker(latlng, { icon: createArrowIcon(myColor, heading, 30) }).addTo(map);
+            myMarker.bindTooltip(myName, { permanent: true, direction: 'top', className: 'user-label' });
+            map.setView(latlng, 16);
+        } else {
+            myMarker.setLatLng(latlng).setIcon(createArrowIcon(myColor, heading, 30));
+        }
+        
+        if (isFollowing) map.panTo(latlng);
+        
+        document.getElementById('status').style.background = "rgba(0,0,0,0.8)";
+        document.getElementById('status').innerText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)} (更新中)`;
+    }
+
     function startTracking() {
         if (!navigator.geolocation) {
-            document.getElementById('status').innerText = "Error: お使いのブラウザはGPS非対応です";
+            document.getElementById('status').innerText = "Error: GPS非対応ブラウザ";
             return;
         }
         if (watchId) navigator.geolocation.clearWatch(watchId);
-        
-        // 最初の1回を即時取得して確実にマップの中心にする
-        navigator.geolocation.getCurrentPosition(pos => {
-            const latitude = pos.coords.latitude + offsetLat;
-            const longitude = pos.coords.longitude + offsetLng;
-            map.setView([latitude, longitude], 16);
-        }, handleGPSError, {enableHighAccuracy: true, timeout: 5000});
 
-        watchId = navigator.geolocation.watchPosition(pos => {
-            const latitude = pos.coords.latitude + offsetLat;
-            const longitude = pos.coords.longitude + offsetLng;
-            const speed = pos.coords.speed;
-            const heading = pos.coords.heading;
-            
-            db.ref('users/'+myId).set({lat: latitude, lng: longitude, name: myName, color: myColor, speed: speed||0, heading: heading||0, ts: Date.now()});
-            const latlng = [latitude, longitude];
-            
-            if (!myMarker) {
-                myMarker = L.marker(latlng, { icon: createArrowIcon(myColor, heading, 30), heading: heading }).addTo(map);
-                myMarker.bindTooltip(myName, { permanent: true, direction: 'top', className: 'user-label' });
-            } else {
-                myMarker.setLatLng(latlng).setIcon(createArrowIcon(myColor, heading, 30));
-                myMarker.options.heading = heading;
-                myMarker.getTooltip().setContent(myName);
-            }
-            
-            if (isInitialFocus || isFollowing) {
-                map.setView(latlng, 16);
-                isInitialFocus = false;
-            }
-            
-            document.getElementById('status').style.background = "rgba(0,0,0,0.8)";
-            document.getElementById('status').innerText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)} (GPS受信中)`;
-        }, handleGPSError, {enableHighAccuracy: true, timeout: 10000, maximumAge: 0});
+        // 高精度オプションを無効にして、まず通信の「詰まり」を解消する
+        const gpsOptions = { enableHighAccuracy: false, timeout: 8000, maximumAge: 0 };
+
+        navigator.geolocation.getCurrentPosition(updateLocation, err => {
+            // 低精度でもダメならもう一度だけ高精度を試す（再トリガー）
+            navigator.geolocation.getCurrentPosition(updateLocation, handleGPSError, { enableHighAccuracy: true, timeout: 8000 });
+        }, gpsOptions);
+
+        watchId = navigator.geolocation.watchPosition(updateLocation, handleGPSError, gpsOptions);
     }
 
     initSetupUI();
-    if (!myName) {
-        openSetup();
-    } else { 
-        startTracking(); 
-    }
+    if (!myName) openSetup(); else startTracking();
 
     db.ref('users').on('value', snap => {
         const users = snap.val();
@@ -398,12 +335,10 @@
             
             if (!isMe) {
                 if (!userMarkers[id]) {
-                    userMarkers[id] = L.marker([u.lat, u.lng], { icon: createArrowIcon(u.color, u.heading, 20), heading: u.heading }).addTo(map);
+                    userMarkers[id] = L.marker([u.lat, u.lng], { icon: createArrowIcon(u.color, u.heading, 20) }).addTo(map);
                     userMarkers[id].bindTooltip(u.name, { permanent: true, direction: 'top', className: 'user-label' });
                 } else {
                     userMarkers[id].setLatLng([u.lat, u.lng]).setIcon(createArrowIcon(u.color, u.heading, 20));
-                    userMarkers[id].options.heading = u.heading;
-                    userMarkers[id].getTooltip().setContent(u.name);
                 }
             }
         }
@@ -414,14 +349,12 @@
         speedUnitMode = (speedUnitMode + 1) % 3;
         localStorage.setItem('tora_king_unit', speedUnitMode);
         document.getElementById('unit-toggle').innerText = units[speedUnitMode];
-        db.ref('users').once('value');
     };
     window.deleteObject = (key) => { if(confirm("消去しますか？")) { db.ref('objects/' + key).remove(); const c = document.querySelector(`.point-card[data-key="${key}"]`); if(c) c.remove(); }};
     window.logout = () => { if(confirm("ログアウトしますか？")) { db.ref('users/'+myId).remove(); localStorage.clear(); location.reload(); }};
     window.goMe = () => { isFollowing = true; if(myMarker) map.panTo(myMarker.getLatLng()); };
     
     map.on('movestart', () => isFollowing = false);
-    map.on('moveend', () => { const c = map.getCenter(); localStorage.setItem('tora_king_pos', JSON.stringify({lat:c.lat, lng:c.lng, zoom:map.getZoom()})); });
 </script>
 </body>
 </html>
