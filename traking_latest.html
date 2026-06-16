@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v2.2.0 by Popolo App.com</title>
+    <title>虎キング v2.3.0 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -68,7 +68,7 @@
 </div>
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v2.2.0</span>
+    <span style="font-size:14px;">虎キング v2.3.0 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -144,6 +144,9 @@
     let isMenuOpen = false;
 
     const userMarkers = {}, objectMarkers = {};
+    let coursePolyline = null; // コースを結ぶ追記用ラインを格納
+
+    const MARK_COLORS = { A:'#ff3b30', B:'#0000ff', C:'#ffff00', D:'#28a745', E:'#6a1b9a', F:'#ff2d55', G:'#000080', S:'#0000ff', K:'#5ac8fa' };
 
     function showToast(message) {
         const toast = document.getElementById('toast-notice');
@@ -166,14 +169,13 @@
         let card = document.querySelector(`.point-card[data-key="${key}"]`);
         if (card) return;
 
-        // 表示用の短いラベル（プッシュキーなら'点'、手入力などの短い文字ならそのまま表示）
         const labelText = key.length > 5 ? '🚩' : key;
 
         const div = document.createElement('div');
         div.className = 'point-card';
         div.dataset.key = key; 
         div.innerHTML = `
-            <span class="point-label">${labelText}</span>
+            <span class="point-label" style="color:${MARK_COLORS[key] || '#007AFF'}">${labelText}</span>
             <select class="type-select" onchange="updateMarkerAppearance('${key}')" style="padding:4px;border-radius:4px;font-size:11px;">
                 <option value="buoy" ${obj.type!=='ship'?'selected':''}>マーク</option>
                 <option value="boat" ${obj.type==='ship'?'selected':''}>船</option>
@@ -196,14 +198,65 @@
         });
     };
 
+    // URLパラメータから送られてきたコースをパースしてFirebaseへ自動同期する関数
+    function checkIncomingCourse() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const mode = urlParams.get('mode');
+        const course = urlParams.get('course');
+        
+        // 運営スタッフのアクセスかつコースタイプが設定されている場合
+        if (mode === 'committee' && course) {
+            const targetKeys = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'K', 'S'];
+            let newObjects = {};
+            let firstPos = null;
+
+            targetKeys.forEach(key => {
+                const latStr = urlParams.get(`lat${key}`);
+                const lngStr = urlParams.get(`lng${key}`);
+                if (latStr && lngStr) {
+                    const lat = parseFloat(latStr);
+                    const lng = parseFloat(lngStr);
+                    
+                    newObjects[key] = {
+                        type: 'buoy',
+                        color: MARK_COLORS[key] || '#ff9900',
+                        lat: lat,
+                        lng: lng,
+                        comment: `${key}点 (${course.toUpperCase()})`,
+                        ts: Date.now()
+                    };
+                    if (!firstPos) firstPos = [lat, lng];
+                }
+            });
+
+            if (Object.keys(newObjects).length > 0) {
+                // 既存のオブジェクト配列を一度削除して上書き
+                db.ref('objects').set(newObjects, (error) => {
+                    if (!error) {
+                        showToast(`コースデータ【${course.toUpperCase()}】を読込＆全体配信しました`);
+                        if (firstPos) {
+                            isFollowing = false; // 自動追従を一時オフにしてコースにカメラを向ける
+                            map.setView(firstPos, 15);
+                        }
+                    }
+                });
+            }
+        }
+    }
+
     db.ref('objects').on('value', snap => {
-        // 一旦リストコンテナを初期化して、最新の状態に再構築する（古いゴミが残るのを防止）
         const listContainer = document.getElementById('pointListContainer');
         listContainer.innerHTML = '<p id="noPointMsg" style="color: #666; font-size: 13px; margin: 0;">座標データが読み込まれていません</p>';
         
         for (let key in objectMarkers) map.removeLayer(objectMarkers[key]);
+        if (coursePolyline) { map.removeLayer(coursePolyline); coursePolyline = null; }
+
         const objects = snap.val();
         if (!objects) return;
+
+        let lineCoords = [];
+        // 特定のコース順を形成して線をつなぐ（A->B->C...など定義可能なものをソートするか、登録順で取得）
+        const sortedKeys = Object.keys(objects).sort(); 
 
         for (let key in objects) {
             const obj = objects[key];
@@ -211,7 +264,7 @@
             
             let iconHtml = isShip 
                 ? `<div style="font-size:24px; filter: drop-shadow(0 0 2px white);">🚤</div>` 
-                : `<svg width="18" height="22" viewBox="0 0 100 120"><path d="M50 5 L95 100 Q95 115 50 115 Q5 115 5 100 Z" fill="${obj.color||'#ff9900'}" stroke="white" stroke-width="8" /></svg>`;
+                : `<svg width="18" height="22" viewBox="0 0 100 120"><path d="M50 5 L95 100 Q95 115 50 115 Q5 115 5 100 Z" fill="${obj.color|| MARK_COLORS[key] || '#ff9900'}" stroke="white" stroke-width="8" /></svg>`;
             
             const marker = L.marker([obj.lat, obj.lng], { 
                 icon: L.divIcon({ html: iconHtml, className: '', iconSize: [24, 24], iconAnchor: [12, 12] }) 
@@ -221,8 +274,20 @@
             marker.bindPopup(`<b>${displayTitle}</b><br>${obj.comment||''}<br><button class="btn-del" onclick="deleteObject('${key}')">削除</button>`);
             objectMarkers[key] = marker;
 
-            // 修正：船かマークかに関わらず、すべての登録オブジェクトを管理パネルにカードとして生成する
             createPointCard(key, obj);
+        }
+
+        // コース図上に理想の航路ライン（ポリライン）を重ね描きする処理
+        // コースタイプがメモ等から判断可能な場合、特定の並び順で繋ぎます。
+        const orderMap = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'K'];
+        let polyPath = [];
+        orderMap.forEach(k => {
+            if (objects[k]) polyPath.push([objects[k].lat, objects[k].lng]);
+        });
+        
+        // パスが生成できればうっすらと黒/グレーの破線コースラインを配置
+        if (polyPath.length > 1) {
+            coursePolyline = L.polyline(polyPath, {color: '#ffffff', weight: 3, opacity: 0.6, dashArray: '5, 10'}).addTo(map);
         }
     });
 
@@ -263,10 +328,10 @@
     window.manualSave = (lat, lng) => {
         const type = document.getElementById('new_type').value;
         const comment = document.getElementById('new_comment').value;
-        db.ref('objects').push({ type: type, color: '#ff9900', lat: lat, lng: lng, comment: comment, ts: Date.now() });
+        // 手動追加の時はランダムキーを生成
+        const randomKey = "M" + Math.floor(Math.random() * 100);
+        db.ref('objects/' + randomKey).set({ type: type, color: '#ff9900', lat: lat, lng: lng, comment: comment, ts: Date.now() });
         map.closePopup();
-        
-        // 設置完了後、すぐ確認・編集できるように設定パネルを強制的に表示状態にする
         document.getElementById('pointSettingsPanel').style.display = 'block';
     };
 
@@ -487,6 +552,11 @@
     window.deleteObject = (key) => { if(confirm("消去しますか？")) { db.ref('objects/' + key).remove(); const c = document.querySelector(`.point-card[data-key="${key}"]`); if(c) c.remove(); }};
     
     map.on('movestart', () => isFollowing = false);
+
+    // 画面ロード完了時にURLパラメータのコースデータ解析を走らせる
+    window.addEventListener('load', () => {
+        setTimeout(checkIncomingCourse, 1000);
+    });
 </script>
 </body>
 </html>
