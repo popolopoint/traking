@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v2.1.8 by Popolo App.com</title>
+    <title>虎キング v2.1.9 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -23,13 +23,23 @@
         .user-label { background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #ff9900; font-size: 10px; font-weight: bold; padding: 2px 4px; border-radius: 3px; white-space: nowrap; }
         .status-panel { position: fixed; bottom: 10px; left: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 11px; max-width: 80%; border: 1px solid #ff9900; }
         
-        #add-point-btn, #recenter-btn, #gps-retry-btn, #hosei-btn, #name-btn, #logout-btn { position: fixed; right: 10px; z-index: 2000; background: #fff; border: 2px solid #ff9900; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
-        #add-point-btn { bottom: 70px; font-size: 20px; background: #007AFF; color: #fff; border-color: #fff; }
-        #recenter-btn { bottom: 125px; font-size: 20px; }
-        #gps-retry-btn { bottom: 180px; font-size: 20px; color: #ff9900; }
-        #hosei-btn { bottom: 235px; background: #ff9900; color: white; font-size: 18px; }
-        #name-btn { bottom: 290px; font-size: 18px; color: #333; }
-        #logout-btn { bottom: 345px; background: #ff4444; border-color: #fff; color: white; font-size: 18px; }
+        /* ボタン共通スタイル */
+        .action-btn { position: fixed; right: 10px; z-index: 2000; background: #fff; border: 2px solid #ff9900; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); font-size: 18px; }
+        
+        /* 常時表示するベースボタン */
+        #recenter-btn { bottom: 70px; font-size: 20px; }
+        #menu-toggle-btn { bottom: 125px; background: #ff9900; color: #fff; border-color: #fff; font-size: 20px; font-weight: bold; transition: background 0.2s; }
+        
+        /* メニュー内格納ボタン群（初期状態は非表示・アニメーション用） */
+        .menu-child { opacity: 0; transform: translateY(20px) scale(0.8); pointer-events: none; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+        .menu-active .menu-child { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+        
+        /* 格納ボタンの個別位置（メニューオープン時に展開） */
+        #add-point-btn { bottom: 185px; font-size: 20px; background: #007AFF; color: #fff; border-color: #fff; }
+        #gps-retry-btn { bottom: 240px; font-size: 20px; color: #ff9900; }
+        #hosei-btn { bottom: 295px; background: #ff9900; color: white; }
+        #name-btn { bottom: 350px; color: #333; }
+        #logout-btn { bottom: 405px; background: #ff4444; border-color: #fff; color: white; }
         
         .popup-form { color: #333; min-width: 140px; font-size: 12px; }
         .popup-form select, .popup-form input { width: 100%; margin: 4px 0; padding: 4px; box-sizing: border-box; }
@@ -58,7 +68,7 @@
 </div>
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v2.1.8</span>
+    <span style="font-size:14px;">虎キング v2.1.9</span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -79,12 +89,19 @@
 
 <div class="status-panel" id="status">GPSシグナル待機中...</div>
 
-<button id="logout-btn" onclick="triggerLogout()" title="ログアウト">🏃</button>
-<button id="name-btn" onclick="triggerSetup()" title="再設定">👤</button>
-<button id="hosei-btn" onclick="triggerHoseiMode()" title="位置補正">🔧</button>
-<button id="gps-retry-btn" onclick="triggerGPSRetry()" title="GPS再接続">🔄</button>
-<button id="recenter-btn" onclick="triggerRecenter()" title="現在地追従">🎯</button>
-<button id="add-point-btn" onclick="triggerAddPointMode()" title="マーク追加">🚩</button>
+<!-- ボタンコンテナ（Menuクラス制御用） -->
+<div id="button-container">
+    <!-- 格納されるボタン群 -->
+    <button id="logout-btn" class="action-btn menu-child" onclick="triggerLogout()" title="ログアウト">🏃</button>
+    <button id="name-btn" class="action-btn menu-child" onclick="triggerSetup()" title="再設定">👤</button>
+    <button id="hosei-btn" class="action-btn menu-child" onclick="triggerHoseiMode()" title="位置補正">🔧</button>
+    <button id="gps-retry-btn" class="action-btn menu-child" onclick="triggerGPSRetry()" title="GPS再接続">🔄</button>
+    <button id="add-point-btn" class="action-btn menu-child" onclick="triggerAddPointMode()" title="マーク追加">🚩</button>
+    
+    <!-- 常時表示ボタン -->
+    <button id="menu-toggle-btn" class="action-btn" onclick="toggleMenu()" title="メニュー">☰</button>
+    <button id="recenter-btn" class="action-btn" onclick="triggerRecenter()" title="現在地追従">🎯</button>
+</div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -126,7 +143,8 @@
     let offsetLat = parseFloat(localStorage.getItem('tora_king_offset_lat') || "0");
     let offsetLng = parseFloat(localStorage.getItem('tora_king_offset_lng') || "0");
     let isHoseiMode = false; 
-    let isAddPointMode = false; // マーク追加待機フラグ
+    let isAddPointMode = false; 
+    let isMenuOpen = false; // メニュー開閉状態フラグ
 
     const userMarkers = {}, objectMarkers = {};
 
@@ -204,11 +222,9 @@
         }
     });
 
-    // 地図タップ時の処理
     map.on('click', e => {
         const { lat, lng } = e.latlng;
         
-        // 1. 位置補正モード稼働時
         if (isHoseiMode) {
             if (confirm("現在地をこの場所に補正しますか？")) {
                 navigator.geolocation.getCurrentPosition(pos => {
@@ -224,7 +240,6 @@
             return;
         }
         
-        // 2. マーク追加モード稼働時のみ設置フォームを開く
         if (isAddPointMode) {
             const popupContent = `
                 <div class="popup-form">
@@ -235,12 +250,10 @@
                 </div>`;
             L.popup().setLatLng(e.latlng).setContent(popupContent).openOn(map);
             
-            // フォームを開いたら追加モードのロックを復帰
             setAddPointMode(false);
+            toggleMenu(); // 設置が始まったらメニューも閉じる
             return;
         }
-        
-        // 通常時はタップしても何も起きない（誤タップガード）
     });
 
     window.manualSave = (lat, lng) => {
@@ -345,11 +358,31 @@
         { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 });
     }
 
+    // --- メニュー表示切り替え ---
+    window.toggleMenu = () => {
+        isMenuOpen = !isMenuOpen;
+        const container = document.getElementById('button-container');
+        const toggleBtn = document.getElementById('menu-toggle-btn');
+        
+        if (isMenuOpen) {
+            container.classList.add('menu-active');
+            toggleBtn.innerText = "✕";
+            toggleBtn.style.background = "#333";
+        } else {
+            container.classList.remove('menu-active');
+            toggleBtn.innerText = "☰";
+            toggleBtn.style.background = "#ff9900";
+            
+            // 安全のためメニューを閉じた時は全稼働モードをリセット
+            if (isAddPointMode) setAddPointMode(false);
+            if (isHoseiMode) { isHoseiMode = false; document.getElementById('hosei-btn').style.background = "#ff9900"; }
+        }
+    };
+
     // --- ボタンアクション関連群 ---
 
-    // マーク追加ボタンの制御
     window.triggerAddPointMode = () => {
-        if (isHoseiMode) triggerHoseiMode(); // 補正モードがONなら切る
+        if (isHoseiMode) { isHoseiMode = false; document.getElementById('hosei-btn').style.background = "#ff9900"; }
         setAddPointMode(!isAddPointMode);
     };
 
@@ -382,10 +415,11 @@
             (err) => { alert("強制取得も応答なし。スマホ本体の設定を確認してください。"); startTracking(); },
             { enableHighAccuracy: false, timeout: 5000 }
         );
+        toggleMenu();
     };
 
     window.triggerHoseiMode = () => {
-        if (isAddPointMode) setAddPointMode(false); // マーク追加がONなら切る
+        if (isAddPointMode) setAddPointMode(false);
         isHoseiMode = !isHoseiMode;
         document.getElementById('hosei-btn').style.background = isHoseiMode ? "#ff3b30" : "#ff9900";
         if(isHoseiMode) {
@@ -397,11 +431,13 @@
 
     window.triggerSetup = () => {
         showToast("👤 プロフィール（名前・色）の再設定を開きます");
+        toggleMenu();
         setTimeout(openSetup, 400);
     };
 
     window.triggerLogout = () => {
         showToast("🏃 データを全消去して初期状態に戻します");
+        toggleMenu();
         setTimeout(() => {
             if(confirm("ログアウト（すべての保存データを削除）しますか？")) { 
                 db.ref('users/'+myId).remove(); 
