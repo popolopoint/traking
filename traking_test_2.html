@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v2.1.6 by Popolo App.com</title>
+    <title>虎キング v2.1.7 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -23,12 +23,12 @@
         .user-label { background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #ff9900; font-size: 10px; font-weight: bold; padding: 2px 4px; border-radius: 3px; white-space: nowrap; }
         .status-panel { position: fixed; bottom: 10px; left: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 11px; max-width: 80%; border: 1px solid #ff9900; }
         
-        #recenter-btn, #gps-retry-btn, #name-btn, #logout-btn, #hosei-btn { position: fixed; right: 10px; z-index: 2000; background: #fff; border: 2px solid #ff9900; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        #recenter-btn, #gps-retry-btn, #name-btn, #hosei-btn, #logout-btn { position: fixed; right: 10px; z-index: 2000; background: #fff; border: 2px solid #ff9900; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
         #recenter-btn { bottom: 70px; font-size: 20px; }
-        #gps-retry-btn { bottom: 125px; font-size: 20px; background: #fff; color: #ff9900; }
-        #name-btn { bottom: 180px; font-size: 18px; color: #333; }
-        #logout-btn { bottom: 235px; background: #ff4444; border-color: #fff; color: white; font-size: 18px; }
-        #hosei-btn { bottom: 290px; background: #ff9900; color: white; font-size: 18px; }
+        #gps-retry-btn { bottom: 125px; font-size: 20px; color: #ff9900; }
+        #hosei-btn { bottom: 180px; background: #ff9900; color: white; font-size: 18px; }
+        #name-btn { bottom: 235px; font-size: 18px; color: #333; }
+        #logout-btn { bottom: 290px; background: #ff4444; border-color: #fff; color: white; font-size: 18px; }
         
         .popup-form { color: #333; min-width: 140px; font-size: 12px; }
         .popup-form select, .popup-form input { width: 100%; margin: 4px 0; padding: 4px; box-sizing: border-box; }
@@ -38,9 +38,14 @@
 
         .point-card { display: flex; align-items: center; gap: 8px; padding: 10px; background: white; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 14px; }
         .point-label { font-weight: bold; min-width: 25px; color: #007AFF; }
+        
+        /* 簡易トースト通知用スタイル */
+        #toast-notice { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 6000; border: 1px solid #ff9900; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: center; pointer-events: none; }
     </style>
 </head>
 <body>
+
+<div id="toast-notice"></div>
 
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
@@ -53,7 +58,7 @@
 </div>
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v2.1.6</span>
+    <span style="font-size:14px;">虎キング v2.1.7</span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -74,11 +79,11 @@
 
 <div class="status-panel" id="status">GPSシグナル待機中...</div>
 
-<button id="hosei-btn" onclick="toggleHoseiMode()" title="位置補正">🔧</button>
-<button id="logout-btn" onclick="logout()" title="ログアウト">🏃</button>
-<button id="name-btn" onclick="openSetup()" title="再設定">👤</button>
-<button id="gps-retry-btn" onclick="manualGPSTrigger()" title="GPS再接続">🔄</button>
-<button id="recenter-btn" onclick="goMe()">🎯</button>
+<button id="logout-btn" onclick="triggerLogout()" title="ログアウト">🏃</button>
+<button id="name-btn" onclick="triggerSetup()" title="再設定">👤</button>
+<button id="hosei-btn" onclick="triggerHoseiMode()" title="位置補正">🔧</button>
+<button id="gps-retry-btn" onclick="triggerGPSRetry()" title="GPS再接続">🔄</button>
+<button id="recenter-btn" onclick="triggerRecenter()" title="現在地追従">🎯</button>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -122,6 +127,15 @@
     let isHoseiMode = false; 
 
     const userMarkers = {}, objectMarkers = {};
+
+    // 画面中央ポップアップ通知用関数
+    function showToast(message) {
+        const toast = document.getElementById('toast-notice');
+        toast.innerText = message;
+        toast.style.display = 'block';
+        if (window.toastTimeout) clearTimeout(window.toastTimeout);
+        window.toastTimeout = setTimeout(() => { toast.style.display = 'none'; }, 2000);
+    }
 
     window.toggleSettingsPanel = () => {
         const panel = document.getElementById('pointSettingsPanel');
@@ -199,7 +213,7 @@
                     localStorage.setItem('tora_king_offset_lat', offsetLat);
                     localStorage.setItem('tora_king_offset_lng', offsetLng);
                     alert("位置補正完了");
-                    toggleHoseiMode(); 
+                    triggerHoseiMode(); 
                     startTracking();   
                 }, err => { alert("位置の取得に失敗しました。"); }, {enableHighAccuracy: false, timeout: 5000});
             }
@@ -214,11 +228,6 @@
             </div>`;
         L.popup().setLatLng(e.latlng).setContent(popupContent).openOn(map);
     });
-
-    window.toggleHoseiMode = () => {
-        isHoseiMode = !isHoseiMode;
-        document.getElementById('hosei-btn').style.background = isHoseiMode ? "#ff3b30" : "#ff9900";
-    };
 
     window.manualSave = (lat, lng) => {
         const type = document.getElementById('new_type').value;
@@ -314,27 +323,56 @@
         document.getElementById('status').style.background = "rgba(0,0,0,0.8)";
         document.getElementById('status').innerText = "GPS接続を開始中...";
 
-        // 1. 高精度モードで監視
         watchIdHigh = navigator.geolocation.watchPosition(updateLocation, (err) => {
-            // 高精度がタイムアウト等で失敗したときのログ用（エラーでも低精度が動けば問題なし）
             if(err.code === err.TIMEOUT) console.log("High accuracy timeout.");
         }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
 
-        // 2. 低精度モードでも同時にバックアップ監視（詰まり対策）
         watchIdLow = navigator.geolocation.watchPosition(updateLocation, handleGPSError, 
         { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 });
     }
 
-    window.manualGPSTrigger = () => {
+    // --- 各ボタンのトリガー処理（ポップアップ案内付き） ---
+    window.triggerRecenter = () => {
+        showToast("🎯 現在地を画面の中心に追従します");
+        isFollowing = true; 
+        if(myMarker) map.panTo(myMarker.getLatLng());
+    };
+
+    window.triggerGPSRetry = () => {
+        showToast("🔄 GPSを強制リセット・再接続します");
         document.getElementById('status').style.background = "#ff9900";
         document.getElementById('status').innerText = "GPSシグナルを強制再起動中...";
-        
-        // 1回きりの強制即時取得をかける
         navigator.geolocation.getCurrentPosition(
-            (pos) => { alert("GPS信号を受信しました！"); updateLocation(pos); startTracking(); },
-            (err) => { alert("強制取得も応答がありません。スマホのGPS設定か、ブラウザの権限を確認してください。"); startTracking(); },
+            (pos) => { updateLocation(pos); startTracking(); },
+            (err) => { alert("強制取得も応答なし。スマホ本体の設定を確認してください。"); startTracking(); },
             { enableHighAccuracy: false, timeout: 5000 }
         );
+    };
+
+    window.triggerHoseiMode = () => {
+        isHoseiMode = !isHoseiMode;
+        document.getElementById('hosei-btn').style.background = isHoseiMode ? "#ff3b30" : "#ff9900";
+        if(isHoseiMode) {
+            showToast("🔧 位置補正モード：ON (地図上をタップして現在地をズラせます)");
+        } else {
+            showToast("🔧 位置補正モード：OFF");
+        }
+    };
+
+    window.triggerSetup = () => {
+        showToast("👤 プロフィール（名前・色）の再設定を開きます");
+        setTimeout(openSetup, 400);
+    };
+
+    window.triggerLogout = () => {
+        showToast("🏃 データを全消去して初期状態に戻します");
+        setTimeout(() => {
+            if(confirm("ログアウト（すべての保存データを削除）しますか？")) { 
+                db.ref('users/'+myId).remove(); 
+                localStorage.clear(); 
+                location.reload(); 
+            }
+        }, 500);
     };
 
     initSetupUI();
@@ -372,8 +410,6 @@
         document.getElementById('unit-toggle').innerText = units[speedUnitMode];
     };
     window.deleteObject = (key) => { if(confirm("消去しますか？")) { db.ref('objects/' + key).remove(); const c = document.querySelector(`.point-card[data-key="${key}"]`); if(c) c.remove(); }};
-    window.logout = () => { if(confirm("ログアウトしますか？")) { db.ref('users/'+myId).remove(); localStorage.clear(); location.reload(); }};
-    window.goMe = () => { isFollowing = true; if(myMarker) map.panTo(myMarker.getLatLng()); };
     
     map.on('movestart', () => isFollowing = false);
 </script>
