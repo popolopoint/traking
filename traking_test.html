@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>虎キング v2.3.2 by Popolo App.com</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 0; background: #fdfefe; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+        .app-header { background: #e67e22; color: white; padding: 10px; text-align: center; font-weight: bold; font-size: 0.9rem; flex-shrink: 0; }
+        
+        .control-panel { background: white; padding: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 1000; flex-shrink: 0; }
+        .section-title { font-size: 0.85rem; font-weight: bold; color: #d35400; margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
+        
+        .grid-inputs { display: flex; gap: 6px; margin-bottom: 8px; }
+        .grid-inputs input { font-size: 1rem; padding: 10px 6px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; min-width: 0; }
+        #boat-name { width: 25%; font-weight: bold; }
+        #boat-lat { width: 37%; text-align: center; }
+        #boat-lng { width: 37%; text-align: center; }
+
+        .btn-group { display: flex; gap: 6px; margin-bottom: 6px; }
+        .btn-main { flex: 1; background: #e67e22; color: white; border: none; padding: 12px; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px; }
+        .btn-main:active { background: #d35400; }
+        
+        /* 🌊 水深測ったろう連携ボタンのスタイル */
+        .btn-suishin { flex: 1; background: #3498db; color: white; border: none; padding: 12px; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px; }
+        .btn-suishin:active { background: #2980b9; }
+
+        #map-container { flex-grow: 1; position: relative; }
+        #map { width: 100%; height: 100%; }
+        
+        .gps-indicator { position: absolute; bottom: 20px; right: 10px; width: 50px; height: 50px; background: white; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; justify-content: center; align-items: center; z-index: 10; cursor: pointer; font-size: 24px; border: none; }
+        .status-text { font-size: 0.75rem; color: #666; text-align: center; margin-top: 4px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="app-header">虎キング v2.3.2 by Popolo App.com</div>
+
+<div class="control-panel">
+    <div class="section-title">⚓ 本部船トラッキング / 位置連携</div>
+    <div class="grid-inputs">
+        <input type="text" id="boat-name" value="本部船" placeholder="船名">
+        <input type="number" id="boat-lat" step="any" placeholder="緯度 (自動取得)" readonly>
+        <input type="number" id="boat-lng" step="any" placeholder="経度 (自動取得)" readonly>
+    </div>
+    
+    <div class="btn-group">
+        <button class="btn-main" onclick="fetchCurrentLocation()">📍 現在地を取得</button>
+        <!-- 🔗 水深測ったろうへの送信・ジャンプボタン -->
+        <button class="btn-suishin" onclick="openSuishinApp()">🌊 水深アプリ連携</button>
+    </div>
+    <div id="status-display" class="status-text">GPS信号を待機中...</div>
+</div>
+
+<div id="map-container">
+    <div id="map"></div>
+    <button class="gps-indicator" onclick="centerToBoat()">⚓</button>
+</div>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAHhxSJK-IhYiT9XBRwE1MX7DHhghBQQQk&callback=initMap" async defer></script>
+
+<script>
+    // 連携先となる「水深測ったろう」のデプロイ先URL（必要に応じて実際のURLに書き換えてください）
+    const SUISHIN_APP_BASE_URL = "https://popolo-app.com/suishin/"; 
+
+    let map;
+    let honbuMarker = null;
+    let honbuCircle = null;
+    let currentCoords = { lat: 26.3318, lng: 127.9288 }; // 初期値
+
+    function initMap() {
+        map = new google.maps.Map(document.getElementById("map"), {
+            zoom: 17,
+            center: currentCoords,
+            mapTypeId: 'roadmap',
+            disableDefaultUI: true,
+            zoomControl: false,
+            scaleControl: true
+        });
+
+        // 本部船トラッキングの開始
+        startTracking();
+    }
+
+    // 本部船のGPSリアルタイム監視
+    function startTracking() {
+        if (!navigator.geolocation) {
+            document.getElementById('status-display').textContent = "❌ GPSがサポートされていません";
+            return;
+        }
+
+        navigator.geolocation.watchPosition((pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            currentCoords = { lat: lat, lng: lng };
+
+            // UIの入力欄に数値を同期表示
+            document.getElementById('boat-lat').value = lat.toFixed(6);
+            document.getElementById('boat-lng').value = lng.toFixed(6);
+            document.getElementById('status-display').textContent = `📡 本部船位置を更新しました (精度: ${pos.coords.accuracy.toFixed(0)}m)`;
+
+            // マップ上のオブジェクト更新
+            updateHonbuOnMap();
+        }, (err) => {
+            document.getElementById('status-display').textContent = "⚠️ 位置情報の取得に失敗しました";
+        }, {
+            enableHighAccuracy: true,
+            timeout: 10000
+        });
+    }
+
+    // 手動での強制再取得用
+    function fetchCurrentLocation() {
+        navigator.geolocation.getCurrentPosition((pos) => {
+            currentCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            document.getElementById('boat-lat').value = currentCoords.lat.toFixed(6);
+            document.getElementById('boat-lng').value = currentCoords.lng.toFixed(6);
+            updateHonbuOnMap();
+            centerToBoat();
+        }, null, { enableHighAccuracy: true });
+    }
+
+    // マップ上に本部船（矢印マークと100mサークル）を描画
+    function updateHonbuOnMap() {
+        const name = document.getElementById('boat-name').value || '本部船';
+
+        if (!honbuMarker) {
+            honbuMarker = new google.maps.Marker({
+                position: currentCoords,
+                map: map,
+                title: name,
+                label: { text: name, color: '#000000', fontWeight: 'bold', fontSize: '13px' },
+                icon: {
+                    path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+                    scale: 6,
+                    fillColor: '#e67e22',
+                    fillOpacity: 1,
+                    strokeColor: '#ffffff',
+                    strokeWeight: 2
+                },
+                zIndex: 1000
+            });
+        } else {
+            honbuMarker.setPosition(currentCoords);
+            honbuMarker.setTitle(name);
+            honbuMarker.setLabel({ text: name, color: '#000000', fontWeight: 'bold', fontSize: '13px' });
+        }
+
+        if (!honbuCircle) {
+            honbuCircle = new google.maps.Circle({
+                map: map,
+                center: currentCoords,
+                radius: 100, // 100mレンジリング
+                strokeColor: '#e67e22',
+                strokeOpacity: 0.6,
+                strokeWeight: 2,
+                fillColor: '#e67e22',
+                fillOpacity: 0.1,
+                clickable: false
+            });
+        } else {
+            honbuCircle.setCenter(currentCoords);
+        }
+    }
+
+    function centerToBoat() {
+        if (map && currentCoords) {
+            map.panTo(currentCoords);
+        }
+    }
+
+    // 🌊 「水深測ったろう」へ最新位置を乗せてジャンプする連携処理
+    function openSuishinApp() {
+        const lat = document.getElementById('boat-lat').value;
+        const lng = document.getElementById('boat-lng').value;
+        const name = encodeURIComponent(document.getElementById('boat-name').value || '本部船');
+
+        if (!lat || !lng) {
+            alert("位置情報がまだ取得できていません。");
+            return;
+        }
+
+        // URLパラメータを構築
+        const targetUrl = `${SUISHIN_APP_BASE_URL}?honbu_lat=${lat}&honbu_lng=${lng}&honbu_name=${name}`;
+        
+        // 別タブで水深測ったろうを起動
+        window.open(targetUrl, '_blank');
+    }
+</script>
+</body>
+</html>
