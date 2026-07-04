@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>虎キング Z v2.3.3 by Popolo App.com</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 0; background: #fdfefe; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+        .app-header { background: #e67e22; color: white; padding: 10px; text-align: center; font-weight: bold; font-size: 0.9rem; flex-shrink: 0; }
+        
+        .control-panel { background: white; padding: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 1000; flex-shrink: 0; }
+        .section-title { font-size: 0.85rem; font-weight: bold; color: #d35400; margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
+        
+        .grid-inputs { display: flex; gap: 6px; margin-bottom: 8px; }
+        .grid-inputs input { font-size: 1rem; padding: 10px 6px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; min-width: 0; }
+        #boat-name { width: 25%; font-weight: bold; }
+        #boat-lat { width: 37%; text-align: center; }
+        #boat-lng { width: 37%; text-align: center; }
+
+        .btn-group { display: flex; gap: 6px; margin-bottom: 6px; }
+        .btn-main { flex: 1.2; background: #e67e22; color: white; border: none; padding: 12px; border-radius: 6px; font-size: 0.95rem; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 4px; }
+        .btn-main:active { background: #d35400; }
+        
+        /* 🌊 本番用アプリ連携ボタン */
+        .btn-suishin-latest { flex: 1; background: #3498db; color: white; border: none; padding: 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 2px; }
+        .btn-suishin-latest:active { background: #2980b9; }
+
+        /* 🧪 テスト用アプリ連携ボタン */
+        .btn-suishin-test { flex: 1; background: #7f8c8d; color: white; border: none; padding: 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 2px; }
+        .btn-suishin-test:active { background: #707b7c; }
+
+        #map-container { flex-grow: 1; position: relative; }
+        #map { width: 100%; height: 100%; }
+        
+        .gps-indicator { position: absolute; bottom: 20px; right: 10px; width: 50px; height: 50px; background: white; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; justify-content: center; align-items: center; z-index: 10; cursor: pointer; font-size: 24px; border: none; }
+        .status-text { font-size: 0.75rem; color: #666; text-align: center; margin-top: 4px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="app-header">虎キング Z v2.3.3 by Popolo App.com</div>
+
+<div class="control-panel">
+    <div class="section-title">⚓ 本部船トラッキング / 位置連携</div>
+    <div class="grid-inputs">
+        <input type="text" id="boat-name" value="本部船" placeholder="船名">
+        <input type="number" id="boat-lat" step="any" placeholder="緯度 (自動取得)" readonly>
+        <input type="number" id="boat-lng" step="any" placeholder="経度 (自動取得)" readonly>
+    </div>
+    
+    <div class="btn-group">
+        <button class="btn-main" onclick="fetchCurrentLocation()">📍 現在地取得</button>
+        <!-- 2系統に分岐した連携ボタン -->
+        <button class="btn-suishin-latest" onclick="openSuishinApp('latest')">🌊 本番連携</button>
+        <button class="btn-suishin-test" onclick="openSuishinApp('test')">🧪 テスト連携</button>
+    </div>
+    <div id="status-display" class="status-text">GPS信号を待機中...</div>
+</div>
+
+<div id="map-container">
+    <div id="map"></div>
+    <button class="gps-indicator" onclick="centerToBoat()">⚓</button>
+</div>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAHhxSJK-IhYiT9XBRwE1MX7DHhghBQQQk&callback=initMap" async defer></script>
+
+<script>
+    // 🔗 水深測ったろう 固定URL定義
+    const URL_MASTER = {
+        latest: "https://popolopoint.github.io/windmap/suisin_latest.html",
+        test: "https://popolopoint.github.io/windmap/suisin_test.html"
+    };
+
+    let map;
+    let honbuMarker = null;
+    let honbuCircle = null;
+    let currentCoords = { lat: 26.3318, lng: 127.9288 }; 
+
+    function initMap() {
+        map = new google.maps.Map(document.getElementById("map"), {
+            zoom: 17,
+            center: currentCoords,
+            mapTypeId: 'roadmap',
+            disableDefaultUI: true,
+            zoomControl: false,
+            scaleControl: true
+        });
+
+        startTracking();
+    }
+
+    function startTracking() {
+        if (!navigator.geolocation) {
+            document.getElementById('status-display').textContent = "❌ GPSがサポートされていません";
+            return;
+        }
+
+        navigator.geolocation.watchPosition((pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            currentCoords = { lat: lat, lng: lng };
+
+            document.getElementById('boat-lat').value = lat.toFixed(6);
+            document.getElementById('boat-lng').value = lng.toFixed(6);
+            document.getElementById('status-display').textContent = `📡 本部船位置を更新しました (精度: ${pos.coords.accuracy.toFixed(0)}m)`;
+
+            updateHonbuOnMap();
+        }, (err) => {
+            document.getElementById('status-display').textContent = "⚠️ 位置情報の取得に失敗しました";
+        }, {
+            enableHighAccuracy: true,
+            timeout: 10000
+        });
+    }
+
+    function fetchCurrentLocation() {
+        navigator.geolocation.getCurrentPosition((pos) => {
+            currentCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            document.getElementById('boat-lat').value = currentCoords.lat.toFixed(6);
+            document.getElementById('boat-lng').value = currentCoords.lng.toFixed(6);
+            updateHonbuOnMap();
+            centerToBoat();
+        }, null, { enableHighAccuracy: true });
+    }
+
+    function updateHonbuOnMap() {
+        const name = document.getElementById('boat-name').value || '本部船';
+
+        if (!honbuMarker) {
+            honbuMarker = new google.maps.Marker({
+                position: currentCoords,
+                map: map,
+                title: name,
+                label: { text: name, color: '#000000', fontWeight: 'bold', fontSize: '13px' },
+                icon: {
+                    path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+                    scale: 6,
+                    fillColor: '#e67e22',
+                    fillOpacity: 1,
+                    strokeColor: '#ffffff',
+                    strokeWeight: 2
+                },
+                zIndex: 1000
+            });
+        } else {
+            honbuMarker.setPosition(currentCoords);
+            honbuMarker.setTitle(name);
+            honbuMarker.setLabel({ text: name, color: '#000000', fontWeight: 'bold', fontSize: '13px' });
+        }
+
+        if (!honbuCircle) {
+            honbuCircle = new google.maps.Circle({
+                map: map,
+                center: currentCoords,
+                radius: 100, 
+                strokeColor: '#e67e22',
+                strokeOpacity: 0.6,
+                strokeWeight: 2,
+                fillColor: '#e67e22',
+                fillOpacity: 0.1,
+                clickable: false
+            });
+        } else {
+            honbuCircle.setCenter(currentCoords);
+        }
+    }
+
+    function centerToBoat() {
+        if (map && currentCoords) {
+            map.panTo(currentCoords);
+        }
+    }
+
+    // 振り分け対応型 連携ジャンプ処理
+    function openSuishinApp(type) {
+        const lat = document.getElementById('boat-lat').value;
+        const lng = document.getElementById('boat-lng').value;
+        const name = encodeURIComponent(document.getElementById('boat-name').value || '本部船');
+
+        if (!lat || !lng) {
+            alert("位置情報がまだ取得できていません。");
+            return;
+        }
+
+        // タイプ(latest / test)に応じたベースURLをセレクト
+        const baseUrl = URL_MASTER[type];
+        const targetUrl = `${baseUrl}?honbu_lat=${lat}&honbu_lng=${lng}&honbu_name=${name}`;
+        
+        window.open(targetUrl, '_blank');
+    }
+</script>
+</body>
+</html>
