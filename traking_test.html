@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v2.3.9 by Popolo App.com</title>
+    <title>虎キング v2.4.0 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -104,7 +104,7 @@
 </div>
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v2.3.9 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
+    <span style="font-size:14px;">虎キング v2.4.0 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -308,13 +308,13 @@
             const isShip = obj.type === 'ship';
             const markerColor = obj.color || MARK_COLORS[key] || '#ff9900';
             
-            // SVGを使わず、CSSボックスと文字で確実・はっきりと大きく描画するスタイル
+            // 本部船は船型、ブイは「長方形」のSVGパスに指定
             let iconHtml = isShip 
-                ? `<div style="background: #1e90ff; width: 26px; height: 32px; border: 2px solid white; border-radius: 6px; box-shadow: 0 3px 6px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; font-weight: bold;">船</div>`
-                : `<div style="background: ${markerColor}; width: 24px; height: 24px; border: 2px solid white; border-radius: 4px; box-shadow: 0 3px 6px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; font-size: 9px; color: white; font-weight: bold;">${key.length > 5 ? '点' : key}</div>`;
+                ? `<div style="position:relative; width:34px; height:34px; display:flex; align-items:center; justify-content:center;"><svg viewBox="0 0 100 100" width="34" height="34" style="position:absolute; top:0; left:0;"><path d="M 0,-15 L 6,-5 L 5,10 L -5,10 L -6,-5 Z" transform="translate(50, 50) scale(1.6)" fill="#1e90ff" stroke="#ffffff" stroke-width="2" /></svg><span style="position:relative; z-index:2; font-size:9px; color:white; font-weight:bold; margin-top:2px;">船</span></div>`
+                : `<div style="position:relative; width:36px; height:28px; display:flex; align-items:center; justify-content:center;"><svg viewBox="0 0 100 100" width="36" height="28" style="position:absolute; top:0; left:0;"><path d="M -12,-6 L 12,-6 L 12,6 L -12,6 Z" transform="translate(50, 50) scale(1.5)" fill="${markerColor}" stroke="#ffffff" stroke-width="2" /></svg><span style="position:relative; z-index:2; font-size:10px; color:white; font-weight:bold; text-shadow: 1px 1px 1px #000;">${key.length > 5 ? '点' : key}</span></div>`;
             
             const marker = L.marker([obj.lat, obj.lng], { 
-                icon: L.divIcon({ html: iconHtml, className: '', iconSize: [28, 32], iconAnchor: [14, 16] }) 
+                icon: L.divIcon({ html: iconHtml, className: '', iconSize: [36, 28], iconAnchor: [18, 14] }) 
             }).addTo(map);
 
             const displayTitle = isShip ? '本部船' : (key.length > 5 ? 'マーク' : key);
