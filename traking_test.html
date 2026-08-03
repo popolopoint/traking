@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v2.8.0 by Popolo App.com</title>
+    <title>虎キング v2.8.1 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -101,9 +101,9 @@
 <div id="recording-banner">🔴 【録画中・記録中】レース航跡を蓄積しています</div>
 <button id="floating-stop-btn" onclick="stopRaceRecording()">⏹️ 記録ストップ＆保存</button>
 
-<!-- リプレイ中の操作コントロールバー（半透明＆＊＊部分のみ表示） -->
+<!-- リプレイ中の操作コントロールバー（＊＊部分のみ表示） -->
 <div id="replay-control-bar">
-    <span id="replay-title-label" style="font-size:11px; font-weight:bold; color:#ff9900;">ヒート名</span>
+    <span id="replay-title-label" style="font-size:11px; font-weight:bold; color:#ff9900;">名称</span>
     <button class="replay-ctrl-btn" id="btn-pause" onclick="toggleReplayPause()">一時停止</button>
     <button class="replay-ctrl-btn" onclick="setReplaySpeed(1)">1x</button>
     <button class="replay-ctrl-btn active" onclick="setReplaySpeed(5)">5x</button>
@@ -154,7 +154,7 @@
 </div>
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v2.8.0 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
+    <span style="font-size:14px;">虎キング v2.8.1 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -247,7 +247,7 @@
     let replayPaused = false;
     let replaySpeed = 5;
     let replayTimer = null;
-    let replayMinimizeTimer = null; // 10秒タイマー管理用変数
+    let replayMinimizeTimer = null;
 
     const MARK_COLORS = { A:'#ff3b30', B:'#0000ff', C:'#ffff00', D:'#28a745', E:'#6a1b9a', F:'#ff2d55', G:'#000080', S:'#0000ff', K:'#5ac8fa' };
 
@@ -405,11 +405,10 @@
                 db.ref('objects').set(data.objects);
             }
 
-            const heatTitle = data.title || 'ヒート';
+            const heatTitle = data.title || '再生中';
             document.getElementById('replay-title-label').innerText = heatTitle;
             document.getElementById('minimized-title').innerText = heatTitle;
             
-            // 操作バーを表示して、10秒後の自動格納タイマーをセット
             document.getElementById('replay-control-bar').style.display = 'flex';
             document.getElementById('replay-minimized-btn').style.display = 'none';
             resetMinimizeTimer();
@@ -426,7 +425,6 @@
         });
     };
 
-    // 10秒後に自動で小さくたたむタイマー
     function resetMinimizeTimer() {
         if (replayMinimizeTimer) clearTimeout(replayMinimizeTimer);
         replayMinimizeTimer = setTimeout(() => {
@@ -434,14 +432,13 @@
                 document.getElementById('replay-control-bar').style.display = 'none';
                 document.getElementById('replay-minimized-btn').style.display = 'block';
             }
-        }, 10000); // 10秒
+        }, 10000);
     }
 
-    // 小さくなったボタンをタップして再展開
     window.expandReplayBar = () => {
         document.getElementById('replay-control-bar').style.display = 'flex';
         document.getElementById('replay-minimized-btn').style.display = 'none';
-        resetMinimizeTimer(); // 再展開したら再び10秒後にたたむタイマーをリセット
+        resetMinimizeTimer();
     };
 
     window.toggleReplayPause = () => {
