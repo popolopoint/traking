@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v2.3.7 by Popolo App.com</title>
+    <title>虎キング v2.3.8 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -23,7 +23,6 @@
         .user-label { background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #ff9900; font-size: 10px; font-weight: bold; padding: 2px 4px; border-radius: 3px; white-space: nowrap; }
         .status-panel { position: fixed; bottom: 10px; left: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 11px; max-width: 80%; border: 1px solid #ff9900; }
         
-        /* メニューボタン・アクションボタンの半透明ガラススタイル */
         .action-btn { 
             position: fixed; right: 10px; z-index: 3000; 
             background: rgba(44, 62, 80, 0.45); color: white; 
@@ -105,7 +104,7 @@
 </div>
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v2.3.7 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
+    <span style="font-size:14px;">虎キング v2.3.8 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -292,8 +291,8 @@
         }
     }
 
-
-db.ref('objects').on('value', snap => {
+    // 船とブイを綺麗に表示するFirebaseオブジェクト同期処理
+    db.ref('objects').on('value', snap => {
         const listContainer = document.getElementById('pointListContainer');
         listContainer.innerHTML = '<p id="noPointMsg" style="color: #666; font-size: 13px; margin: 0;">座標データが読み込まれていません</p>';
         
@@ -307,7 +306,7 @@ db.ref('objects').on('value', snap => {
             const isShip = obj.type === 'ship';
             const markerColor = obj.color || MARK_COLORS[key] || '#ff9900';
             
-            // Leafletでも確実にSVGとして描画されるようにスタイルを調整
+            // 水深測っ太郎と同じSVG形状（船：青い船型 / ブイ：四角形）を確実に描画
             let iconHtml = isShip 
                 ? `<div style="width:32px; height:32px; display:flex; align-items:center; justify-content:center;"><svg viewBox="0 0 100 100" width="30" height="30"><path d="M 0,-15 L 6,-5 L 5,10 L -5,10 L -6,-5 Z" transform="translate(50, 50) scale(1.6)" fill="#1e90ff" stroke="#ffffff" stroke-width="2.5" /></svg></div>`
                 : `<div style="width:28px; height:28px; display:flex; align-items:center; justify-content:center;"><svg viewBox="0 0 100 100" width="26" height="26"><path d="M -6,-8 L 6,-8 L 6,8 L -6,8 Z" transform="translate(50, 50) scale(1.8)" fill="${markerColor}" stroke="#ffffff" stroke-width="2.5" /></svg></div>`;
@@ -324,9 +323,6 @@ db.ref('objects').on('value', snap => {
         }
     });
 
-
-
-    
     map.on('click', e => {
         const { lat, lng } = e.latlng;
         
