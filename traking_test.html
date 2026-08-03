@@ -3,19 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v2.9.4 by Popolo App.com</title>
+    <title>虎キング v2.9.7 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
-        #header { background: #1a1a1a; color: #ff9900; padding: 10px; text-align: center; font-weight: bold; position: fixed; width: 100%; height: 40px; z-index: 3000; border-bottom: 2px solid #ff9900; display: flex; justify-content: center; align-items: center; gap: 10px; box-sizing: border-box; }
+        #header { background: #1a1a1a; color: #ff9900; padding: 6px 10px; text-align: center; font-weight: bold; position: fixed; width: 100%; height: 55px; z-index: 3000; border-bottom: 2px solid #ff9900; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; }
         
-        #recording-banner { position: fixed; top: 40px; left: 0; width: 100%; background: #c0392b; color: white; text-align: center; font-size: 12px; font-weight: bold; padding: 4px 0; z-index: 2900; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.5); letter-spacing: 1px; animation: flashBanner 1.5s infinite; }
+        #recording-banner { position: fixed; top: 55px; left: 0; width: 100%; background: #c0392b; color: white; text-align: center; font-size: 12px; font-weight: bold; padding: 4px 0; z-index: 2900; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.5); letter-spacing: 1px; animation: flashBanner 1.5s infinite; }
         @keyframes flashBanner { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
         #start-flash-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(231, 76, 60, 0.85); z-index: 8000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; pointer-events: none; animation: flashAlert 0.8s infinite alternate; }
         @keyframes flashAlert { from { opacity: 0.6; } to { opacity: 1; } }
 
-        #floating-stop-btn { position: fixed; top: 75px; right: 10px; z-index: 3500; background: #e74c3c; color: white; border: 2px solid #fff; padding: 10px 16px; border-radius: 25px; font-size: 14px; font-weight: bold; cursor: pointer; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.4); animation: flashBanner 1.5s infinite; }
+        /* レース画面を隠しすぎないコンパクトなスタート合図ポップアップ */
+        #replay-start-alert { position: fixed; top: 62px; left: 50%; transform: translateX(-50%); background: rgba(231, 76, 60, 0.95); color: white; padding: 6px 16px; border-radius: 15px; font-size: 14px; font-weight: bold; z-index: 9000; display: none; box-shadow: 0 2px 10px rgba(0,0,0,0.5); border: 2px solid white; text-align: center; pointer-events: none; animation: pulseAlert 0.5s infinite alternate; }
+        @keyframes pulseAlert { from { transform: translateX(-50%) scale(1); } to { transform: translateX(-50%) scale(1.05); } }
+
+        #floating-stop-btn { position: fixed; top: 90px; right: 10px; z-index: 3500; background: #e74c3c; color: white; border: 2px solid #fff; padding: 10px 16px; border-radius: 25px; font-size: 14px; font-weight: bold; cursor: pointer; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.4); animation: flashBanner 1.5s infinite; }
 
         #map { height: 100vh; width: 100vw; z-index: 1; background: #222; }
         #unit-toggle { background: #333; color: #ff9900; border: 1px solid #ff9900; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; }
@@ -25,7 +29,7 @@
         .color-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
         .color-btn { width: 100%; aspect-ratio: 1/1; border-radius: 50%; border: 2px solid #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; text-shadow: 1px 1px 2px #000; color: #fff; }
         
-        #user-list { position: fixed; top: 120px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 8px; border-radius: 8px; width: 100px; max-height: 200px; overflow-y: auto; border: 1px solid #ff9900; font-size: 10px; }
+        #user-list { position: fixed; top: 135px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 8px; border-radius: 8px; width: 100px; max-height: 200px; overflow-y: auto; border: 1px solid #ff9900; font-size: 10px; }
         .list-title { color: #ff9900; font-weight: bold; border-bottom: 1px solid #ff9900; margin-bottom: 5px; }
         .user-item { border-bottom: 1px solid #444; padding: 4px 0; }
         .user-item.me { color: #00ff00; font-weight: bold; }
@@ -103,6 +107,7 @@
 <body>
 
 <div id="toast-notice"></div>
+<div id="replay-start-alert">🚨 スタート！</div>
 
 <div id="start-flash-overlay">
     <div style="font-size: 40px; font-weight: bold; text-shadow: 2px 2px 10px rgba(0,0,0,0.5);">🚨 競技スタート！ 🚨</div>
@@ -152,8 +157,10 @@
             <button onclick="closeManualModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">✖</button>
         </div>
         <div class="modal-body-scroll">
-            <h4>🛰️ GPS二重起動防止機能</h4>
-            <p>・同一デバイス内でGPSウォッチの多重起動やゴーストアイコンが発生しないよう、起動時にセッションをクリーンアップする機能を搭載しています。</p>
+            <h4>⏱️ リプレイ中の高精度カウントダウン・経過時間</h4>
+            <p>・録画開始時点からスタートまで（10分前なども含む）、1/100秒単位で「スタートまであと〇分〇秒」とカウントダウンします。</p>
+            <p>・スタート10秒前からは1秒ずつの特別カウントダウンになり、スタート後は「スタートから〇分〇秒経過」とカウントアップします。</p>
+            <p>・その下に現在の日本時間（1/100秒）も常時表示されます。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:12px; background:#3498db; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -168,9 +175,12 @@
     </div>
 </div>
 
-<div id="header" style="flex-direction: column; height: 50px; padding: 4px 0;">
-    <div style="font-size:13px; font-weight:bold;">虎キング v2.9.4 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></div>
-    <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-family:monospace; display:none;"></div>
+<div id="header">
+    <div style="font-size:12px; font-weight:bold;">虎キング v2.9.7 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></div>
+    <!-- 画面上部：1/100秒単位のカウントダウン/経過時間 ＆ 日本時間 -->
+    <div id="header-replay-status" style="font-size:10px; color:#ffcc00; font-family:monospace; display:none;"></div>
+    <div id="header-replay-time" style="font-size:9px; color:#00ffcc; font-family:monospace; display:none;"></div>
+    
     <div style="position: absolute; right: 10px; top: 10px; display: flex; gap: 6px;">
         <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;">設定</button>
         <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
@@ -179,7 +189,7 @@
 
 <div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
 
-<div id="pointSettingsPanel" style="position: fixed; top: 120px; left: 10px; z-index: 5000; width: 280px; max-height: 50vh; overflow-y: auto; background: rgba(255, 255, 255, 0.95); padding: 10px; border-radius: 12px; border: 2px solid #007AFF; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: #333; display:none;">
+<div id="pointSettingsPanel" style="position: fixed; top: 135px; left: 10px; z-index: 5000; width: 280px; max-height: 50vh; overflow-y: auto; background: rgba(255, 255, 255, 0.95); padding: 10px; border-radius: 12px; border: 2px solid #007AFF; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: #333; display:none;">
     <h3 onclick="toggleSettingsPanel()" style="margin: 0 0 10px 0; padding-bottom: 5px; font-size: 16px; color: #007AFF; border-bottom: 1px solid #ddd; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
         <span>🚩 コース地点設定</span>
         <span style="font-size: 10px; color: #999;">[ 閉じる ]</span>
@@ -270,6 +280,8 @@
     let replayLogsAll = [];
     let replayCurrentIndex = 0;
     let isSeeking = false;
+    let replayStartTimeMs = null;
+    let hasAlertedStart = false;
 
     const MARK_COLORS = { A:'#ff3b30', B:'#0000ff', C:'#ffff00', D:'#28a745', E:'#6a1b9a', F:'#ff2d55', G:'#000080', S:'#0000ff', K:'#5ac8fa' };
 
@@ -447,7 +459,18 @@
             document.getElementById('replay-title-label').innerText = heatTitle + startStr;
             document.getElementById('minimized-title').innerText = heatTitle;
             
+            document.getElementById('header-replay-status').style.display = 'block';
             document.getElementById('header-replay-time').style.display = 'block';
+
+            if (data.startTime && data.startTime.includes(':')) {
+                const parts = data.startTime.split(':');
+                const d = new Date();
+                d.setHours(parseInt(parts[0]), parseInt(parts[1]), 0, 0);
+                replayStartTimeMs = d.getTime();
+            } else {
+                replayStartTimeMs = null;
+            }
+            hasAlertedStart = false;
 
             document.getElementById('replay-control-bar').style.display = 'flex';
             document.getElementById('replay-minimized-btn').style.display = 'none';
@@ -486,6 +509,10 @@
 
         if (replayLogsAll.length === 0) return;
 
+        if (!replayStartTimeMs && replayLogsAll.length > 0) {
+            replayStartTimeMs = replayLogsAll[0].ts;
+        }
+
         replayCurrentIndex = 0;
         document.getElementById('replay-seekbar').max = replayLogsAll.length - 1;
         document.getElementById('replay-seekbar').value = 0;
@@ -510,6 +537,16 @@
         return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms100).padStart(2,'0')}`;
     }
 
+    // 1/100秒対応の詳細なカウントダウン／アップフォーマット (〇分〇秒.〇〇)
+    function formatPreciseCountdown(diffMs) {
+        const absMs = Math.abs(diffMs);
+        const totalSec = Math.floor(absMs / 1000);
+        const m = Math.floor(totalSec / 60);
+        const s = totalSec % 60;
+        const ms100 = Math.floor((absMs % 1000) / 10);
+        return `${m > 0 ? m + '分' : ''}${s}秒.${String(ms100).padStart(2,'0')}`;
+    }
+
     function playHistoryStep() {
         if (!isReplaying) return;
         if (replayPaused) {
@@ -530,6 +567,37 @@
             
             const timeStr = `${formatElapsedTime(curTime)} / ${formatElapsedTime(totalTime)}`;
             document.getElementById('replay-time-label').innerText = timeStr;
+
+            // --- 1/100秒単位の高精度カウントダウン・経過時間判定ロジック ---
+            if (replayStartTimeMs) {
+                const diffMs = replayStartTimeMs - u.ts; // 正ならスタート前、負ならスタート後
+                const diffSec = diffMs / 1000;
+
+                let statusText = "";
+                if (diffSec > 10) {
+                    // スタートの10秒以上前：高精度な「あと〇分〇秒.〇〇」
+                    statusText = `⏳ スタートまであと ${formatPreciseCountdown(diffMs)}`;
+                } else if (diffSec > 0 && diffSec <= 10) {
+                    // スタート10秒前〜1秒前：1秒ずつの分かりやすい整数カウントダウン
+                    const countNum = Math.ceil(diffSec);
+                    statusText = `⏳ スタートまであと ${countNum} 秒`;
+                } else if (diffSec <= 0 && diffSec > -1.5) {
+                    // スタートの瞬間
+                    statusText = `🚨 スタート！`;
+                    if (!hasAlertedStart) {
+                        hasAlertedStart = true;
+                        triggerStartAlertOverlay();
+                    }
+                } else {
+                    // スタート後：高精度な「スタートから〇分〇秒.〇〇経過」
+                    const elapsedAfterStartMs = u.ts - replayStartTimeMs;
+                    statusText = `⏱️ スタートから ${formatPreciseCountdown(elapsedAfterStartMs)} 経過`;
+                    if (diffSec < -1.5) hasAlertedStart = false;
+                }
+
+                document.getElementById('header-replay-status').innerText = statusText;
+            }
+
             document.getElementById('header-replay-time').innerText = `🕒 日本時間: ${formatJapanDateTime(u.ts)}`;
 
             replayCurrentIndex++;
@@ -537,6 +605,14 @@
         } else {
             showToast("🏁 リプレイが終了しました");
         }
+    }
+
+    function triggerStartAlertOverlay() {
+        const alertBox = document.getElementById('replay-start-alert');
+        alertBox.style.display = 'block';
+        setTimeout(() => {
+            alertBox.style.display = 'none';
+        }, 1200);
     }
 
     window.onSeekbarInput = (val) => {
@@ -597,6 +673,7 @@
         if(replayMinimizeTimer) clearTimeout(replayMinimizeTimer);
         document.getElementById('replay-control-bar').style.display = 'none';
         document.getElementById('replay-minimized-btn').style.display = 'none';
+        document.getElementById('header-replay-status').style.display = 'none';
         document.getElementById('header-replay-time').style.display = 'none';
         showToast("⏹️ リプレイを終了しました");
         location.reload();
@@ -920,7 +997,7 @@
             document.getElementById('status').innerText = "Error: GPS非対応環境";
             return;
         }
-        stopTracking(); // 既存のGPS監視を完全にクリアして二重起動を防ぐ
+        stopTracking();
         document.getElementById('status').style.background = "rgba(0,0,0,0.8)";
         document.getElementById('status').innerText = "GPS接続を開始中...";
 
@@ -1026,7 +1103,6 @@
     initSetupUI();
     if (!myName && !isViewerMode) openSetup(); else startTracking();
 
-    // データベースからのユーザー監視（自分自身の古いIDのマーカーもここで一掃する処理を追加）
     db.ref('users').on('value', snap => {
         if (isReplaying) return;
 
@@ -1042,7 +1118,6 @@
                 continue;
             }
 
-            // 【超重要】もし同じ名前で自分のIDとは違う古いセッションがデータベースに残っていたら、マップ上から即座に消去
             if (u.name === myName && id !== myId && !isViewerMode) {
                 if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
                 continue;
