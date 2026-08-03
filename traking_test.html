@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v2.7.6 by Popolo App.com</title>
+    <title>虎キング v2.7.7 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -124,10 +124,8 @@
             <button onclick="closeManualModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">✖</button>
         </div>
         <div class="modal-body-scroll">
-            <h4>🔴 記録スタート ( ボタン )</h4>
-            <p>・レース開始時に押すと記録が始まり、画面上部に赤いバナーと、右上に「⏹️ 記録ストップ＆保存」ボタンが常時現れます。</p>
-            <h4>⏹️ 記録ストップ</h4>
-            <p>・記録中に画面右上の赤いボタンを押すと、ヒート名を入力してサーバーに保存できます。</p>
+            <h4>▶️ リプレイ再生 ( ボタン )</h4>
+            <p>・過去に保存したヒートを選んで、航跡アニメーションを再生できます。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:12px; background:#3498db; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -143,7 +141,7 @@
 </div>
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v2.7.6 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
+    <span style="font-size:14px;">虎キング v2.7.7 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -277,7 +275,7 @@
         }
     };
 
-    // ⏹️ 記録ストップ＆保存（修正版：ボタンを押したら即座に停止処理＆プロンプトを起動）
+    // ⏹️ 記録ストップ＆保存
     window.stopRaceRecording = () => {
         if (!isRecordingActive) {
             alert("現在、記録はスタートしていません");
@@ -286,7 +284,6 @@
             return;
         }
 
-        // 即座に記録フラグをオフにし、バナーとボタンを隠す（これで止まらない現象を完全に防止）
         isRecordingActive = false;
         document.getElementById('recording-banner').style.display = 'none';
         document.getElementById('floating-stop-btn').style.display = 'none';
@@ -297,7 +294,6 @@
             return;
         }
 
-        // サーバーから一時履歴を取得して保存
         db.ref('temp_history').once('value', tempSnap => {
             const historyData = tempSnap.val() || {};
 
@@ -312,7 +308,7 @@
                 }, err => {
                     if (!err) {
                         showToast(`💾 「${heatName}」のレース記録を保存しました！`);
-                        db.ref('temp_history').remove(); // 一時保存をクリア
+                        db.ref('temp_history').remove();
                     } else {
                         alert("サーバーへの保存に失敗しました");
                     }
@@ -321,28 +317,44 @@
         });
     };
 
+    // ▶️ リプレイメニュー表示（修正版：フリーズ防止と確実にリストを描画する処理）
     window.openReplayMenu = () => {
         toggleMenu();
         const listDiv = document.getElementById('saved-courses-list');
         listDiv.innerHTML = "読み込み中...";
         document.getElementById('saved-courses-modal').style.display = 'flex';
 
+        // 3秒以内にロードできない場合のタイムアウト保険
+        let isLoaded = false;
+        const loadTimeout = setTimeout(() => {
+            if (!isLoaded) {
+                listDiv.innerHTML = "<p style='color:#e74c3c;'>読み込みに時間がかかっています。<br>電波状況を確認してください。</p>";
+            }
+        }, 4000);
+
         db.ref('saved_courses').once('value', snap => {
+            isLoaded = true;
+            clearTimeout(loadTimeout);
+
             const saved = snap.val();
             if (!saved) {
-                listDiv.innerHTML = "<p>保存されたヒート記録はありません</p>";
+                listDiv.innerHTML = "<p style='color:#666; padding:20px;'>保存されたヒート記録はありません</p>";
                 return;
             }
             let html = "";
             for (let id in saved) {
                 const c = saved[id];
-                const dateStr = new Date(c.createdAt).toLocaleString();
-                html += `<div style="background:#f1f2f6; padding:8px; border-radius:6px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
-                    <div style="text-align:left;"><b>🏁 ${c.title}</b><br><span style="font-size:10px; color:#666;">${dateStr}</span></div>
-                    <button onclick="startReplay('${id}')" style="background:#8e44ad; color:white; border:none; padding:6px 10px; border-radius:4px; font-weight:bold; cursor:pointer;">再生</button>
+                const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleString() : '日時不明';
+                html += `<div style="background:#f1f2f6; padding:10px; border-radius:6px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                    <div style="text-align:left;"><b>🏁 ${c.title || '無題のヒート'}</b><br><span style="font-size:10px; color:#666;">${dateStr}</span></div>
+                    <button onclick="startReplay('${id}')" style="background:#8e44ad; color:white; border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">再生</button>
                 </div>`;
             }
             listDiv.innerHTML = html;
+        }, (error) => {
+            isLoaded = true;
+            clearTimeout(loadTimeout);
+            listDiv.innerHTML = `<p style='color:#e74c3c;'>データの取得に失敗しました。<br>${error.message}</p>`;
         });
     };
 
