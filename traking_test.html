@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.0.3 by Popolo App.com</title>
+    <title>虎キング v3.0.4 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -159,9 +159,8 @@
             <button onclick="closeManualModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">✖</button>
         </div>
         <div class="modal-body-scroll">
-            <h4>⏱️ 再生速度・スタート時刻の修正 (v3.0.3)</h4>
-            <p>・1x（等倍速）が異常に早くなってしまう不具合を修正しました。</p>
-            <p>・日付が変わっても、記録データの正しい日付を基準にスタート時刻を計算するように修正しました。</p>
+            <h4>⚡ 倍速再生の修正 (v3.0.4)</h4>
+            <p>・5x、10x、20xの各倍速が正確かつ自然なスピードになるよう、時間差分ベースの倍速制御に改善しました。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:12px; background:#3498db; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -177,7 +176,7 @@
 </div>
 
 <div id="header">
-    <div style="font-size:12px; font-weight:bold;">虎キング v3.0.3 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></div>
+    <div style="font-size:12px; font-weight:bold;">虎キング v3.0.4 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></div>
     <!-- 画面上部：時刻形式でのカウントダウン／経過時間 ＆ 日本時間 -->
     <div id="header-replay-status" style="font-size:10px; color:#ffcc00; font-family:monospace; display:none;"></div>
     <div id="header-replay-time" style="font-size:9px; color:#00ffcc; font-family:monospace; display:none;"></div>
@@ -529,7 +528,6 @@
             document.getElementById('header-replay-status').style.display = 'block';
             document.getElementById('header-replay-time').style.display = 'block';
 
-            // 履歴データから正しい日付の基準（最初に記録されたログの日付）を取得する
             let baseDate = new Date();
             if (data.history) {
                 let firstTs = null;
@@ -650,7 +648,7 @@
             document.getElementById('replay-time-label').innerText = timeStr;
 
             if (replayStartTimeMs) {
-                const diffMs = replayStartTimeMs - u.ts; // 正ならスタート前、負ならスタート後
+                const diffMs = replayStartTimeMs - u.ts;
                 const diffSec = diffMs / 1000;
 
                 let statusText = "";
@@ -682,7 +680,7 @@
 
             document.getElementById('header-replay-time').innerText = `🕒 日本時間: ${formatJapanDateTime(u.ts)}`;
 
-            // --- 再生速度の正確な制御（1xのときは等倍速、倍速のときはなめらかにスキップ） ---
+            // --- 倍速ごとの正確なスピード制御に修正 ---
             let nextDelay = 30;
             if (replaySpeed === 1) {
                 if (replayCurrentIndex < replayLogsAll.length - 1) {
@@ -692,10 +690,13 @@
                 }
                 replayCurrentIndex += 1;
             } else {
-                let skipStep = 2;
-                if (replaySpeed === 10) skipStep = 4;
-                else if (replaySpeed === 20) skipStep = 8;
-                replayCurrentIndex += skipStep;
+                // 倍速（5x, 10x, 20x）のときは、時間差分を「replaySpeed」で割ることで正確な倍速を実現
+                if (replayCurrentIndex < replayLogsAll.length - 1) {
+                    const nextU = replayLogsAll[replayCurrentIndex + 1];
+                    const realDiff = nextU.ts - u.ts;
+                    nextDelay = Math.max(15, Math.floor(realDiff / replaySpeed));
+                }
+                replayCurrentIndex += 1;
             }
 
             replayTimer = setTimeout(playHistoryStep, nextDelay);
@@ -1150,7 +1151,7 @@
     };
 
     window.triggerGPSRetry = () => {
-        showToast("🔄 GPSを強制リセット・再接続します");
+        showToast("🔄 GPS를強制リセット・再接続します");
         document.getElementById('status').style.background = "#ff9900";
         document.getElementById('status').innerText = "GPSシグナルを強制再起動中...";
         navigator.geolocation.getCurrentPosition(
