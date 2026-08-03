@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v2.9.0 by Popolo App.com</title>
+    <title>虎キング v2.9.1 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -12,7 +12,6 @@
         #recording-banner { position: fixed; top: 40px; left: 0; width: 100%; background: #c0392b; color: white; text-align: center; font-size: 12px; font-weight: bold; padding: 4px 0; z-index: 2900; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.5); letter-spacing: 1px; animation: flashBanner 1.5s infinite; }
         @keyframes flashBanner { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
-        /* スタート時の派手な合図オーバーレイ */
         #start-flash-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(231, 76, 60, 0.85); z-index: 8000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; pointer-events: none; animation: flashAlert 0.8s infinite alternate; }
         @keyframes flashAlert { from { opacity: 0.6; } to { opacity: 1; } }
 
@@ -33,7 +32,7 @@
         .user-label { background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #ff9900; font-size: 10px; font-weight: bold; padding: 2px 4px; border-radius: 3px; white-space: nowrap; }
         .status-panel { position: fixed; bottom: 10px; left: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 11px; max-width: 80%; border: 1px solid #ff9900; }
         
-        /* リプレイ操作用コントロールバー（シークバー追加・半透明ガラススタイル） */
+        /* リプレイ操作用コントロールバー（半透明ガラススタイル） */
         #replay-control-bar { 
             position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%); z-index: 3500; 
             background: rgba(30, 39, 46, 0.75); border: 1.5px solid rgba(255, 255, 255, 0.3); 
@@ -45,13 +44,11 @@
         .replay-top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
         .replay-bottom-row { display: flex; align-items: center; gap: 6px; width: 100%; justify-content: center; }
         
-        /* シークバー（横棒）スタイル */
         #replay-seekbar { width: 100%; accent-color: #ff9900; cursor: pointer; height: 5px; }
 
         .replay-ctrl-btn { background: rgba(50, 50, 50, 0.6); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 4px 7px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 10px; }
         .replay-ctrl-btn.active { background: #ff9900; color: #000; border-color: #ff9900; }
 
-        /* 小さくたたまれた状態の半透明ガラスボタン */
         #replay-minimized-btn {
             position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%); z-index: 3500;
             background: rgba(30, 39, 46, 0.75); color: white; border: 1.5px solid rgba(255, 255, 255, 0.3);
@@ -108,7 +105,6 @@
 
 <div id="toast-notice"></div>
 
-<!-- スタート時の視覚的合図（フラッシュオーバーレイ） -->
 <div id="start-flash-overlay">
     <div style="font-size: 40px; font-weight: bold; text-shadow: 2px 2px 10px rgba(0,0,0,0.5);">🚨 競技スタート！ 🚨</div>
     <div style="font-size: 18px; margin-top: 10px; font-weight: bold;">レースの記録を開始しました</div>
@@ -117,13 +113,11 @@
 <div id="recording-banner">🔴 【録画中・記録中】レース航跡を蓄積しています</div>
 <button id="floating-stop-btn" onclick="stopRaceRecording()">⏹️ 記録ストップ＆保存</button>
 
-<!-- リプレイ中の操作コントロールバー（シークバー・名称つき） -->
 <div id="replay-control-bar">
     <div class="replay-top-row">
         <span id="replay-title-label" style="font-size:12px; font-weight:bold; color:#ff9900;">名称</span>
         <span id="replay-time-label" style="font-size:10px; color:#ccc;">00:00 / 00:00</span>
     </div>
-    <!-- 動画プレーヤー風シークバー -->
     <input type="range" id="replay-seekbar" min="0" max="100" value="0" oninput="onSeekbarInput(this.value)">
     <div class="replay-bottom-row">
         <button class="replay-ctrl-btn" id="btn-pause" onclick="toggleReplayPause()">一時停止</button>
@@ -159,11 +153,8 @@
             <button onclick="closeManualModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">✖</button>
         </div>
         <div class="modal-body-scroll">
-            <h4>🔴 記録スタート & スタート時刻</h4>
-            <p>・パスワード認証後、画面が赤くフラッシュしてスタートの合図をお知らせします。</p>
-            <p>・ストップ＆保存時に、スタート時刻を入力できます。</p>
-            <h4>▶️ リプレイのシークバー</h4>
-            <p>・再生中の横棒を動かすことで、見たいシーンへ自由に早送り・巻き戻しができます。</p>
+            <h4>📈 トラッキング尾っぽ軌跡</h4>
+            <p>・船が通過後、8秒間はハッキリした実線で後ろに尾っぽが伸び、その後の8秒〜10秒経過した古い部分から順番にフェードアウトして消えていきます。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:12px; background:#3498db; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -179,7 +170,7 @@
 </div>
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v2.9.0 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
+    <span style="font-size:14px;">虎キング v2.9.1 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -274,7 +265,6 @@
     let replayTimer = null;
     let replayMinimizeTimer = null;
     
-    // リプレイシークバー用の管理変数
     let replayLogsAll = [];
     let replayCurrentIndex = 0;
     let isSeeking = false;
@@ -302,7 +292,6 @@
         document.getElementById('manual-modal').style.display = 'none';
     }
 
-    // 🔴 記録スタート（フラッシュ演出付き）
     window.startRaceRecording = () => {
         toggleMenu();
         const inputPass = prompt("本部スタッフ用パスワードを入力してください:");
@@ -319,7 +308,6 @@
                 document.getElementById('recording-banner').style.display = 'block';
                 document.getElementById('floating-stop-btn').style.display = 'block';
                 
-                // 🚨 スタート時の視覚的合図（赤フラッシュを3秒間表示）
                 const flashOverlay = document.getElementById('start-flash-overlay');
                 flashOverlay.style.display = 'flex';
                 setTimeout(() => { flashOverlay.style.display = 'none'; }, 3000);
@@ -339,7 +327,6 @@
         }
     };
 
-    // ⏹️ 記録ストップ＆保存（スタート時刻入力対応）
     window.stopRaceRecording = () => {
         if (!isRecordingActive) {
             alert("現在、記録はスタートしていません");
@@ -358,7 +345,6 @@
             return;
         }
 
-        // 現在の時刻を取得して初期値にする
         const nowTimeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const startTimeInput = prompt("スタート時刻を入力してください\n（例: 10:30）", nowTimeStr);
 
@@ -467,9 +453,11 @@
             replayPaused = false;
             document.getElementById('btn-pause').innerText = "一時停止";
 
-            // 軌跡をクリア
+            // 全ての軌跡と線をクリア
             for (let name in userPolylineLines) {
-                map.removeLayer(userPolylineLines[name]);
+                if(userPolylineLines[name]) {
+                    userPolylineLines[name].forEach(seg => map.removeLayer(seg));
+                }
             }
             Object.keys(userPolylineLines).forEach(k => delete userPolylineLines[k]);
             Object.keys(userTrails).forEach(k => delete userTrails[k]);
@@ -520,7 +508,6 @@
             const u = replayLogsAll[replayCurrentIndex];
             updateUserTrailAndMarker(u.name, u.lat, u.lng, u.color, u.heading, u.ts);
 
-            // シークバーとタイムラベルの更新
             const seekbar = document.getElementById('replay-seekbar');
             if (!isSeeking) seekbar.value = replayCurrentIndex;
 
@@ -536,12 +523,10 @@
         }
     }
 
-    // シークバー操作時（プレイヤーの横棒を動かしたとき）
     window.onSeekbarInput = (val) => {
         isSeeking = true;
         replayCurrentIndex = parseInt(val);
         
-        // 該当インデックスまでのデータを一瞬で再描画
         const u = replayLogsAll[replayCurrentIndex];
         if (u) {
             updateUserTrailAndMarker(u.name, u.lat, u.lng, u.color, u.heading, u.ts);
@@ -597,35 +582,49 @@
         location.reload();
     };
 
-    // 通過後8秒キープ、8〜10秒でフェードアウトして消滅する軌跡処理
+    // 正確な「尾っぽが伸びて、古い部分から順番に薄くなって消える」ロジック
     function updateUserTrailAndMarker(name, lat, lng, color, heading, timestamp) {
         if (!userTrails[name]) userTrails[name] = [];
         userTrails[name].push({ lat: lat, lng: lng, ts: timestamp });
         
+        // 10秒以上古い古い座標を完全に除去
         userTrails[name] = userTrails[name].filter(p => timestamp - p.ts <= 10000);
 
-        const latlngs = userTrails[name].map(p => [p.lat, p.lng]);
+        // 古い描画線を一度すべて削除
+        if (userPolylineLines[name]) {
+            userPolylineLines[name].forEach(seg => map.removeLayer(seg));
+        }
+        userPolylineLines[name] = [];
 
-        let opacity = 0.8;
-        if (userTrails[name].length > 0) {
-            const oldestAge = timestamp - userTrails[name][0].ts; 
-            if (oldestAge > 8000) {
-                opacity = 0.8 * (1.0 - (oldestAge - 8000) / 2000);
-                if (opacity < 0) opacity = 0;
+        const points = userTrails[name];
+        if (points.length > 1) {
+            // 各セグメント（点と点の間）ごとに経過時間を計算し、部分ごとに不透明度を変えて描画
+            for (let i = 0; i < points.length - 1; i++) {
+                const p1 = points[i];
+                const p2 = points[i+1];
+                
+                // この区間が経過してからの時間（最新時点を基準とする）
+                const age = timestamp - p2.ts; // 0 (今) 〜 10000 (10秒前)
+                
+                let opacity = 0.8;
+                if (age > 8000) {
+                    // 8秒〜10秒前の古い区間は、後ろから順番にフェードアウト (0.8 → 0)
+                    opacity = 0.8 * (1.0 - (age - 8000) / 2000);
+                    if (opacity < 0) opacity = 0;
+                }
+
+                if (opacity > 0) {
+                    const segLine = L.polyline([[p1.lat, p1.lng], [p2.lat, p2.lng]], {
+                        color: color || '#ff9900',
+                        weight: 2,
+                        opacity: opacity
+                    }).addTo(map);
+                    userPolylineLines[name].push(segLine);
+                }
             }
         }
 
-        if (userPolylineLines[name]) {
-            userPolylineLines[name].setLatLngs(latlngs);
-            userPolylineLines[name].setStyle({ opacity: opacity });
-        } else if (latlngs.length > 1) {
-            userPolylineLines[name] = L.polyline(latlngs, {
-                color: color || '#ff9900',
-                weight: 2,
-                opacity: opacity
-            }).addTo(map);
-        }
-
+        // マーカー位置の更新
         if (userMarkers[name]) {
             userMarkers[name].setLatLng([lat, lng]).setIcon(createArrowIcon(color, heading, 20));
         } else {
@@ -1038,7 +1037,7 @@
         for (let name in userTrails) {
             if (!activeUserNames[name]) {
                 if (userPolylineLines[name]) {
-                    map.removeLayer(userPolylineLines[name]);
+                    userPolylineLines[name].forEach(seg => map.removeLayer(seg));
                     delete userPolylineLines[name];
                 }
                 delete userTrails[name];
