@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v2.8.3 by Popolo App.com</title>
+    <title>虎キング v2.8.4 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -135,8 +135,8 @@
             <button onclick="closeManualModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">✖</button>
         </div>
         <div class="modal-body-scroll">
-            <h4>📈 トラッキング軌跡</h4>
-            <p>・各選手の移動軌跡が細い実線で残ります。直近10秒間の航跡を表示し、古くなった部分は自動で消えていきます。</p>
+            <h4>📈 トラッキング軌跡 (リアルタイム & リプレイ)</h4>
+            <p>・選手の移動軌跡が細い実線で残ります。8秒経過すると薄くなり、10秒経過すると自動で消去されます。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:12px; background:#3498db; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -152,7 +152,7 @@
 </div>
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v2.8.3 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
+    <span style="font-size:14px;">虎キング v2.8.4 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -415,6 +415,13 @@
             replayPaused = false;
             document.getElementById('btn-pause').innerText = "一時停止";
 
+            // リプレイ開始時に古い軌跡線をクリア
+            for (let name in userPolylineLines) {
+                map.removeLayer(userPolylineLines[name]);
+            }
+            Object.keys(userPolylineLines).forEach(k => delete userPolylineLines[k]);
+            Object.keys(userTrails).forEach(k => delete userTrails[k]);
+
             showToast(`▶️ 「${heatTitle}」のリプレイを開始します`);
             
             if (data.history) {
@@ -489,12 +496,10 @@
 
             if (index < allLogs.length) {
                 const u = allLogs[index];
-                if (userMarkers[u.name]) {
-                    userMarkers[u.name].setLatLng([u.lat, u.lng]).setIcon(createArrowIcon(u.color, u.heading, 20));
-                } else {
-                    userMarkers[u.name] = L.marker([u.lat, u.lng], { icon: createArrowIcon(u.color, u.heading, 20) }).addTo(map);
-                    userMarkers[u.name].bindTooltip(u.name, { permanent: true, direction: 'top', className: 'user-label' });
-                }
+                
+                // 共通の軌跡描画＆フェードアウト処理を呼び出し
+                updateUserTrailAndMarker(u.name, u.lat, u.lng, u.color, u.heading, u.ts);
+
                 index++;
                 replayTimer = setTimeout(step, Math.max(50, 1000 / replaySpeed));
             } else {
@@ -502,6 +507,46 @@
             }
         }
         step();
+    }
+
+    // 共通：選手の位置、軌跡（8秒で薄くなり、10秒で消える）の更新処理
+    function updateUserTrailAndMarker(name, lat, lng, color, heading, timestamp) {
+        if (!userTrails[name]) userTrails[name] = [];
+        userTrails[name].push({ lat: lat, lng: lng, ts: timestamp });
+        
+        // 10秒（10000ミリ秒）以上古い座標を削除
+        userTrails[name] = userTrails[name].filter(p => timestamp - p.ts <= 10000);
+
+        const latlngs = userTrails[name].map(p => [p.lat, p.lng]);
+
+        // 経過時間に応じた透過度（opacity）の計算：
+        // 8秒〜10秒の間で徐々にフェードアウト（0.8 → 0.2）させ、10秒で消去
+        let opacity = 0.8;
+        if (userTrails[name].length > 0) {
+            const oldestAge = timestamp - userTrails[name][0].ts; // 最古のポイントの経過時間
+            if (oldestAge > 8000) {
+                opacity = 0.2; // 8秒経ったら薄くする
+            }
+        }
+
+        if (userPolylineLines[name]) {
+            userPolylineLines[name].setLatLngs(latlngs);
+            userPolylineLines[name].setStyle({ opacity: opacity });
+        } else if (latlngs.length > 1) {
+            userPolylineLines[name] = L.polyline(latlngs, {
+                color: color || '#ff9900',
+                weight: 2,        // 細い実線
+                opacity: opacity
+            }).addTo(map);
+        }
+
+        // マーカー位置の更新
+        if (userMarkers[name]) {
+            userMarkers[name].setLatLng([lat, lng]).setIcon(createArrowIcon(color, heading, 20));
+        } else {
+            userMarkers[name] = L.marker([lat, lng], { icon: createArrowIcon(color, heading, 20) }).addTo(map);
+            userMarkers[name].bindTooltip(name, { permanent: true, direction: 'top', className: 'user-label' });
+        }
     }
 
     function createPointCard(key, obj) {
@@ -737,9 +782,10 @@
         const longitude = pos.coords.longitude + offsetLng;
         const speed = pos.coords.speed || 0;
         const heading = pos.coords.heading || 0;
+        const now = Date.now();
         
         if (!isViewerMode && myName) {
-            const userData = {lat: latitude, lng: longitude, name: myName, color: myColor, speed: speed, heading: heading, ts: Date.now()};
+            const userData = {lat: latitude, lng: longitude, name: myName, color: myColor, speed: speed, heading: heading, ts: now};
             db.ref('users/'+myId).set(userData);
             
             if (isRecordingActive) {
@@ -752,8 +798,6 @@
             myMarker = L.marker(latlng, { icon: createArrowIcon(myColor || '#7f8c8d', heading, 30) }).addTo(map);
             myMarker.bindTooltip(myName || '観戦者', { permanent: true, direction: 'top', className: 'user-label' });
             map.setView(latlng, 16);
-        } else {
-            myMarker.setLatLng(latlng).setIcon(createArrowIcon(myColor || '#7f8c8d', heading, 30));
         }
         
         if (isFollowing) map.panTo(latlng);
@@ -884,7 +928,7 @@
     initSetupUI();
     if (!myName && !isViewerMode) openSetup(); else startTracking();
 
-    // 各選手のリアルタイム位置＆10秒間残る細い実線軌跡の処理
+    // リアルタイムの各選手データ受信処理
     db.ref('users').on('value', snap => {
         if (isReplaying) return;
 
@@ -904,38 +948,11 @@
             const s = (u.speed * (speedUnitMode === 0 ? 1.94384 : (speedUnitMode === 1 ? 3.6 : 1))).toFixed(1);
             listHtml += `<div class="user-item ${isMe ? 'me' : ''}"><span style="color:${u.color}">●</span> ${u.name} ${s}${units[speedUnitMode]}</div>`;
             
-            // 軌跡データの蓄積（現在時刻から10秒以内のものだけ保持）
-            if (!userTrails[u.name]) userTrails[u.name] = [];
-            userTrails[u.name].push({ lat: u.lat, lng: u.lng, ts: now });
-            
-            // 10秒（10000ミリ秒）以上経過した古い座標を削除
-            userTrails[u.name] = userTrails[u.name].filter(p => now - p.ts <= 10000);
-
-            // マーカーと細い実線ポリラインの更新
-            const latlngs = userTrails[u.name].map(p => [p.lat, p.lng]);
-
-            if (userPolylineLines[u.name]) {
-                userPolylineLines[u.name].setLatLngs(latlngs);
-            } else if (latlngs.length > 1) {
-                userPolylineLines[u.name] = L.polyline(latlngs, {
-                    color: u.color || '#ff9900',
-                    weight: 2,        // 細い実線
-                    opacity: 0.8
-                }).addTo(map);
-            }
-
-            // マーカー位置の更新
-            if (!isMe) {
-                if (!userMarkers[id]) {
-                    userMarkers[id] = L.marker([u.lat, u.lng], { icon: createArrowIcon(u.color, u.heading, 20) }).addTo(map);
-                    userMarkers[id].bindTooltip(u.name, { permanent: true, direction: 'top', className: 'user-label' });
-                } else {
-                    userMarkers[id].setLatLng([u.lat, u.lng]).setIcon(createArrowIcon(u.color, u.heading, 20));
-                }
-            }
+            // 軌跡・マーカー更新共通関数を呼び出し
+            updateUserTrailAndMarker(u.name, u.lat, u.lng, u.color, u.heading, now);
         }
 
-        // 退出したユーザーの軌跡・線をクリーンアップ
+        // 退出したユーザーの線をクリーンアップ
         for (let name in userTrails) {
             if (!activeUserNames[name]) {
                 if (userPolylineLines[name]) {
@@ -943,6 +960,10 @@
                     delete userPolylineLines[name];
                 }
                 delete userTrails[name];
+                if (userMarkers[name]) {
+                    map.removeLayer(userMarkers[name]);
+                    delete userMarkers[name];
+                }
             }
         }
 
