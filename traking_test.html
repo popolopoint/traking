@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v2.7.5 by Popolo App.com</title>
+    <title>虎キング v2.7.6 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -143,7 +143,7 @@
 </div>
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v2.7.5 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
+    <span style="font-size:14px;">虎キング v2.7.6 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -266,7 +266,7 @@
             db.ref('temp_history').remove().then(() => {
                 isRecordingActive = true;
                 document.getElementById('recording-banner').style.display = 'block';
-                document.getElementById('floating-stop-btn').style.display = 'block'; // 常時ストップボタンを表示
+                document.getElementById('floating-stop-btn').style.display = 'block';
                 showToast("🔴 レース記録をスタートしました！");
             }).catch(err => {
                 isRecordingActive = true;
@@ -277,22 +277,32 @@
         }
     };
 
-    // ⏹️ 記録ストップ＆保存
+    // ⏹️ 記録ストップ＆保存（修正版：ボタンを押したら即座に停止処理＆プロンプトを起動）
     window.stopRaceRecording = () => {
-        if (!isRecordingActive) return alert("現在、記録はスタートしていません");
+        if (!isRecordingActive) {
+            alert("現在、記録はスタートしていません");
+            document.getElementById('floating-stop-btn').style.display = 'none';
+            document.getElementById('recording-banner').style.display = 'none';
+            return;
+        }
 
+        // 即座に記録フラグをオフにし、バナーとボタンを隠す（これで止まらない現象を完全に防止）
+        isRecordingActive = false;
+        document.getElementById('recording-banner').style.display = 'none';
+        document.getElementById('floating-stop-btn').style.display = 'none';
+
+        const heatName = prompt("記録するヒート名を入力してください\n（例: 第1ヒート、決勝戦など）", "第1ヒート");
+        if (!heatName) {
+            showToast("⚠️ 保存がキャンセルされました（記録は停止しました）");
+            return;
+        }
+
+        // サーバーから一時履歴を取得して保存
         db.ref('temp_history').once('value', tempSnap => {
-            const historyData = tempSnap.val();
-            if (!historyData) {
-                alert("記録された航跡データがありません");
-                return;
-            }
+            const historyData = tempSnap.val() || {};
 
             db.ref('objects').once('value', objSnap => {
                 const currentObjects = objSnap.val() || {};
-
-                const heatName = prompt("記録するヒート名を入力してください\n（例: 第1ヒート、決勝戦など）", "第1ヒート");
-                if (!heatName) return;
 
                 db.ref('saved_courses').push({
                     title: heatName,
@@ -301,12 +311,10 @@
                     createdAt: Date.now()
                 }, err => {
                     if (!err) {
-                        isRecordingActive = false;
-                        document.getElementById('recording-banner').style.display = 'none';
-                        document.getElementById('floating-stop-btn').style.display = 'none'; // 常時ストップボタンを非表示
                         showToast(`💾 「${heatName}」のレース記録を保存しました！`);
+                        db.ref('temp_history').remove(); // 一時保存をクリア
                     } else {
-                        alert("保存に失敗しました");
+                        alert("サーバーへの保存に失敗しました");
                     }
                 });
             });
