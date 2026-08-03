@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v2.9.8 by Popolo App.com</title>
+    <title>虎キング v2.9.9 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -156,10 +156,10 @@
             <button onclick="closeManualModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">✖</button>
         </div>
         <div class="modal-body-scroll">
-            <h4>✂️ 記録データの切り出し（トリミング）保存</h4>
-            <p>・長時間のぶっ通し録画データから、リプレイメニュー内の「✂️ 切り出し保存」を使って特定のヒートだけを切り分けることができます。</p>
-            <h4>⏱️ 高精度な時刻書式表示</h4>
-            <p>・「00:00:00.00」形式で、スタートまでの残り時間およびスタートからの経過時間が時刻と同じ書式で表示されます。</p>
+            <h4>⏱️ リプレイ中の高精度カウント（00:00:00.00形式）</h4>
+            <p>・スタート前は、どれだけ長時間の前でも「スタートまであと 00:00:00.00」で常時カウントダウンします。</p>
+            <p>・スタート後は「スタートから 00:00:00.00 経過」でカウントアップします。</p>
+            <p>・その下に現在の日本時間（1/100秒）も常時表示されます。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:12px; background:#3498db; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -175,7 +175,7 @@
 </div>
 
 <div id="header">
-    <div style="font-size:12px; font-weight:bold;">虎キング v2.9.8 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></div>
+    <div style="font-size:12px; font-weight:bold;">虎キング v2.9.9 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></div>
     <!-- 画面上部：00:00:00.00 書式でのカウントダウン／経過時間 ＆ 日本時間 -->
     <div id="header-replay-status" style="font-size:10px; color:#ffcc00; font-family:monospace; display:none;"></div>
     <div id="header-replay-time" style="font-size:9px; color:#00ffcc; font-family:monospace; display:none;"></div>
@@ -281,7 +281,6 @@
     let isSeeking = false;
     let replayStartTimeMs = null;
     let hasAlertedStart = false;
-    let currentLoadedCourseId = null; // トリミング用
 
     const MARK_COLORS = { A:'#ff3b30', B:'#0000ff', C:'#ffff00', D:'#28a745', E:'#6a1b9a', F:'#ff2d55', G:'#000080', S:'#0000ff', K:'#5ac8fa' };
 
@@ -421,7 +420,6 @@
         });
     };
 
-    // --- 新機能：長大な記録データから一部分を切り出して新しく保存するトリミング機能 ---
     window.trimAndSaveCourse = (id) => {
         db.ref('saved_courses/' + id).once('value', snap => {
             const data = snap.val();
@@ -430,7 +428,6 @@
                 return;
             }
 
-            // タイムラインの最小・最大タイムスタンプを算出
             let allTs = [];
             for (let uid in data.history) {
                 for (let pushId in data.history[uid]) {
@@ -443,7 +440,6 @@
             }
             allTs.sort((a,b) => a - b);
             const minTs = allTs[0];
-            const maxTs = allTs[allTs.length - 1];
 
             const startMinutesFromMin = prompt(`全記録の開始から「何分後」を新しいスタート地点にしますか？\n（例: 5 と入力すると、記録開始から5分後以降を切り出します）`, "0");
             if (startMinutesFromMin === null) return;
@@ -458,7 +454,6 @@
             
             const newStartTimeStr = prompt("新しいスタート時刻（文字表示用）を入力してください\n（例: 10:35）", data.startTime || "10:30");
 
-            // 履歴のフィルタリング
             let newHistory = {};
             for (let uid in data.history) {
                 newHistory[uid] = {};
@@ -514,7 +509,6 @@
     };
 
     window.startReplay = (id) => {
-        currentLoadedCourseId = id;
         document.getElementById('saved-courses-modal').style.display = 'none';
         db.ref('saved_courses/' + id).once('value', snap => {
             const data = snap.val();
@@ -607,7 +601,7 @@
         return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms100).padStart(2,'0')}`;
     }
 
-    // 時刻と同じ書式（00:00:00.00）に変換する高精度フォーマット関数
+    // ご要望通りの 00:00:00.00 書式変換関数
     function formatClockStyle(ms) {
         const absMs = Math.abs(ms);
         const totalSec = Math.floor(absMs / 1000);
@@ -616,11 +610,7 @@
         const s = totalSec % 60;
         const ms100 = Math.floor((absMs % 1000) / 10);
         
-        if (h > 0) {
-            return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms100).padStart(2,'0')}`;
-        } else {
-            return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms100).padStart(2,'0')}`;
-        }
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms100).padStart(2,'0')}`;
     }
 
     function playHistoryStep() {
@@ -644,19 +634,15 @@
             const timeStr = `${formatElapsedTime(curTime)} / ${formatElapsedTime(totalTime)}`;
             document.getElementById('replay-time-label').innerText = timeStr;
 
-            // --- ご要望の書式（21:41:40.23形式）でのカウントダウン・経過時間表示 ---
+            // --- スタート前もスタート後も、すべて同じ時刻形式（00:00:00.00）で継続表示 ---
             if (replayStartTimeMs) {
                 const diffMs = replayStartTimeMs - u.ts; // 正ならスタート前、負ならスタート後
                 const diffSec = diffMs / 1000;
 
                 let statusText = "";
-                if (diffSec > 10) {
-                    // スタート10秒前よりも前：時刻書式でのカウントダウン
+                if (diffSec > 0) {
+                    // スタート前：どれだけ時間があっても常に時刻形式でカウントダウン
                     statusText = `⏳ スタートまであと ${formatClockStyle(diffMs)}`;
-                } else if (diffSec > 0 && diffSec <= 10) {
-                    // スタート10秒前〜1秒前：1秒ずつの特別カウントダウン
-                    const countNum = Math.ceil(diffSec);
-                    statusText = `⏳ スタートまであと ${countNum} 秒`;
                 } else if (diffSec <= 0 && diffSec > -1.5) {
                     // スタートの瞬間
                     statusText = `🚨 スタート！`;
@@ -665,7 +651,7 @@
                         triggerStartAlertOverlay();
                     }
                 } else {
-                    // スタート後：時刻書式での経過時間カウントアップ
+                    // スタート後：時刻形式で経過時間カウントアップ
                     const elapsedAfterStartMs = u.ts - replayStartTimeMs;
                     statusText = `⏱️ スタートから ${formatClockStyle(elapsedAfterStartMs)} 経過`;
                     if (diffSec < -1.5) hasAlertedStart = false;
