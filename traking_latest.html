@@ -3,19 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v2.9.1 by Popolo App.com</title>
+    <title>虎キング v3.0.4 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
-        #header { background: #1a1a1a; color: #ff9900; padding: 10px; text-align: center; font-weight: bold; position: fixed; width: 100%; height: 40px; z-index: 3000; border-bottom: 2px solid #ff9900; display: flex; justify-content: center; align-items: center; gap: 10px; box-sizing: border-box; }
+        #header { background: #1a1a1a; color: #ff9900; padding: 6px 10px; text-align: center; font-weight: bold; position: fixed; width: 100%; height: 55px; z-index: 3000; border-bottom: 2px solid #ff9900; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; }
         
-        #recording-banner { position: fixed; top: 40px; left: 0; width: 100%; background: #c0392b; color: white; text-align: center; font-size: 12px; font-weight: bold; padding: 4px 0; z-index: 2900; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.5); letter-spacing: 1px; animation: flashBanner 1.5s infinite; }
+        #recording-banner { position: fixed; top: 55px; left: 0; width: 100%; background: #c0392b; color: white; text-align: center; font-size: 12px; font-weight: bold; padding: 4px 0; z-index: 2900; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.5); letter-spacing: 1px; animation: flashBanner 1.5s infinite; }
         @keyframes flashBanner { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
         #start-flash-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(231, 76, 60, 0.85); z-index: 8000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; pointer-events: none; animation: flashAlert 0.8s infinite alternate; }
         @keyframes flashAlert { from { opacity: 0.6; } to { opacity: 1; } }
 
-        #floating-stop-btn { position: fixed; top: 75px; right: 10px; z-index: 3500; background: #e74c3c; color: white; border: 2px solid #fff; padding: 10px 16px; border-radius: 25px; font-size: 14px; font-weight: bold; cursor: pointer; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.4); animation: flashBanner 1.5s infinite; }
+        #replay-start-alert { position: fixed; top: 62px; left: 50%; transform: translateX(-50%); background: rgba(231, 76, 60, 0.95); color: white; padding: 6px 16px; border-radius: 15px; font-size: 14px; font-weight: bold; z-index: 9000; display: none; box-shadow: 0 2px 10px rgba(0,0,0,0.5); border: 2px solid white; text-align: center; pointer-events: none; animation: pulseAlert 0.5s infinite alternate; }
+        @keyframes pulseAlert { from { transform: translateX(-50%) scale(1); } to { transform: translateX(-50%) scale(1.05); } }
+
+        #replay-countdown-alert { position: fixed; top: 62px; left: 50%; transform: translateX(-50%); background: rgba(243, 156, 18, 0.95); color: white; padding: 6px 20px; border-radius: 15px; font-size: 18px; font-weight: bold; z-index: 9000; display: none; box-shadow: 0 2px 10px rgba(0,0,0,0.5); border: 2px solid white; text-align: center; pointer-events: none; animation: pulseAlert 0.5s infinite alternate; }
+
+        #floating-stop-btn { position: fixed; top: 90px; right: 10px; z-index: 3500; background: #e74c3c; color: white; border: 2px solid #fff; padding: 10px 16px; border-radius: 25px; font-size: 14px; font-weight: bold; cursor: pointer; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.4); animation: flashBanner 1.5s infinite; }
 
         #map { height: 100vh; width: 100vw; z-index: 1; background: #222; }
         #unit-toggle { background: #333; color: #ff9900; border: 1px solid #ff9900; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; }
@@ -25,14 +30,13 @@
         .color-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
         .color-btn { width: 100%; aspect-ratio: 1/1; border-radius: 50%; border: 2px solid #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; text-shadow: 1px 1px 2px #000; color: #fff; }
         
-        #user-list { position: fixed; top: 120px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 8px; border-radius: 8px; width: 100px; max-height: 200px; overflow-y: auto; border: 1px solid #ff9900; font-size: 10px; }
+        #user-list { position: fixed; top: 135px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 8px; border-radius: 8px; width: 100px; max-height: 200px; overflow-y: auto; border: 1px solid #ff9900; font-size: 10px; }
         .list-title { color: #ff9900; font-weight: bold; border-bottom: 1px solid #ff9900; margin-bottom: 5px; }
         .user-item { border-bottom: 1px solid #444; padding: 4px 0; }
         .user-item.me { color: #00ff00; font-weight: bold; }
         .user-label { background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #ff9900; font-size: 10px; font-weight: bold; padding: 2px 4px; border-radius: 3px; white-space: nowrap; }
         .status-panel { position: fixed; bottom: 10px; left: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 11px; max-width: 80%; border: 1px solid #ff9900; }
         
-        /* リプレイ操作用コントロールバー（半透明ガラススタイル） */
         #replay-control-bar { 
             position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%); z-index: 3500; 
             background: rgba(30, 39, 46, 0.75); border: 1.5px solid rgba(255, 255, 255, 0.3); 
@@ -104,6 +108,8 @@
 <body>
 
 <div id="toast-notice"></div>
+<div id="replay-start-alert">🚨 スタート！</div>
+<div id="replay-countdown-alert">10</div>
 
 <div id="start-flash-overlay">
     <div style="font-size: 40px; font-weight: bold; text-shadow: 2px 2px 10px rgba(0,0,0,0.5);">🚨 競技スタート！ 🚨</div>
@@ -116,7 +122,7 @@
 <div id="replay-control-bar">
     <div class="replay-top-row">
         <span id="replay-title-label" style="font-size:12px; font-weight:bold; color:#ff9900;">名称</span>
-        <span id="replay-time-label" style="font-size:10px; color:#ccc;">00:00 / 00:00</span>
+        <span id="replay-time-label" style="font-size:10px; color:#ccc;">00:00.00 / 00:00.00</span>
     </div>
     <input type="range" id="replay-seekbar" min="0" max="100" value="0" oninput="onSeekbarInput(this.value)">
     <div class="replay-bottom-row">
@@ -153,8 +159,8 @@
             <button onclick="closeManualModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">✖</button>
         </div>
         <div class="modal-body-scroll">
-            <h4>📈 トラッキング尾っぽ軌跡</h4>
-            <p>・船が通過後、8秒間はハッキリした実線で後ろに尾っぽが伸び、その後の8秒〜10秒経過した古い部分から順番にフェードアウトして消えていきます。</p>
+            <h4>⚡ 倍速再生の修正 (v3.0.4)</h4>
+            <p>・5x、10x、20xの各倍速が正確かつ自然なスピードになるよう、時間差分ベースの倍速制御に改善しました。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:12px; background:#3498db; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -170,14 +176,20 @@
 </div>
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v2.9.1 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
-    <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
-    <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
+    <div style="font-size:12px; font-weight:bold;">虎キング v3.0.4 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></div>
+    <!-- 画面上部：時刻形式でのカウントダウン／経過時間 ＆ 日本時間 -->
+    <div id="header-replay-status" style="font-size:10px; color:#ffcc00; font-family:monospace; display:none;"></div>
+    <div id="header-replay-time" style="font-size:9px; color:#00ffcc; font-family:monospace; display:none;"></div>
+    
+    <div style="position: absolute; right: 10px; top: 10px; display: flex; gap: 6px;">
+        <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;">設定</button>
+        <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
+    </div>
 </div>
 
 <div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
 
-<div id="pointSettingsPanel" style="position: fixed; top: 120px; left: 10px; z-index: 5000; width: 280px; max-height: 50vh; overflow-y: auto; background: rgba(255, 255, 255, 0.95); padding: 10px; border-radius: 12px; border: 2px solid #007AFF; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: #333; display:none;">
+<div id="pointSettingsPanel" style="position: fixed; top: 135px; left: 10px; z-index: 5000; width: 280px; max-height: 50vh; overflow-y: auto; background: rgba(255, 255, 255, 0.95); padding: 10px; border-radius: 12px; border: 2px solid #007AFF; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: #333; display:none;">
     <h3 onclick="toggleSettingsPanel()" style="margin: 0 0 10px 0; padding-bottom: 5px; font-size: 16px; color: #007AFF; border-bottom: 1px solid #ddd; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
         <span>🚩 コース地点設定</span>
         <span style="font-size: 10px; color: #999;">[ 閉じる ]</span>
@@ -268,6 +280,9 @@
     let replayLogsAll = [];
     let replayCurrentIndex = 0;
     let isSeeking = false;
+    let replayStartTimeMs = null;
+    let hasAlertedStart = false;
+    let lastCountdownNum = null;
 
     const MARK_COLORS = { A:'#ff3b30', B:'#0000ff', C:'#ffff00', D:'#28a745', E:'#6a1b9a', F:'#ff2d55', G:'#000080', S:'#0000ff', K:'#5ac8fa' };
 
@@ -391,16 +406,81 @@
                 const startInfo = c.startTime ? ` スタート: ${c.startTime}` : '';
                 html += `<div style="background:#f1f2f6; padding:8px; border-radius:6px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
                     <div style="text-align:left; max-width:130px; overflow:hidden;"><b>🏁 ${c.title || '無題'}</b><br><span style="font-size:9px; color:#555;">${startInfo}</span><br><span style="font-size:8px; color:#888;">${dateStr}</span></div>
-                    <div style="display:flex; gap:4px;">
-                        <button onclick="startReplay('${id}')" style="background:#8e44ad; color:white; border:none; padding:5px 8px; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer;">再生</button>
-                        <button onclick="renameCourse('${id}', '${c.title}')" style="background:#2980b9; color:white; border:none; padding:5px 6px; border-radius:4px; font-size:11px; cursor:pointer;" title="名前変更">✏️</button>
-                        <button onclick="deleteCourse('${id}')" style="background:#c0392b; color:white; border:none; padding:5px 6px; border-radius:4px; font-size:11px; cursor:pointer;" title="削除">🗑️</button>
+                    <div style="display:flex; gap:4px; flex-direction:column;">
+                        <button onclick="startReplay('${id}')" style="background:#8e44ad; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:10px; font-weight:bold; cursor:pointer;">再生</button>
+                        <button onclick="trimAndSaveCourse('${id}')" style="background:#27ae60; color:white; border:none; padding:3px 6px; border-radius:4px; font-size:9px; cursor:pointer;" title="このデータから一部分を切り出し">✂️ 切り出し</button>
+                    </div>
+                    <div style="display:flex; gap:3px;">
+                        <button onclick="renameCourse('${id}', '${c.title}')" style="background:#2980b9; color:white; border:none; padding:4px 6px; border-radius:4px; font-size:10px; cursor:pointer;" title="名前変更">✏️</button>
+                        <button onclick="deleteCourse('${id}')" style="background:#c0392b; color:white; border:none; padding:4px 6px; border-radius:4px; font-size:10px; cursor:pointer;" title="削除">🗑️</button>
                     </div>
                 </div>`;
             }
             listDiv.innerHTML = html;
         }, (error) => {
             listDiv.innerHTML = `<p style='color:#e74c3c;'>取得失敗: ${error.message}</p>`;
+        });
+    };
+
+    window.trimAndSaveCourse = (id) => {
+        db.ref('saved_courses/' + id).once('value', snap => {
+            const data = snap.val();
+            if (!data || !data.history) {
+                alert("切り出しできる履歴データがありません");
+                return;
+            }
+
+            let allTs = [];
+            for (let uid in data.history) {
+                for (let pushId in data.history[uid]) {
+                    allTs.push(data.history[uid][pushId].ts);
+                }
+            }
+            if (allTs.length === 0) {
+                alert("有効なログがありません");
+                return;
+            }
+            allTs.sort((a,b) => a - b);
+            const minTs = allTs[0];
+
+            const startMinutesFromMin = prompt(`全記録の開始から「何分後」を新しいスタート地点にしますか？\n（例: 5 と入力すると、記録開始から5分後以降を切り出します）`, "0");
+            if (startMinutesFromMin === null) return;
+            const durationMinutes = prompt(`そこから「何分間」を切り出しますか？\n（例: 3 と入力すると、3分間のレース分を切り出します）`, "3");
+            if (durationMinutes === null) return;
+
+            const targetStartTs = minTs + (parseFloat(startMinutesFromMin) || 0) * 60000;
+            const targetEndTs = targetStartTs + (parseFloat(durationMinutes) || 3) * 60000;
+
+            const newHeatName = prompt("切り出した新しいヒート名を入力してください", (data.title || "ヒート") + " (切出)");
+            if (!newHeatName) return;
+            
+            const newStartTimeStr = prompt("新しいスタート時刻（文字表示用）を入力してください\n（例: 10:35）", data.startTime || "10:30");
+
+            let newHistory = {};
+            for (let uid in data.history) {
+                newHistory[uid] = {};
+                for (let pushId in data.history[uid]) {
+                    const log = data.history[uid][pushId];
+                    if (log.ts >= targetStartTs && log.ts <= targetEndTs) {
+                        newHistory[uid][pushId] = log;
+                    }
+                }
+            }
+
+            db.ref('saved_courses').push({
+                title: newHeatName,
+                startTime: newStartTimeStr || '10:30',
+                objects: data.objects || {},
+                history: newHistory,
+                createdAt: Date.now()
+            }, err => {
+                if (!err) {
+                    showToast(`✂️ 「${newHeatName}」として切り出し保存しました！`);
+                    openReplayMenu();
+                } else {
+                    alert("切り出し保存に失敗しました");
+                }
+            });
         });
     };
 
@@ -445,6 +525,31 @@
             document.getElementById('replay-title-label').innerText = heatTitle + startStr;
             document.getElementById('minimized-title').innerText = heatTitle;
             
+            document.getElementById('header-replay-status').style.display = 'block';
+            document.getElementById('header-replay-time').style.display = 'block';
+
+            let baseDate = new Date();
+            if (data.history) {
+                let firstTs = null;
+                for (let uid in data.history) {
+                    for (let pushId in data.history[uid]) {
+                        const ts = data.history[uid][pushId].ts;
+                        if (!firstTs || ts < firstTs) firstTs = ts;
+                    }
+                }
+                if (firstTs) baseDate = new Date(firstTs);
+            }
+
+            if (data.startTime && data.startTime.includes(':')) {
+                const parts = data.startTime.split(':');
+                baseDate.setHours(parseInt(parts[0]), parseInt(parts[1]), 0, 0);
+                replayStartTimeMs = baseDate.getTime();
+            } else {
+                replayStartTimeMs = null;
+            }
+            hasAlertedStart = false;
+            lastCountdownNum = null;
+
             document.getElementById('replay-control-bar').style.display = 'flex';
             document.getElementById('replay-minimized-btn').style.display = 'none';
             resetMinimizeTimer();
@@ -453,7 +558,6 @@
             replayPaused = false;
             document.getElementById('btn-pause').innerText = "一時停止";
 
-            // 全ての軌跡と線をクリア
             for (let name in userPolylineLines) {
                 if(userPolylineLines[name]) {
                     userPolylineLines[name].forEach(seg => map.removeLayer(seg));
@@ -483,6 +587,10 @@
 
         if (replayLogsAll.length === 0) return;
 
+        if (!replayStartTimeMs && replayLogsAll.length > 0) {
+            replayStartTimeMs = replayLogsAll[0].ts;
+        }
+
         replayCurrentIndex = 0;
         document.getElementById('replay-seekbar').max = replayLogsAll.length - 1;
         document.getElementById('replay-seekbar').value = 0;
@@ -490,17 +598,38 @@
         playHistoryStep();
     }
 
-    function formatTime(ms) {
+    function formatJapanDateTime(ms) {
+        const date = new Date(ms);
+        const h = String(date.getHours()).padStart(2, '0');
+        const min = String(date.getMinutes()).padStart(2, '0');
+        const s = String(date.getSeconds()).padStart(2, '0');
+        const ms100 = String(Math.floor(date.getMilliseconds() / 10)).padStart(2, '0');
+        return `${h}:${min}:${s}.${ms100}`;
+    }
+
+    function formatElapsedTime(ms) {
         const totalSec = Math.floor(ms / 1000);
         const m = Math.floor(totalSec / 60);
         const s = totalSec % 60;
-        return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        const ms100 = Math.floor((ms % 1000) / 10);
+        return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms100).padStart(2,'0')}`;
+    }
+
+    function formatClockStyle(ms) {
+        const absMs = Math.abs(ms);
+        const totalSec = Math.floor(absMs / 1000);
+        const h = Math.floor(totalSec / 3600);
+        const m = Math.floor((totalSec % 3600) / 60);
+        const s = totalSec % 60;
+        const ms100 = Math.floor((absMs % 1000) / 10);
+        
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms100).padStart(2,'0')}`;
     }
 
     function playHistoryStep() {
         if (!isReplaying) return;
         if (replayPaused) {
-            replayTimer = setTimeout(playHistoryStep, 500);
+            replayTimer = setTimeout(playHistoryStep, 100);
             return;
         }
 
@@ -514,13 +643,74 @@
             const startTime = replayLogsAll[0].ts;
             const curTime = u.ts - startTime;
             const totalTime = replayLogsAll[replayLogsAll.length - 1].ts - startTime;
-            document.getElementById('replay-time-label').innerText = `${formatTime(curTime)} / ${formatTime(totalTime)}`;
+            
+            const timeStr = `${formatElapsedTime(curTime)} / ${formatElapsedTime(totalTime)}`;
+            document.getElementById('replay-time-label').innerText = timeStr;
 
-            replayCurrentIndex++;
-            replayTimer = setTimeout(playHistoryStep, Math.max(30, 1000 / replaySpeed));
+            if (replayStartTimeMs) {
+                const diffMs = replayStartTimeMs - u.ts;
+                const diffSec = diffMs / 1000;
+
+                let statusText = "";
+                if (diffSec > 10) {
+                    statusText = `⏳ スタートまであと ${formatClockStyle(diffMs)}`;
+                    document.getElementById('replay-countdown-alert').style.display = 'none';
+                } else if (diffSec > 0 && diffSec <= 10) {
+                    statusText = `⏳ スタートまであと ${formatClockStyle(diffMs)}`;
+                    const secInt = Math.ceil(diffSec);
+                    const alertBox = document.getElementById('replay-countdown-alert');
+                    alertBox.innerText = secInt;
+                    alertBox.style.display = 'block';
+                } else if (diffSec <= 0 && diffSec > -1.5) {
+                    statusText = `🚨 スタート！`;
+                    document.getElementById('replay-countdown-alert').style.display = 'none';
+                    if (!hasAlertedStart) {
+                        hasAlertedStart = true;
+                        triggerStartAlertOverlay();
+                    }
+                } else {
+                    const elapsedAfterStartMs = u.ts - replayStartTimeMs;
+                    statusText = `⏱️ スタートから ${formatClockStyle(elapsedAfterStartMs)} 経過`;
+                    document.getElementById('replay-countdown-alert').style.display = 'none';
+                    if (diffSec < -1.5) hasAlertedStart = false;
+                }
+
+                document.getElementById('header-replay-status').innerText = statusText;
+            }
+
+            document.getElementById('header-replay-time').innerText = `🕒 日本時間: ${formatJapanDateTime(u.ts)}`;
+
+            // --- 倍速ごとの正確なスピード制御に修正 ---
+            let nextDelay = 30;
+            if (replaySpeed === 1) {
+                if (replayCurrentIndex < replayLogsAll.length - 1) {
+                    const nextU = replayLogsAll[replayCurrentIndex + 1];
+                    const realDiff = nextU.ts - u.ts;
+                    nextDelay = Math.max(10, realDiff);
+                }
+                replayCurrentIndex += 1;
+            } else {
+                // 倍速（5x, 10x, 20x）のときは、時間差分を「replaySpeed」で割ることで正確な倍速を実現
+                if (replayCurrentIndex < replayLogsAll.length - 1) {
+                    const nextU = replayLogsAll[replayCurrentIndex + 1];
+                    const realDiff = nextU.ts - u.ts;
+                    nextDelay = Math.max(15, Math.floor(realDiff / replaySpeed));
+                }
+                replayCurrentIndex += 1;
+            }
+
+            replayTimer = setTimeout(playHistoryStep, nextDelay);
         } else {
             showToast("🏁 リプレイが終了しました");
         }
+    }
+
+    function triggerStartAlertOverlay() {
+        const alertBox = document.getElementById('replay-start-alert');
+        alertBox.style.display = 'block';
+        setTimeout(() => {
+            alertBox.style.display = 'none';
+        }, 1200);
     }
 
     window.onSeekbarInput = (val) => {
@@ -533,7 +723,10 @@
             const startTime = replayLogsAll[0].ts;
             const curTime = u.ts - startTime;
             const totalTime = replayLogsAll[replayLogsAll.length - 1].ts - startTime;
-            document.getElementById('replay-time-label').innerText = `${formatTime(curTime)} / ${formatTime(totalTime)}`;
+            
+            const timeStr = `${formatElapsedTime(curTime)} / ${formatElapsedTime(totalTime)}`;
+            document.getElementById('replay-time-label').innerText = timeStr;
+            document.getElementById('header-replay-time').innerText = `🕒 日本時間: ${formatJapanDateTime(u.ts)}`;
         }
         setTimeout(() => { isSeeking = false; }, 200);
     };
@@ -578,19 +771,19 @@
         if(replayMinimizeTimer) clearTimeout(replayMinimizeTimer);
         document.getElementById('replay-control-bar').style.display = 'none';
         document.getElementById('replay-minimized-btn').style.display = 'none';
+        document.getElementById('header-replay-status').style.display = 'none';
+        document.getElementById('header-replay-time').style.display = 'none';
+        document.getElementById('replay-countdown-alert').style.display = 'none';
         showToast("⏹️ リプレイを終了しました");
         location.reload();
     };
 
-    // 正確な「尾っぽが伸びて、古い部分から順番に薄くなって消える」ロジック
     function updateUserTrailAndMarker(name, lat, lng, color, heading, timestamp) {
         if (!userTrails[name]) userTrails[name] = [];
         userTrails[name].push({ lat: lat, lng: lng, ts: timestamp });
         
-        // 10秒以上古い古い座標を完全に除去
         userTrails[name] = userTrails[name].filter(p => timestamp - p.ts <= 10000);
 
-        // 古い描画線を一度すべて削除
         if (userPolylineLines[name]) {
             userPolylineLines[name].forEach(seg => map.removeLayer(seg));
         }
@@ -598,17 +791,13 @@
 
         const points = userTrails[name];
         if (points.length > 1) {
-            // 各セグメント（点と点の間）ごとに経過時間を計算し、部分ごとに不透明度を変えて描画
             for (let i = 0; i < points.length - 1; i++) {
                 const p1 = points[i];
                 const p2 = points[i+1];
-                
-                // この区間が経過してからの時間（最新時点を基準とする）
-                const age = timestamp - p2.ts; // 0 (今) 〜 10000 (10秒前)
+                const age = timestamp - p2.ts;
                 
                 let opacity = 0.8;
                 if (age > 8000) {
-                    // 8秒〜10秒前の古い区間は、後ろから順番にフェードアウト (0.8 → 0)
                     opacity = 0.8 * (1.0 - (age - 8000) / 2000);
                     if (opacity < 0) opacity = 0;
                 }
@@ -624,7 +813,6 @@
             }
         }
 
-        // マーカー位置の更新
         if (userMarkers[name]) {
             userMarkers[name].setLatLng([lat, lng]).setIcon(createArrowIcon(color, heading, 20));
         } else {
@@ -882,6 +1070,8 @@
             myMarker = L.marker(latlng, { icon: createArrowIcon(myColor || '#7f8c8d', heading, 30) }).addTo(map);
             myMarker.bindTooltip(myName || '観戦者', { permanent: true, direction: 'top', className: 'user-label' });
             map.setView(latlng, 16);
+        } else {
+            myMarker.setLatLng(latlng).setIcon(createArrowIcon(myColor || '#7f8c8d', heading, 30));
         }
         
         if (isFollowing) map.panTo(latlng);
@@ -961,7 +1151,7 @@
     };
 
     window.triggerGPSRetry = () => {
-        showToast("🔄 GPSを強制リセット・再接続します");
+        showToast("🔄 GPS를強制リセット・再接続します");
         document.getElementById('status').style.background = "#ff9900";
         document.getElementById('status').innerText = "GPSシグナルを強制再起動中...";
         navigator.geolocation.getCurrentPosition(
@@ -1026,6 +1216,12 @@
                 if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
                 continue;
             }
+
+            if (u.name === myName && id !== myId && !isViewerMode) {
+                if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
+                continue;
+            }
+
             activeUserNames[u.name] = true;
             const isMe = (id === myId);
             const s = (u.speed * (speedUnitMode === 0 ? 1.94384 : (speedUnitMode === 1 ? 3.6 : 1))).toFixed(1);
