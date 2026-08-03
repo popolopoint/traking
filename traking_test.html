@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v2.9.9 by Popolo App.com</title>
+    <title>虎キング v2.9.10 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -17,6 +17,9 @@
 
         #replay-start-alert { position: fixed; top: 62px; left: 50%; transform: translateX(-50%); background: rgba(231, 76, 60, 0.95); color: white; padding: 6px 16px; border-radius: 15px; font-size: 14px; font-weight: bold; z-index: 9000; display: none; box-shadow: 0 2px 10px rgba(0,0,0,0.5); border: 2px solid white; text-align: center; pointer-events: none; animation: pulseAlert 0.5s infinite alternate; }
         @keyframes pulseAlert { from { transform: translateX(-50%) scale(1); } to { transform: translateX(-50%) scale(1.05); } }
+
+        /* 10秒前からの数字カウントダウン（画面を隠しすぎないコンパクト設計） */
+        #replay-countdown-alert { position: fixed; top: 62px; left: 50%; transform: translateX(-50%); background: rgba(243, 156, 18, 0.95); color: white; padding: 6px 20px; border-radius: 15px; font-size: 18px; font-weight: bold; z-index: 9000; display: none; box-shadow: 0 2px 10px rgba(0,0,0,0.5); border: 2px solid white; text-align: center; pointer-events: none; animation: pulseAlert 0.5s infinite alternate; }
 
         #floating-stop-btn { position: fixed; top: 90px; right: 10px; z-index: 3500; background: #e74c3c; color: white; border: 2px solid #fff; padding: 10px 16px; border-radius: 25px; font-size: 14px; font-weight: bold; cursor: pointer; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.4); animation: flashBanner 1.5s infinite; }
 
@@ -107,6 +110,7 @@
 
 <div id="toast-notice"></div>
 <div id="replay-start-alert">🚨 スタート！</div>
+<div id="replay-countdown-alert">10</div>
 
 <div id="start-flash-overlay">
     <div style="font-size: 40px; font-weight: bold; text-shadow: 2px 2px 10px rgba(0,0,0,0.5);">🚨 競技スタート！ 🚨</div>
@@ -156,10 +160,9 @@
             <button onclick="closeManualModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">✖</button>
         </div>
         <div class="modal-body-scroll">
-            <h4>⏱️ リプレイ中の高精度カウント（00:00:00.00形式）</h4>
-            <p>・スタート前は、どれだけ長時間の前でも「スタートまであと 00:00:00.00」で常時カウントダウンします。</p>
-            <p>・スタート後は「スタートから 00:00:00.00 経過」でカウントアップします。</p>
-            <p>・その下に現在の日本時間（1/100秒）も常時表示されます。</p>
+            <h4>⏱️ リプレイ中のカウントダウン演出</h4>
+            <p>・スタート10秒前からは画面中央に「10」「9」「8」…と1秒ごとの数字カウントダウンが表示されます。</p>
+            <p>・スタートの瞬間には「スタート！」のポップアップが出ます。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:12px; background:#3498db; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -175,8 +178,8 @@
 </div>
 
 <div id="header">
-    <div style="font-size:12px; font-weight:bold;">虎キング v2.9.9 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></div>
-    <!-- 画面上部：00:00:00.00 書式でのカウントダウン／経過時間 ＆ 日本時間 -->
+    <div style="font-size:12px; font-weight:bold;">虎キング v2.9.10 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></div>
+    <!-- 画面上部：時刻形式でのカウントダウン／経過時間 ＆ 日本時間 -->
     <div id="header-replay-status" style="font-size:10px; color:#ffcc00; font-family:monospace; display:none;"></div>
     <div id="header-replay-time" style="font-size:9px; color:#00ffcc; font-family:monospace; display:none;"></div>
     
@@ -281,6 +284,7 @@
     let isSeeking = false;
     let replayStartTimeMs = null;
     let hasAlertedStart = false;
+    let lastCountdownNum = null;
 
     const MARK_COLORS = { A:'#ff3b30', B:'#0000ff', C:'#ffff00', D:'#28a745', E:'#6a1b9a', F:'#ff2d55', G:'#000080', S:'#0000ff', K:'#5ac8fa' };
 
@@ -535,6 +539,7 @@
                 replayStartTimeMs = null;
             }
             hasAlertedStart = false;
+            lastCountdownNum = null;
 
             document.getElementById('replay-control-bar').style.display = 'flex';
             document.getElementById('replay-minimized-btn').style.display = 'none';
@@ -601,7 +606,6 @@
         return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms100).padStart(2,'0')}`;
     }
 
-    // ご要望通りの 00:00:00.00 書式変換関数
     function formatClockStyle(ms) {
         const absMs = Math.abs(ms);
         const totalSec = Math.floor(absMs / 1000);
@@ -634,26 +638,35 @@
             const timeStr = `${formatElapsedTime(curTime)} / ${formatElapsedTime(totalTime)}`;
             document.getElementById('replay-time-label').innerText = timeStr;
 
-            // --- スタート前もスタート後も、すべて同じ時刻形式（00:00:00.00）で継続表示 ---
             if (replayStartTimeMs) {
                 const diffMs = replayStartTimeMs - u.ts; // 正ならスタート前、負ならスタート後
                 const diffSec = diffMs / 1000;
 
                 let statusText = "";
-                if (diffSec > 0) {
-                    // スタート前：どれだけ時間があっても常に時刻形式でカウントダウン
+                if (diffSec > 10) {
+                    // 10秒より前は通常通り時刻書式カウントダウン
                     statusText = `⏳ スタートまであと ${formatClockStyle(diffMs)}`;
+                    document.getElementById('replay-countdown-alert').style.display = 'none';
+                } else if (diffSec > 0 && diffSec <= 10) {
+                    // スタート10秒前〜1秒前：上部は通常の時刻カウントダウンを維持しつつ、中央に「10」「9」…を表示
+                    statusText = `⏳ スタートまであと ${formatClockStyle(diffMs)}`;
+                    const secInt = Math.ceil(diffSec);
+                    const alertBox = document.getElementById('replay-countdown-alert');
+                    alertBox.innerText = secInt;
+                    alertBox.style.display = 'block';
                 } else if (diffSec <= 0 && diffSec > -1.5) {
                     // スタートの瞬間
                     statusText = `🚨 スタート！`;
+                    document.getElementById('replay-countdown-alert').style.display = 'none';
                     if (!hasAlertedStart) {
                         hasAlertedStart = true;
                         triggerStartAlertOverlay();
                     }
                 } else {
-                    // スタート後：時刻形式で経過時間カウントアップ
+                    // スタート後
                     const elapsedAfterStartMs = u.ts - replayStartTimeMs;
                     statusText = `⏱️ スタートから ${formatClockStyle(elapsedAfterStartMs)} 経過`;
+                    document.getElementById('replay-countdown-alert').style.display = 'none';
                     if (diffSec < -1.5) hasAlertedStart = false;
                 }
 
@@ -737,6 +750,7 @@
         document.getElementById('replay-minimized-btn').style.display = 'none';
         document.getElementById('header-replay-status').style.display = 'none';
         document.getElementById('header-replay-time').style.display = 'none';
+        document.getElementById('replay-countdown-alert').style.display = 'none';
         showToast("⏹️ リプレイを終了しました");
         location.reload();
     };
