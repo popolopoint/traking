@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v2.9.1 by Popolo App.com</title>
+    <title>虎キング v2.9.2 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -32,7 +32,7 @@
         .user-label { background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #ff9900; font-size: 10px; font-weight: bold; padding: 2px 4px; border-radius: 3px; white-space: nowrap; }
         .status-panel { position: fixed; bottom: 10px; left: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 11px; max-width: 80%; border: 1px solid #ff9900; }
         
-        /* リプレイ操作用コントロールバー（半透明ガラススタイル） */
+        /* リプレイコントロールバー（半透明ガラススタイル） */
         #replay-control-bar { 
             position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%); z-index: 3500; 
             background: rgba(30, 39, 46, 0.75); border: 1.5px solid rgba(255, 255, 255, 0.3); 
@@ -116,7 +116,7 @@
 <div id="replay-control-bar">
     <div class="replay-top-row">
         <span id="replay-title-label" style="font-size:12px; font-weight:bold; color:#ff9900;">名称</span>
-        <span id="replay-time-label" style="font-size:10px; color:#ccc;">00:00 / 00:00</span>
+        <span id="replay-time-label" style="font-size:10px; color:#ccc;">00:00.00 / 00:00.00</span>
     </div>
     <input type="range" id="replay-seekbar" min="0" max="100" value="0" oninput="onSeekbarInput(this.value)">
     <div class="replay-bottom-row">
@@ -153,8 +153,8 @@
             <button onclick="closeManualModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">✖</button>
         </div>
         <div class="modal-body-scroll">
-            <h4>📈 トラッキング尾っぽ軌跡</h4>
-            <p>・船が通過後、8秒間はハッキリした実線で後ろに尾っぽが伸び、その後の8秒〜10秒経過した古い部分から順番にフェードアウトして消えていきます。</p>
+            <h4>⏱️ リプレイ中の1/100秒時刻表示</h4>
+            <p>・画面上部（タイトル下）に、ログのタイムスタンプを基準とした正確なレース経過時間が1/100秒単位（00:00.00）で表示されます。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:12px; background:#3498db; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -169,10 +169,14 @@
     </div>
 </div>
 
-<div id="header">
-    <span style="font-size:14px;">虎キング v2.9.1 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
-    <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
-    <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
+<div id="header" style="flex-direction: column; height: 50px; padding: 4px 0;">
+    <div style="font-size:13px; font-weight:bold;">虎キング v2.9.2 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></div>
+    <!-- 画面一番上のタイトル下：リプレイ中の正確な1/100秒時刻表示エリア -->
+    <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-family:monospace; display:none;"></div>
+    <div style="position: absolute; right: 10px; top: 10px; display: flex; gap: 6px;">
+        <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;">設定</button>
+        <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
+    </div>
 </div>
 
 <div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
@@ -390,7 +394,7 @@
                 const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleString() : '日時不明';
                 const startInfo = c.startTime ? ` スタート: ${c.startTime}` : '';
                 html += `<div style="background:#f1f2f6; padding:8px; border-radius:6px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
-                    <div style="text-align:left; max-width:130px; overflow:hidden;"><b>🏁 ${c.title || '無題'}</b><br><span style="font-size:9px; color:#555;">${startInfo}</span><br><span style="font-size:8px; color:#888;">${dateStr}</span></div>
+                    <div style="text-align:left; max-width:130px; overflow:hidden;"><b>🏁 ${c.title || '无題'}</b><br><span style="font-size:9px; color:#555;">${startInfo}</span><br><span style="font-size:8px; color:#888;">${dateStr}</span></div>
                     <div style="display:flex; gap:4px;">
                         <button onclick="startReplay('${id}')" style="background:#8e44ad; color:white; border:none; padding:5px 8px; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer;">再生</button>
                         <button onclick="renameCourse('${id}', '${c.title}')" style="background:#2980b9; color:white; border:none; padding:5px 6px; border-radius:4px; font-size:11px; cursor:pointer;" title="名前変更">✏️</button>
@@ -445,6 +449,9 @@
             document.getElementById('replay-title-label').innerText = heatTitle + startStr;
             document.getElementById('minimized-title').innerText = heatTitle;
             
+            // 画面上部の時刻表示エリアを表示
+            document.getElementById('header-replay-time').style.display = 'block';
+
             document.getElementById('replay-control-bar').style.display = 'flex';
             document.getElementById('replay-minimized-btn').style.display = 'none';
             resetMinimizeTimer();
@@ -453,7 +460,6 @@
             replayPaused = false;
             document.getElementById('btn-pause').innerText = "一時停止";
 
-            // 全ての軌跡と線をクリア
             for (let name in userPolylineLines) {
                 if(userPolylineLines[name]) {
                     userPolylineLines[name].forEach(seg => map.removeLayer(seg));
@@ -490,11 +496,13 @@
         playHistoryStep();
     }
 
-    function formatTime(ms) {
+    // 1/100秒単位の時刻フォーマット（00:00.00形式）
+    function formatPreciseTime(ms) {
         const totalSec = Math.floor(ms / 1000);
         const m = Math.floor(totalSec / 60);
         const s = totalSec % 60;
-        return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        const ms100 = Math.floor((ms % 1000) / 10); // 0〜99
+        return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms100).padStart(2,'0')}`;
     }
 
     function playHistoryStep() {
@@ -514,7 +522,10 @@
             const startTime = replayLogsAll[0].ts;
             const curTime = u.ts - startTime;
             const totalTime = replayLogsAll[replayLogsAll.length - 1].ts - startTime;
-            document.getElementById('replay-time-label').innerText = `${formatTime(curTime)} / ${formatTime(totalTime)}`;
+            
+            const timeStr = `${formatPreciseTime(curTime)} / ${formatPreciseTime(totalTime)}`;
+            document.getElementById('replay-time-label').innerText = timeStr;
+            document.getElementById('header-replay-time').innerText = `⏱️ ${formatPreciseTime(curTime)}`;
 
             replayCurrentIndex++;
             replayTimer = setTimeout(playHistoryStep, Math.max(30, 1000 / replaySpeed));
@@ -533,7 +544,10 @@
             const startTime = replayLogsAll[0].ts;
             const curTime = u.ts - startTime;
             const totalTime = replayLogsAll[replayLogsAll.length - 1].ts - startTime;
-            document.getElementById('replay-time-label').innerText = `${formatTime(curTime)} / ${formatTime(totalTime)}`;
+            
+            const timeStr = `${formatPreciseTime(curTime)} / ${formatPreciseTime(totalTime)}`;
+            document.getElementById('replay-time-label').innerText = timeStr;
+            document.getElementById('header-replay-time').innerText = `⏱️ ${formatPreciseTime(curTime)}`;
         }
         setTimeout(() => { isSeeking = false; }, 200);
     };
@@ -578,19 +592,17 @@
         if(replayMinimizeTimer) clearTimeout(replayMinimizeTimer);
         document.getElementById('replay-control-bar').style.display = 'none';
         document.getElementById('replay-minimized-btn').style.display = 'none';
+        document.getElementById('header-replay-time').style.display = 'none';
         showToast("⏹️ リプレイを終了しました");
         location.reload();
     };
 
-    // 正確な「尾っぽが伸びて、古い部分から順番に薄くなって消える」ロジック
     function updateUserTrailAndMarker(name, lat, lng, color, heading, timestamp) {
         if (!userTrails[name]) userTrails[name] = [];
         userTrails[name].push({ lat: lat, lng: lng, ts: timestamp });
         
-        // 10秒以上古い古い座標を完全に除去
         userTrails[name] = userTrails[name].filter(p => timestamp - p.ts <= 10000);
 
-        // 古い描画線を一度すべて削除
         if (userPolylineLines[name]) {
             userPolylineLines[name].forEach(seg => map.removeLayer(seg));
         }
@@ -598,17 +610,13 @@
 
         const points = userTrails[name];
         if (points.length > 1) {
-            // 各セグメント（点と点の間）ごとに経過時間を計算し、部分ごとに不透明度を変えて描画
             for (let i = 0; i < points.length - 1; i++) {
                 const p1 = points[i];
                 const p2 = points[i+1];
-                
-                // この区間が経過してからの時間（最新時点を基準とする）
-                const age = timestamp - p2.ts; // 0 (今) 〜 10000 (10秒前)
+                const age = timestamp - p2.ts;
                 
                 let opacity = 0.8;
                 if (age > 8000) {
-                    // 8秒〜10秒前の古い区間は、後ろから順番にフェードアウト (0.8 → 0)
                     opacity = 0.8 * (1.0 - (age - 8000) / 2000);
                     if (opacity < 0) opacity = 0;
                 }
@@ -624,7 +632,6 @@
             }
         }
 
-        // マーカー位置の更新
         if (userMarkers[name]) {
             userMarkers[name].setLatLng([lat, lng]).setIcon(createArrowIcon(color, heading, 20));
         } else {
