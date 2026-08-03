@@ -292,7 +292,8 @@
         }
     }
 
-    db.ref('objects').on('value', snap => {
+
+db.ref('objects').on('value', snap => {
         const listContainer = document.getElementById('pointListContainer');
         listContainer.innerHTML = '<p id="noPointMsg" style="color: #666; font-size: 13px; margin: 0;">座標データが読み込まれていません</p>';
         
@@ -306,13 +307,13 @@
             const isShip = obj.type === 'ship';
             const markerColor = obj.color || MARK_COLORS[key] || '#ff9900';
             
-            // 確実に見えるよう、div要素の背景色と枠線で直接ブイ・船を表現するスタイル
+            // Leafletでも確実にSVGとして描画されるようにスタイルを調整
             let iconHtml = isShip 
-                ? `<div style="background: #1e90ff; width: 22px; height: 26px; border: 2px solid white; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; font-weight: bold;">船</div>`
-                : `<div style="background: ${markerColor}; width: 20px; height: 20px; border: 2px solid white; border-radius: 2px; box-shadow: 0 2px 4px rgba(0,0,0,0.4);"></div>`;
+                ? `<div style="width:32px; height:32px; display:flex; align-items:center; justify-content:center;"><svg viewBox="0 0 100 100" width="30" height="30"><path d="M 0,-15 L 6,-5 L 5,10 L -5,10 L -6,-5 Z" transform="translate(50, 50) scale(1.6)" fill="#1e90ff" stroke="#ffffff" stroke-width="2.5" /></svg></div>`
+                : `<div style="width:28px; height:28px; display:flex; align-items:center; justify-content:center;"><svg viewBox="0 0 100 100" width="26" height="26"><path d="M -6,-8 L 6,-8 L 6,8 L -6,8 Z" transform="translate(50, 50) scale(1.8)" fill="${markerColor}" stroke="#ffffff" stroke-width="2.5" /></svg></div>`;
             
             const marker = L.marker([obj.lat, obj.lng], { 
-                icon: L.divIcon({ html: iconHtml, className: '', iconSize: [24, 24], iconAnchor: [12, 12] }) 
+                icon: L.divIcon({ html: iconHtml, className: '', iconSize: [32, 32], iconAnchor: [16, 16] }) 
             }).addTo(map);
 
             const displayTitle = isShip ? '本部船' : (key.length > 5 ? 'マーク' : key);
@@ -322,6 +323,10 @@
             createPointCard(key, obj);
         }
     });
+
+
+
+    
     map.on('click', e => {
         const { lat, lng } = e.latlng;
         
