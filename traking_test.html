@@ -3,11 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v2.7.2 by Popolo App.com</title>
+    <title>虎キング v2.7.3 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
         #header { background: #1a1a1a; color: #ff9900; padding: 10px; text-align: center; font-weight: bold; position: fixed; width: 100%; height: 40px; z-index: 3000; border-bottom: 2px solid #ff9900; display: flex; justify-content: center; align-items: center; gap: 10px; box-sizing: border-box; }
+        
+        /* 録画中ステータスバー (ヘッダー直下に常時表示用) */
+        #recording-banner { position: fixed; top: 40px; left: 0; width: 100%; background: #c0392b; color: white; text-align: center; font-size: 12px; font-weight: bold; padding: 4px 0; z-index: 2900; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.5); letter-spacing: 1px; animation: flashBanner 1.5s infinite; }
+        @keyframes flashBanner { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+
         #map { height: 100vh; width: 100vw; z-index: 1; background: #222; }
         #unit-toggle { background: #333; color: #ff9900; border: 1px solid #ff9900; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; }
         
@@ -47,17 +52,18 @@
         .menu-child { opacity: 0; transform: translateY(20px) scale(0.8); pointer-events: none; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
         .menu-active .menu-child { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
         
-        #logout-btn   { bottom: 140px; background: rgba(231, 76, 60, 0.45); }
-        #name-btn     { bottom: 200px; }
-        #manual-btn   { bottom: 260px; background: rgba(39, 174, 96, 0.45); }
-        #replay-btn   { bottom: 320px; background: rgba(155, 89, 182, 0.45); }
+        #logout-btn     { bottom: 140px; background: rgba(231, 76, 60, 0.45); }
+        #name-btn       { bottom: 200px; }
+        #manual-btn     { bottom: 260px; background: rgba(39, 174, 96, 0.45); }
+        #replay-btn     { bottom: 320px; background: rgba(155, 89, 182, 0.45); }
         
-        /* 記録ボタン（共通位置） */
-        #record-btn   { bottom: 380px; background: rgba(39, 174, 96, 0.6); }
+        /* 独立した記録ボタン配置 */
+        #record-start-btn { bottom: 380px; background: rgba(39, 174, 96, 0.6); }
+        #record-stop-btn  { bottom: 440px; background: rgba(192, 57, 43, 0.6); }
         
-        #hosei-btn    { bottom: 440px; background: rgba(241, 196, 15, 0.45); }
-        #gps-retry-btn{ bottom: 500px; }
-        #add-point-btn{ bottom: 560px; background: rgba(52, 152, 219, 0.45); }
+        #hosei-btn      { bottom: 500px; background: rgba(241, 196, 15, 0.45); }
+        #gps-retry-btn  { bottom: 560px; }
+        #add-point-btn  { bottom: 620px; background: rgba(52, 152, 219, 0.45); }
         
         .popup-form { color: #333; min-width: 140px; font-size: 12px; }
         .popup-form select, .popup-form input { width: 100%; margin: 4px 0; padding: 4px; box-sizing: border-box; }
@@ -68,7 +74,7 @@
         .point-card { display: flex; align-items: center; gap: 8px; padding: 10px; background: white; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 14px; }
         .point-label { font-weight: bold; min-width: 25px; color: #007AFF; text-align: center; }
         
-        #toast-notice { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 6000; border: 1px solid #ff9900; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: center; pointer-events: none; }
+        #toast-notice { position: fixed; top: 65px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 6000; border: 1px solid #ff9900; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: center; pointer-events: none; }
         
         .modal-body-scroll { max-height: 60vh; overflow-y: auto; margin-top: 10px; font-size: 0.85rem; line-height: 1.5; color: #333; text-align: left; }
         .modal-body-scroll h4 { color: #2c3e50; margin: 10px 0 4px 0; border-bottom: 2px solid #3498db; padding-bottom: 2px; font-size: 0.9rem; }
@@ -78,6 +84,9 @@
 <body>
 
 <div id="toast-notice"></div>
+
+<!-- 画面上部に常時表示される録画中案内バナー -->
+<div id="recording-banner">🔴 【録画中・記録中】レース航跡を蓄積しています</div>
 
 <!-- リプレイ中の操作コントロールバー -->
 <div id="replay-control-bar">
@@ -111,10 +120,10 @@
             <button onclick="closeManualModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">✖</button>
         </div>
         <div class="modal-body-scroll">
-            <h4>🔴 記録スタート / ⏹️ ストップ</h4>
-            <p>・ボタンを押すだけで「🔴 記録開始」と「⏹️ 記録停止・保存」がスムーズに切り替わります。</p>
-            <h4>▶️ リプレイ再生 ( ▶️ ボタン )</h4>
-            <p>・過去に保存したヒートを選んで、航跡アニメーションを倍速・一時停止付きで再生できます。</p>
+            <h4>🔴 記録スタート ( ボタン )</h4>
+            <p>・レース開始時に押すと記録が始まり、画面上部に赤い「録画中」の案内バナーが常時表示されます。</p>
+            <h4>⏹️ 記録ストップ ( ボタン )</h4>
+            <p>・ゴール時に押すと、ヒート名を入力して保存できます。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:12px; background:#3498db; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -130,7 +139,7 @@
 </div>
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v2.7.2 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
+    <span style="font-size:14px;">虎キング v2.7.3 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -151,15 +160,16 @@
 
 <div class="status-panel" id="status">GPSシグナル待機中...</div>
 
-<!-- メニューボタン群 (1つのボタンが状態によって 🔴 / ⏹️ に切り替わります) -->
+<!-- メニューボタン群 (「記録スタート」と「記録ストップ」を独立した別ボタンに配置) -->
 <div id="button-container">
     <button id="logout-btn" class="action-btn menu-child" onclick="triggerLogout()" title="ログアウト">🏃</button>
     <button id="name-btn" class="action-btn menu-child" onclick="triggerSetup()" title="再設定">👤</button>
     <button id="manual-btn" class="action-btn menu-child" onclick="openManualModal()" title="使い方・アイコン説明">❓</button>
     <button id="replay-btn" class="action-btn menu-child" onclick="openReplayMenu()" title="航跡リプレイ再生">▶️</button>
     
-    <!-- 統合された記録ボタン（押すと赤 🔴 / 停止時は赤から緑 ⏹️ に切り替わる） -->
-    <button id="record-btn" class="action-btn menu-child" onclick="toggleRaceRecording()" title="レース記録切替">🔴</button>
+    <!-- 独立した「スタート」と「ストップ」ボタン -->
+    <button id="record-start-btn" class="action-btn menu-child" onclick="startRaceRecording()" title="レース記録スタート">🔴</button>
+    <button id="record-stop-btn" class="action-btn menu-child" onclick="stopRaceRecording()" title="レース記録ストップ">⏹️</button>
 
     <button id="hosei-btn" class="action-btn menu-child" onclick="triggerHoseiMode()" title="位置補正">🔧</button>
     <button id="gps-retry-btn" class="action-btn menu-child" onclick="triggerGPSRetry()" title="GPS再接続">🔄</button>
@@ -247,56 +257,54 @@
         document.getElementById('manual-modal').style.display = 'none';
     }
 
-    // 🔴 / ⏹️ 記録の開始・停止を1つのボタンで切り替えるスマートな関数
-    window.toggleRaceRecording = () => {
+    // 🔴 記録スタート
+    window.startRaceRecording = () => {
         toggleMenu();
-        const btn = document.getElementById('record-btn');
-
-        if (!isRecordingActive) {
-            // まだ記録していない場合 ➔ スタート
-            if (confirm("レースの記録を開始しますか？（前回の未保存一時履歴はリセットされます）")) {
-                db.ref('temp_history').remove().then(() => {
-                    isRecordingActive = true;
-                    btn.innerText = "⏹️";
-                    btn.style.background = "rgba(192, 57, 43, 0.85)";
-                    btn.title = "レース記録ストップ";
-                    showToast("🔴 レース記録をスタートしました！");
-                });
-            }
-        } else {
-            // すでに記録中の場合 ➔ ストップして保存
-            db.ref('temp_history').once('value', tempSnap => {
-                const historyData = tempSnap.val();
-                if (!historyData) {
-                    alert("記録された航跡データがありません");
-                    return;
-                }
-
-                db.ref('objects').once('value', objSnap => {
-                    const currentObjects = objSnap.val() || {};
-
-                    const heatName = prompt("記録するヒート名を入力してください\n（例: 第1ヒート、決勝戦など）", "第1ヒート");
-                    if (!heatName) return;
-
-                    db.ref('saved_courses').push({
-                        title: heatName,
-                        objects: currentObjects,
-                        history: historyData,
-                        createdAt: Date.now()
-                    }, err => {
-                        if (!err) {
-                            isRecordingActive = false;
-                            btn.innerText = "🔴";
-                            btn.style.background = "rgba(39, 174, 96, 0.6)";
-                            btn.title = "レース記録スタート";
-                            showToast(`💾 「${heatName}」のレース記録を保存しました！`);
-                        } else {
-                            alert("保存に失敗しました");
-                        }
-                    });
-                });
+        if (confirm("レースの記録を開始しますか？（前回の未保存一時履歴はリセットされます）")) {
+            db.ref('temp_history').remove().then(() => {
+                isRecordingActive = true;
+                // 画面上の録画中案内バナーを表示する
+                document.getElementById('recording-banner').style.display = 'block';
+                showToast("🔴 レース記録をスタートしました！");
             });
         }
+    };
+
+    // ⏹️ 記録ストップ＆保存
+    window.stopRaceRecording = () => {
+        toggleMenu();
+        if (!isRecordingActive) return alert("現在、記録はスタートしていません");
+
+        db.ref('temp_history').once('value', tempSnap => {
+            const historyData = tempSnap.val();
+            if (!historyData) {
+                alert("記録された航跡データがありません");
+                return;
+            }
+
+            db.ref('objects').once('value', objSnap => {
+                const currentObjects = objSnap.val() || {};
+
+                const heatName = prompt("記録するヒート名を入力してください\n（例: 第1ヒート、決勝戦など）", "第1ヒート");
+                if (!heatName) return;
+
+                db.ref('saved_courses').push({
+                    title: heatName,
+                    objects: currentObjects,
+                    history: historyData,
+                    createdAt: Date.now()
+                }, err => {
+                    if (!err) {
+                        isRecordingActive = false;
+                        // 録画中バナーを非表示にする
+                        document.getElementById('recording-banner').style.display = 'none';
+                        showToast(`💾 「${heatName}」のレース記録を保存しました！`);
+                    } else {
+                        alert("保存に失敗しました");
+                    }
+                });
+            });
+        });
     };
 
     window.openReplayMenu = () => {
