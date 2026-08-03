@@ -3,17 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v2.7.7 by Popolo App.com</title>
+    <title>虎キング v2.7.8 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
         #header { background: #1a1a1a; color: #ff9900; padding: 10px; text-align: center; font-weight: bold; position: fixed; width: 100%; height: 40px; z-index: 3000; border-bottom: 2px solid #ff9900; display: flex; justify-content: center; align-items: center; gap: 10px; box-sizing: border-box; }
         
-        /* 録画中ステータスバー (ヘッダー直下に常時表示用) */
         #recording-banner { position: fixed; top: 40px; left: 0; width: 100%; background: #c0392b; color: white; text-align: center; font-size: 12px; font-weight: bold; padding: 4px 0; z-index: 2900; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.5); letter-spacing: 1px; animation: flashBanner 1.5s infinite; }
         @keyframes flashBanner { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
-        /* 記録中の常時表示ストップボタン（画面右上に大きく配置） */
         #floating-stop-btn { position: fixed; top: 75px; right: 10px; z-index: 3500; background: #e74c3c; color: white; border: 2px solid #fff; padding: 10px 16px; border-radius: 25px; font-size: 14px; font-weight: bold; cursor: pointer; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.4); animation: flashBanner 1.5s infinite; }
 
         #map { height: 100vh; width: 100vw; z-index: 1; background: #222; }
@@ -31,9 +29,9 @@
         .user-label { background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #ff9900; font-size: 10px; font-weight: bold; padding: 2px 4px; border-radius: 3px; white-space: nowrap; }
         .status-panel { position: fixed; bottom: 10px; left: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 11px; max-width: 80%; border: 1px solid #ff9900; }
         
-        /* リプレイ操作用コントロールバー */
-        #replay-control-bar { position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%); z-index: 3500; background: rgba(0,0,0,0.85); border: 2px solid #ff9900; padding: 10px 15px; border-radius: 25px; display: none; align-items: center; gap: 10px; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .replay-ctrl-btn { background: #333; color: white; border: 1px solid #ff9900; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        /* リプレイ操作用コントロールバー（1x等倍を追加） */
+        #replay-control-bar { position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%); z-index: 3500; background: rgba(0,0,0,0.85); border: 2px solid #ff9900; padding: 10px 15px; border-radius: 25px; display: none; align-items: center; gap: 8px; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .replay-ctrl-btn { background: #333; color: white; border: 1px solid #ff9900; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11px; }
         .replay-ctrl-btn.active { background: #ff9900; color: #000; }
 
         /* 水深測っ太郎風の半透明ガラススタイル */
@@ -86,16 +84,14 @@
 
 <div id="toast-notice"></div>
 
-<!-- 画面上部に常時表示される録画中案内バナー -->
 <div id="recording-banner">🔴 【録画中・記録中】レース航跡を蓄積しています</div>
-
-<!-- 記録中のみ画面右上に出現する専用の常時ストップボタン -->
 <button id="floating-stop-btn" onclick="stopRaceRecording()">⏹️ 記録ストップ＆保存</button>
 
-<!-- リプレイ中の操作コントロールバー -->
+<!-- リプレイ中の操作コントロールバー (1x等倍を追加) -->
 <div id="replay-control-bar">
-    <span id="replay-title-label" style="font-size:12px; font-weight:bold; color:#ff9900;">リプレイ</span>
+    <span id="replay-title-label" style="font-size:11px; font-weight:bold; color:#ff9900;">リプレイ</span>
     <button class="replay-ctrl-btn" id="btn-pause" onclick="toggleReplayPause()">一時停止</button>
+    <button class="replay-ctrl-btn" onclick="setReplaySpeed(1)">1x</button>
     <button class="replay-ctrl-btn active" onclick="setReplaySpeed(5)">5x</button>
     <button class="replay-ctrl-btn" onclick="setReplaySpeed(10)">10x</button>
     <button class="replay-ctrl-btn" onclick="setReplaySpeed(20)">20x</button>
@@ -125,7 +121,7 @@
         </div>
         <div class="modal-body-scroll">
             <h4>▶️ リプレイ再生 ( ボタン )</h4>
-            <p>・過去に保存したヒートを選んで、航跡アニメーションを再生できます。</p>
+            <p>・過去に保存したヒートを選んで再生できます。リストから「✏️ 編集」で名前の変更や「🗑️ 削除」が可能です。「1x（等倍）」〜「20x（倍速）」の切り替えもできます。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:12px; background:#3498db; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -133,7 +129,7 @@
 
 <!-- ヒート名を選んでリプレイするモーダル -->
 <div id="saved-courses-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
-    <div style="background:white; padding:18px; border-radius:12px; width:90%; max-width:350px; box-sizing:border-box; text-align:center;">
+    <div style="background:white; padding:18px; border-radius:12px; width:90%; max-width:360px; box-sizing:border-box; text-align:center;">
         <h3 style="margin:0 0 10px 0; color:#2c3e50; font-size:1.1rem;">📁 レース記録・ヒート一覧</h3>
         <div id="saved-courses-list" class="modal-body-scroll" style="min-height:100px; max-height:40vh;"></div>
         <button onclick="document.getElementById('saved-courses-modal').style.display='none'" style="width:100%; margin-top:12px; background:#7f8c8d; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
@@ -141,7 +137,7 @@
 </div>
 
 <div id="header">
-    <span style="font-size:14px;">虎キング v2.7.7 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
+    <span style="font-size:14px;">虎キング v2.7.8 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
     <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定パネル</button>
     <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
 </div>
@@ -231,7 +227,7 @@
 
     let isReplaying = false;
     let replayPaused = false;
-    let replaySpeed = 5;
+    let replaySpeed = 5; // 初期 5x
     let replayTimer = null;
 
     const MARK_COLORS = { A:'#ff3b30', B:'#0000ff', C:'#ffff00', D:'#28a745', E:'#6a1b9a', F:'#ff2d55', G:'#000080', S:'#0000ff', K:'#5ac8fa' };
@@ -257,7 +253,6 @@
         document.getElementById('manual-modal').style.display = 'none';
     }
 
-    // 🔴 記録スタート
     window.startRaceRecording = () => {
         toggleMenu();
         if (confirm("レースの記録を開始しますか？（前回の未保存一時履歴はリセットされます）")) {
@@ -275,7 +270,6 @@
         }
     };
 
-    // ⏹️ 記録ストップ＆保存
     window.stopRaceRecording = () => {
         if (!isRecordingActive) {
             alert("現在、記録はスタートしていません");
@@ -317,25 +311,14 @@
         });
     };
 
-    // ▶️ リプレイメニュー表示（修正版：フリーズ防止と確実にリストを描画する処理）
+    // ▶️ リプレイメニュー表示（名前の書き換え・削除機能つき）
     window.openReplayMenu = () => {
         toggleMenu();
         const listDiv = document.getElementById('saved-courses-list');
         listDiv.innerHTML = "読み込み中...";
         document.getElementById('saved-courses-modal').style.display = 'flex';
 
-        // 3秒以内にロードできない場合のタイムアウト保険
-        let isLoaded = false;
-        const loadTimeout = setTimeout(() => {
-            if (!isLoaded) {
-                listDiv.innerHTML = "<p style='color:#e74c3c;'>読み込みに時間がかかっています。<br>電波状況を確認してください。</p>";
-            }
-        }, 4000);
-
         db.ref('saved_courses').once('value', snap => {
-            isLoaded = true;
-            clearTimeout(loadTimeout);
-
             const saved = snap.val();
             if (!saved) {
                 listDiv.innerHTML = "<p style='color:#666; padding:20px;'>保存されたヒート記録はありません</p>";
@@ -345,17 +328,47 @@
             for (let id in saved) {
                 const c = saved[id];
                 const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleString() : '日時不明';
-                html += `<div style="background:#f1f2f6; padding:10px; border-radius:6px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-                    <div style="text-align:left;"><b>🏁 ${c.title || '無題のヒート'}</b><br><span style="font-size:10px; color:#666;">${dateStr}</span></div>
-                    <button onclick="startReplay('${id}')" style="background:#8e44ad; color:white; border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">再生</button>
+                html += `<div style="background:#f1f2f6; padding:8px; border-radius:6px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+                    <div style="text-align:left; max-width:130px; overflow:hidden;"><b>🏁 ${c.title || '無題'}</b><br><span style="font-size:9px; color:#666;">${dateStr}</span></div>
+                    <div style="display:flex; gap:4px;">
+                        <button onclick="startReplay('${id}')" style="background:#8e44ad; color:white; border:none; padding:5px 8px; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer;">再生</button>
+                        <button onclick="renameCourse('${id}', '${c.title}')" style="background:#2980b9; color:white; border:none; padding:5px 6px; border-radius:4px; font-size:11px; cursor:pointer;" title="名前変更">✏️</button>
+                        <button onclick="deleteCourse('${id}')" style="background:#c0392b; color:white; border:none; padding:5px 6px; border-radius:4px; font-size:11px; cursor:pointer;" title="削除">🗑️</button>
+                    </div>
                 </div>`;
             }
             listDiv.innerHTML = html;
         }, (error) => {
-            isLoaded = true;
-            clearTimeout(loadTimeout);
-            listDiv.innerHTML = `<p style='color:#e74c3c;'>データの取得に失敗しました。<br>${error.message}</p>`;
+            listDiv.innerHTML = `<p style='color:#e74c3c;'>取得失敗: ${error.message}</p>`;
         });
+    };
+
+    // ヒート名の書き換え（編集）機能
+    window.renameCourse = (id, currentTitle) => {
+        const newTitle = prompt("新しいヒート名を入力してください", currentTitle);
+        if (!newTitle) return;
+        db.ref('saved_courses/' + id).update({ title: newTitle }, err => {
+            if (!err) {
+                showToast("✏️ ヒート名を変更しました");
+                openReplayMenu(); // リストを再読み込み
+            } else {
+                alert("変更に失敗しました");
+            }
+        });
+    };
+
+    // ヒートの削除機能
+    window.deleteCourse = (id) => {
+        if (confirm("このレース記録を削除しますか？（元に戻せません）")) {
+            db.ref('saved_courses/' + id).remove(err => {
+                if (!err) {
+                    showToast("🗑️ 記録を削除しました");
+                    openReplayMenu(); // リストを再読み込み
+                } else {
+                    alert("削除に失敗しました");
+                }
+            });
+        }
     };
 
     window.startReplay = (id) => {
@@ -395,7 +408,7 @@
                 btn.classList.toggle('active', btn.innerText.includes(speed + 'x'));
             }
         });
-        showToast(`⚡ 再生速度: ${speed}倍速`);
+        showToast(`⚡ 再生速度: ${speed === 1 ? '等倍 (1x)' : speed + '倍速'}`);
     };
 
     window.exitReplay = () => {
