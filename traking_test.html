@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.0.4 by Popolo App.com</title>
+    <title>虎キング v3.0.5 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -84,10 +84,11 @@
         #replay-btn     { bottom: 320px; background: rgba(155, 89, 182, 0.45); }
         
         #record-start-btn { bottom: 380px; background: rgba(39, 174, 96, 0.6); }
-        
-        #hosei-btn      { bottom: 440px; background: rgba(241, 196, 15, 0.45); }
-        #gps-retry-btn  { bottom: 500px; }
-        #add-point-btn  { bottom: 560px; background: rgba(52, 152, 219, 0.45); }
+        #admin-user-del-btn { bottom: 440px; background: rgba(192, 57, 43, 0.6); }
+
+        #hosei-btn      { bottom: 500px; background: rgba(241, 196, 15, 0.45); }
+        #gps-retry-btn  { bottom: 560px; }
+        #add-point-btn  { bottom: 620px; background: rgba(52, 152, 219, 0.45); }
         
         .popup-form { color: #333; min-width: 140px; font-size: 12px; }
         .popup-form select, .popup-form input { width: 100%; margin: 4px 0; padding: 4px; box-sizing: border-box; }
@@ -159,8 +160,8 @@
             <button onclick="closeManualModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">✖</button>
         </div>
         <div class="modal-body-scroll">
-            <h4>⚡ 倍速再生の修正 (v3.0.4)</h4>
-            <p>・5x、10x、20xの各倍速が正確かつ自然なスピードになるよう、時間差分ベースの倍速制御に改善しました。</p>
+            <h4>🛡️ 管理者参加者削除機能 (v3.0.5)</h4>
+            <p>・メニューの「🛡️」ボタンから管理者パスワードを入力することで、現在参加しているメンバーをチェックボックスで選択して強制削除できるようになりました。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:12px; background:#3498db; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -175,9 +176,19 @@
     </div>
 </div>
 
+<!-- 管理者用・参加者削除モーダル -->
+<div id="admin-users-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:18px; border-radius:12px; width:90%; max-width:360px; box-sizing:border-box; text-align:center;">
+        <h3 style="margin:0 0 10px 0; color:#c0392b; font-size:1.1rem;">🛡️ 管理者: 参加者削除</h3>
+        <p style="font-size:11px; color:#555; margin-bottom:10px;">削除したい参加者にチェックを入れてください</p>
+        <div id="admin-users-list" class="modal-body-scroll" style="min-height:80px; max-height:35vh; text-align:left;"></div>
+        <button onclick="executeSelectedUsersDelete()" style="width:100%; margin-top:12px; background:#c0392b; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">チェックした参加者を強制退出（削除）</button>
+        <button onclick="document.getElementById('admin-users-modal').style.display='none'" style="width:100%; margin-top:6px; background:#7f8c8d; color:white; border:none; padding:8px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
+    </div>
+</div>
+
 <div id="header">
-    <div style="font-size:12px; font-weight:bold;">虎キング v3.0.4 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></div>
-    <!-- 画面上部：時刻形式でのカウントダウン／経過時間 ＆ 日本時間 -->
+    <div style="font-size:12px; font-weight:bold;">虎キング v3.0.5 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></div>
     <div id="header-replay-status" style="font-size:10px; color:#ffcc00; font-family:monospace; display:none;"></div>
     <div id="header-replay-time" style="font-size:9px; color:#00ffcc; font-family:monospace; display:none;"></div>
     
@@ -211,6 +222,7 @@
     <button id="replay-btn" class="action-btn menu-child" onclick="openReplayMenu()" title="航跡リプレイ再生">▶️</button>
     
     <button id="record-start-btn" class="action-btn menu-child" onclick="startRaceRecording()" title="レース記録スタート">🔴</button>
+    <button id="admin-user-del-btn" class="action-btn menu-child" onclick="openAdminUsersModal()" title="参加者管理・削除">🛡️</button>
 
     <button id="hosei-btn" class="action-btn menu-child" onclick="triggerHoseiMode()" title="位置補正">🔧</button>
     <button id="gps-retry-btn" class="action-btn menu-child" onclick="triggerGPSRetry()" title="GPS再接続">🔄</button>
@@ -306,6 +318,65 @@
     function closeManualModal() {
         document.getElementById('manual-modal').style.display = 'none';
     }
+
+    // 管理者用・参加者削除モーダルを開く
+    window.openAdminUsersModal = () => {
+        toggleMenu();
+        const inputPass = prompt("管理者用パスワードを入力してください:");
+        if (inputPass === null) return;
+
+        if (inputPass !== RECORD_PASSWORD) {
+            alert("❌ パスワードが違います！");
+            return;
+        }
+
+        const listDiv = document.getElementById('admin-users-list');
+        listDiv.innerHTML = "読み込み中...";
+        document.getElementById('admin-users-modal').style.display = 'flex';
+
+        db.ref('users').once('value', snap => {
+            const users = snap.val();
+            if (!users) {
+                listDiv.innerHTML = "<p style='color:#666; padding:10px;'>現在参加しているユーザーはいません</p>";
+                return;
+            }
+
+            let html = "";
+            for (let id in users) {
+                const u = users[id];
+                if (!u.name) continue;
+                html += `<div style="padding:6px 0; border-bottom:1px solid #eee; display:flex; align-items:center; gap:8px;">
+                    <input type="checkbox" class="target-user-chk" value="${id}" id="chk_${id}" style="transform:scale(1.2);">
+                    <label for="chk_${id}" style="font-size:12px; cursor:pointer;"><span style="color:${u.color}">●</span> <b>${u.name}</b></label>
+                </div>`;
+            }
+            listDiv.innerHTML = html || "<p style='color:#666;'>有効なユーザーがいません</p>";
+        });
+    };
+
+    // チェックされたユーザーをデータベースから削除する実行関数
+    window.executeSelectedUsersDelete = () => {
+        const checkboxes = document.querySelectorAll('.target-user-chk:checked');
+        if (checkboxes.length === 0) {
+            alert("削除するユーザーが選択されていません");
+            return;
+        }
+
+        if (confirm(`選択した ${checkboxes.length} 名の参加者を強制退出（削除）させますか？`)) {
+            let promises = [];
+            checkboxes.forEach(chk => {
+                const userId = chk.value;
+                promises.push(db.ref('users/' + userId).remove());
+            });
+
+            Promise.all(promises).then(() => {
+                showToast("🗑️ 選択した参加者を削除しました");
+                document.getElementById('admin-users-modal').style.display = 'none';
+            }).catch(err => {
+                alert("削除に失敗しました: " + err.message);
+            });
+        }
+    };
 
     window.startRaceRecording = () => {
         toggleMenu();
@@ -680,7 +751,6 @@
 
             document.getElementById('header-replay-time').innerText = `🕒 日本時間: ${formatJapanDateTime(u.ts)}`;
 
-            // --- 倍速ごとの正確なスピード制御に修正 ---
             let nextDelay = 30;
             if (replaySpeed === 1) {
                 if (replayCurrentIndex < replayLogsAll.length - 1) {
@@ -690,7 +760,6 @@
                 }
                 replayCurrentIndex += 1;
             } else {
-                // 倍速（5x, 10x, 20x）のときは、時間差分を「replaySpeed」で割ることで正確な倍速を実現
                 if (replayCurrentIndex < replayLogsAll.length - 1) {
                     const nextU = replayLogsAll[replayCurrentIndex + 1];
                     const realDiff = nextU.ts - u.ts;
@@ -1151,7 +1220,7 @@
     };
 
     window.triggerGPSRetry = () => {
-        showToast("🔄 GPS를強制リセット・再接続します");
+        showToast("🔄 GPSを強制リセット・再接続します");
         document.getElementById('status').style.background = "#ff9900";
         document.getElementById('status').innerText = "GPSシグナルを強制再起動中...";
         navigator.geolocation.getCurrentPosition(
