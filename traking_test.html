@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.0.7 by Popolo App.com</title>
+    <title>虎キング v3.0.8 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -122,7 +122,6 @@
 
 <div id="replay-control-bar">
     <div class="replay-top-row">
-        <!-- 文字サイズを少し大きく変更 -->
         <span id="replay-title-label" style="font-size:13px; font-weight:bold; color:#ff9900;">名称</span>
         <span id="replay-time-label" style="font-size:12px; font-weight:bold; color:#ccc;">00:00.00 / 00:00.00</span>
     </div>
@@ -161,7 +160,7 @@
             <button onclick="closeManualModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">✖</button>
         </div>
         <div class="modal-body-scroll">
-            <h4>🛡️ 管理者参加者削除機能 (v3.0.5)</h4>
+            <h4>🛡️ 管理者参加者削除機能</h4>
             <p>・メニューの「🛡️」ボタンから管理者パスワードを入力することで、現在参加しているメンバーをチェックボックスで選択して強制削除できるようになりました。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:12px; background:#3498db; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
@@ -188,10 +187,8 @@
     </div>
 </div>
 
-
-   <div id="header">
-    <div style="font-size:12px; font-weight:bold;">虎キング v3.0.7 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></div>
-    <!-- 文字サイズを大きくし、太字を追加して視認性をアップ -->
+<div id="header">
+    <div style="font-size:12px; font-weight:bold;">虎キング v3.0.8 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
     
@@ -199,10 +196,7 @@
         <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;">設定</button>
         <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
     </div>
-</div> 
-
-
-    
+</div>
 
 <div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
 
@@ -313,7 +307,6 @@
         黒: '#2c2c2e' 
     };
     
-    // カラーの選択肢用ヘルパー配列
     const COLOR_OPTIONS = [
         { name: '赤', hex: '#ff3b30' },
         { name: 'オレンジ', hex: '#ff9500' },
@@ -324,8 +317,6 @@
         { name: '白', hex: '#ffffff' },
         { name: '黒', hex: '#2c2c2e' }
     ];
-
-    
 
     function showToast(message) {
         const toast = document.getElementById('toast-notice');
@@ -348,7 +339,6 @@
         document.getElementById('manual-modal').style.display = 'none';
     }
 
-    // 管理者用・参加者削除モーダルを開く
     window.openAdminUsersModal = () => {
         toggleMenu();
         const inputPass = prompt("管理者用パスワードを入力してください:");
@@ -383,7 +373,6 @@
         });
     };
 
-    // チェックされたユーザーをデータベースから削除する実行関数
     window.executeSelectedUsersDelete = () => {
         const checkboxes = document.querySelectorAll('.target-user-chk:checked');
         if (checkboxes.length === 0) {
@@ -698,15 +687,11 @@
         playHistoryStep();
     }
 
-    
-    
-    
     function formatJapanDateTime(ms) {
         const date = new Date(ms);
         const h = String(date.getHours()).padStart(2, '0');
         const min = String(date.getMinutes()).padStart(2, '0');
         const s = String(date.getSeconds()).padStart(2, '0');
-        // 演出用：再生中はミリ秒の下2桁を綺麗に動かす
         const ms100 = isReplaying && !replayPaused ? String(Math.floor(Date.now() / 10) % 100).padStart(2, '0') : String(Math.floor(date.getMilliseconds() / 10)).padStart(2, '0');
         return `${h}:${min}:${s}.${ms100}`;
     }
@@ -715,7 +700,6 @@
         const totalSec = Math.floor(ms / 1000);
         const m = Math.floor(totalSec / 60);
         const s = totalSec % 60;
-        // 演出用：再生中は1/100秒が動いているように見せる
         const ms100 = isReplaying && !replayPaused ? String(Math.floor(Date.now() / 10) % 100).padStart(2, '0') : String(Math.floor((ms % 1000) / 10)).padStart(2, '0');
         return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${ms100}`;
     }
@@ -726,13 +710,10 @@
         const h = Math.floor(totalSec / 3600);
         const m = Math.floor((totalSec % 3600) / 60);
         const s = totalSec % 60;
-        // 演出用：カウントダウン中や経過時間もミリ秒が動くように
         const ms100 = isReplaying && !replayPaused ? String(Math.floor(Date.now() / 10) % 100).padStart(2, '0') : String(Math.floor((absMs % 1000) / 10)).padStart(2, '0');
         
         return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${ms100}`;
     }
-
-    
 
     function playHistoryStep() {
         if (!isReplaying) return;
@@ -926,7 +907,8 @@
             userMarkers[name].bindTooltip(name, { permanent: true, direction: 'top', className: 'user-label' });
         }
     }
-function createPointCard(key, obj) {
+
+    function createPointCard(key, obj) {
         const listContainer = document.getElementById('pointListContainer');
         const msg = document.getElementById('noPointMsg');
         if (msg) msg.style.display = 'none';
@@ -992,20 +974,6 @@ function createPointCard(key, obj) {
         });
     };
 
-
-    
-    window.updateMarkerAppearance = (key) => {
-        const card = document.querySelector(`.point-card[data-key="${key}"]`);
-        if (!card) return;
-        const type = card.querySelector('.type-select').value;
-        const comment = card.querySelector('.comment-input').value;
-
-        db.ref('objects/' + key).update({
-            type: type === 'boat' ? 'ship' : 'buoy',
-            comment: comment
-        });
-    };
-
     function checkIncomingCourse() {
         const urlParams = new URLSearchParams(window.location.search);
         const mode = urlParams.get('mode');
@@ -1025,7 +993,7 @@ function createPointCard(key, obj) {
                     
                     newObjects[key] = {
                         type: 'buoy',
-                        color: MARK_COLORS[key] || '#ff9900',
+                        color: MARK_COLORS[key] || '#ff3b30',
                         lat: lat,
                         lng: lng,
                         comment: `${key}点 (${course.toUpperCase()})`,
@@ -1102,14 +1070,7 @@ function createPointCard(key, obj) {
             }
             return;
         }
-
-
-
-
-
         
-       // マップクリック時のポップアップ表示部分
-    // map.on('click', e => { ... 内の isAddPointMode の中身を以下に差し替え）
         if (isAddPointMode) {
             let colorOpts = '';
             COLOR_OPTIONS.forEach(c => { colorOpts += `<option value="${c.hex}">${c.name}</option>`; });
@@ -1137,6 +1098,7 @@ function createPointCard(key, obj) {
             toggleMenu();
             return;
         }
+    });
 
     window.manualSave = (lat, lng) => {
         const type = document.getElementById('new_type').value;
@@ -1154,19 +1116,6 @@ function createPointCard(key, obj) {
             comment: comment, 
             ts: Date.now() 
         });
-        map.closePopup();
-        document.getElementById('pointSettingsPanel').style.display = 'block';
-    };
-
-
-
-
-    
-    window.manualSave = (lat, lng) => {
-        const type = document.getElementById('new_type').value;
-        const comment = document.getElementById('new_comment').value;
-        const randomKey = "M" + Math.floor(Math.random() * 100);
-        db.ref('objects/' + randomKey).set({ type: type, color: '#ff9900', lat: lat, lng: lng, comment: comment, ts: Date.now() });
         map.closePopup();
         document.getElementById('pointSettingsPanel').style.display = 'block';
     };
@@ -1222,28 +1171,21 @@ function createPointCard(key, obj) {
         return L.divIcon({ html: html, className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
     }
 
-
-function createObjectIcon(type, shape, color) {
+    function createObjectIcon(type, shape, color) {
         let iconHtml = '';
         if (type === 'ship') {
-            // ゴムボートっぽいアイコン（レスキューボート風）
             iconHtml = `<div style="font-size:26px; filter: drop-shadow(0 0 3px rgba(0,0,0,0.8)); text-align:center; line-height:26px;" title="ゴムボート">🚤</div>`;
         } else {
             const hexColor = color || '#ff3b30';
             if (shape === 'rect') {
-                // 縦長長方形（高さは三角形と同じくらい）
                 iconHtml = `<svg width="18" height="24" viewBox="0 0 100 133"><rect x="15" y="5" width="70" height="123" rx="6" fill="${hexColor}" stroke="white" stroke-width="8" /></svg>`;
             } else {
-                // 縦長三角形
                 iconHtml = `<svg width="18" height="24" viewBox="0 0 100 133"><path d="M50 5 L95 125 Q95 128 50 128 Q5 128 5 125 Z" fill="${hexColor}" stroke="white" stroke-width="8" /></svg>`;
             }
         }
         return L.divIcon({ html: iconHtml, className: '', iconSize: [24, 26], iconAnchor: [12, 13] });
     }
 
-
-    
-    
     function handleGPSError(error) {
         let msg = "Status: ";
         switch(error.code) {
