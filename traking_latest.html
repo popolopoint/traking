@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.0.4 by Popolo App.com</title>
+    <title>虎キング v3.0.8 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -84,10 +84,11 @@
         #replay-btn     { bottom: 320px; background: rgba(155, 89, 182, 0.45); }
         
         #record-start-btn { bottom: 380px; background: rgba(39, 174, 96, 0.6); }
-        
-        #hosei-btn      { bottom: 440px; background: rgba(241, 196, 15, 0.45); }
-        #gps-retry-btn  { bottom: 500px; }
-        #add-point-btn  { bottom: 560px; background: rgba(52, 152, 219, 0.45); }
+        #admin-user-del-btn { bottom: 440px; background: rgba(192, 57, 43, 0.6); }
+
+        #hosei-btn      { bottom: 500px; background: rgba(241, 196, 15, 0.45); }
+        #gps-retry-btn  { bottom: 560px; }
+        #add-point-btn  { bottom: 620px; background: rgba(52, 152, 219, 0.45); }
         
         .popup-form { color: #333; min-width: 140px; font-size: 12px; }
         .popup-form select, .popup-form input { width: 100%; margin: 4px 0; padding: 4px; box-sizing: border-box; }
@@ -121,8 +122,8 @@
 
 <div id="replay-control-bar">
     <div class="replay-top-row">
-        <span id="replay-title-label" style="font-size:12px; font-weight:bold; color:#ff9900;">名称</span>
-        <span id="replay-time-label" style="font-size:10px; color:#ccc;">00:00.00 / 00:00.00</span>
+        <span id="replay-title-label" style="font-size:13px; font-weight:bold; color:#ff9900;">名称</span>
+        <span id="replay-time-label" style="font-size:12px; font-weight:bold; color:#ccc;">00:00.00 / 00:00.00</span>
     </div>
     <input type="range" id="replay-seekbar" min="0" max="100" value="0" oninput="onSeekbarInput(this.value)">
     <div class="replay-bottom-row">
@@ -159,8 +160,8 @@
             <button onclick="closeManualModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">✖</button>
         </div>
         <div class="modal-body-scroll">
-            <h4>⚡ 倍速再生の修正 (v3.0.4)</h4>
-            <p>・5x、10x、20xの各倍速が正確かつ自然なスピードになるよう、時間差分ベースの倍速制御に改善しました。</p>
+            <h4>🛡️ 管理者参加者削除機能</h4>
+            <p>・メニューの「🛡️」ボタンから管理者パスワードを入力することで、現在参加しているメンバーをチェックボックスで選択して強制削除できるようになりました。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:12px; background:#3498db; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -175,11 +176,21 @@
     </div>
 </div>
 
+<!-- 管理者用・参加者削除モーダル -->
+<div id="admin-users-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:18px; border-radius:12px; width:90%; max-width:360px; box-sizing:border-box; text-align:center;">
+        <h3 style="margin:0 0 10px 0; color:#c0392b; font-size:1.1rem;">🛡️ 管理者: 参加者削除</h3>
+        <p style="font-size:11px; color:#555; margin-bottom:10px;">削除したい参加者にチェックを入れてください</p>
+        <div id="admin-users-list" class="modal-body-scroll" style="min-height:80px; max-height:35vh; text-align:left;"></div>
+        <button onclick="executeSelectedUsersDelete()" style="width:100%; margin-top:12px; background:#c0392b; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">チェックした参加者を強制退出（削除）</button>
+        <button onclick="document.getElementById('admin-users-modal').style.display='none'" style="width:100%; margin-top:6px; background:#7f8c8d; color:white; border:none; padding:8px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
+    </div>
+</div>
+
 <div id="header">
-    <div style="font-size:12px; font-weight:bold;">虎キング v3.0.4 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></div>
-    <!-- 画面上部：時刻形式でのカウントダウン／経過時間 ＆ 日本時間 -->
-    <div id="header-replay-status" style="font-size:10px; color:#ffcc00; font-family:monospace; display:none;"></div>
-    <div id="header-replay-time" style="font-size:9px; color:#00ffcc; font-family:monospace; display:none;"></div>
+    <div style="font-size:12px; font-weight:bold;">虎キング v3.0.8 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></div>
+    <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
+    <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
     
     <div style="position: absolute; right: 10px; top: 10px; display: flex; gap: 6px;">
         <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;">設定</button>
@@ -211,6 +222,7 @@
     <button id="replay-btn" class="action-btn menu-child" onclick="openReplayMenu()" title="航跡リプレイ再生">▶️</button>
     
     <button id="record-start-btn" class="action-btn menu-child" onclick="startRaceRecording()" title="レース記録スタート">🔴</button>
+    <button id="admin-user-del-btn" class="action-btn menu-child" onclick="openAdminUsersModal()" title="参加者管理・削除">🛡️</button>
 
     <button id="hosei-btn" class="action-btn menu-child" onclick="triggerHoseiMode()" title="位置補正">🔧</button>
     <button id="gps-retry-btn" class="action-btn menu-child" onclick="triggerGPSRetry()" title="GPS再接続">🔄</button>
@@ -284,7 +296,27 @@
     let hasAlertedStart = false;
     let lastCountdownNum = null;
 
-    const MARK_COLORS = { A:'#ff3b30', B:'#0000ff', C:'#ffff00', D:'#28a745', E:'#6a1b9a', F:'#ff2d55', G:'#000080', S:'#0000ff', K:'#5ac8fa' };
+    const MARK_COLORS = { 
+        赤: '#ff3b30', 
+        オレンジ: '#ff9500', 
+        黄色: '#ffcc00', 
+        ピンク: '#ff2d55', 
+        黄緑: '#34c759', 
+        青: '#007aff', 
+        白: '#ffffff', 
+        黒: '#2c2c2e' 
+    };
+    
+    const COLOR_OPTIONS = [
+        { name: '赤', hex: '#ff3b30' },
+        { name: 'オレンジ', hex: '#ff9500' },
+        { name: '黄色', hex: '#ffcc00' },
+        { name: 'ピンク', hex: '#ff2d55' },
+        { name: '黄緑', hex: '#34c759' },
+        { name: '青', hex: '#007aff' },
+        { name: '白', hex: '#ffffff' },
+        { name: '黒', hex: '#2c2c2e' }
+    ];
 
     function showToast(message) {
         const toast = document.getElementById('toast-notice');
@@ -306,6 +338,63 @@
     function closeManualModal() {
         document.getElementById('manual-modal').style.display = 'none';
     }
+
+    window.openAdminUsersModal = () => {
+        toggleMenu();
+        const inputPass = prompt("管理者用パスワードを入力してください:");
+        if (inputPass === null) return;
+
+        if (inputPass !== RECORD_PASSWORD) {
+            alert("❌ パスワードが違います！");
+            return;
+        }
+
+        const listDiv = document.getElementById('admin-users-list');
+        listDiv.innerHTML = "読み込み中...";
+        document.getElementById('admin-users-modal').style.display = 'flex';
+
+        db.ref('users').once('value', snap => {
+            const users = snap.val();
+            if (!users) {
+                listDiv.innerHTML = "<p style='color:#666; padding:10px;'>現在参加しているユーザーはいません</p>";
+                return;
+            }
+
+            let html = "";
+            for (let id in users) {
+                const u = users[id];
+                if (!u.name) continue;
+                html += `<div style="padding:6px 0; border-bottom:1px solid #eee; display:flex; align-items:center; gap:8px;">
+                    <input type="checkbox" class="target-user-chk" value="${id}" id="chk_${id}" style="transform:scale(1.2);">
+                    <label for="chk_${id}" style="font-size:12px; cursor:pointer;"><span style="color:${u.color}">●</span> <b>${u.name}</b></label>
+                </div>`;
+            }
+            listDiv.innerHTML = html || "<p style='color:#666;'>有効なユーザーがいません</p>";
+        });
+    };
+
+    window.executeSelectedUsersDelete = () => {
+        const checkboxes = document.querySelectorAll('.target-user-chk:checked');
+        if (checkboxes.length === 0) {
+            alert("削除するユーザーが選択されていません");
+            return;
+        }
+
+        if (confirm(`選択した ${checkboxes.length} 名の参加者を強制退出（削除）させますか？`)) {
+            let promises = [];
+            checkboxes.forEach(chk => {
+                const userId = chk.value;
+                promises.push(db.ref('users/' + userId).remove());
+            });
+
+            Promise.all(promises).then(() => {
+                showToast("🗑️ 選択した参加者を削除しました");
+                document.getElementById('admin-users-modal').style.display = 'none';
+            }).catch(err => {
+                alert("削除に失敗しました: " + err.message);
+            });
+        }
+    };
 
     window.startRaceRecording = () => {
         toggleMenu();
@@ -603,7 +692,7 @@
         const h = String(date.getHours()).padStart(2, '0');
         const min = String(date.getMinutes()).padStart(2, '0');
         const s = String(date.getSeconds()).padStart(2, '0');
-        const ms100 = String(Math.floor(date.getMilliseconds() / 10)).padStart(2, '0');
+        const ms100 = isReplaying && !replayPaused ? String(Math.floor(Date.now() / 10) % 100).padStart(2, '0') : String(Math.floor(date.getMilliseconds() / 10)).padStart(2, '0');
         return `${h}:${min}:${s}.${ms100}`;
     }
 
@@ -611,8 +700,8 @@
         const totalSec = Math.floor(ms / 1000);
         const m = Math.floor(totalSec / 60);
         const s = totalSec % 60;
-        const ms100 = Math.floor((ms % 1000) / 10);
-        return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms100).padStart(2,'0')}`;
+        const ms100 = isReplaying && !replayPaused ? String(Math.floor(Date.now() / 10) % 100).padStart(2, '0') : String(Math.floor((ms % 1000) / 10)).padStart(2, '0');
+        return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${ms100}`;
     }
 
     function formatClockStyle(ms) {
@@ -621,9 +710,9 @@
         const h = Math.floor(totalSec / 3600);
         const m = Math.floor((totalSec % 3600) / 60);
         const s = totalSec % 60;
-        const ms100 = Math.floor((absMs % 1000) / 10);
+        const ms100 = isReplaying && !replayPaused ? String(Math.floor(Date.now() / 10) % 100).padStart(2, '0') : String(Math.floor((absMs % 1000) / 10)).padStart(2, '0');
         
-        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms100).padStart(2,'0')}`;
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${ms100}`;
     }
 
     function playHistoryStep() {
@@ -680,7 +769,6 @@
 
             document.getElementById('header-replay-time').innerText = `🕒 日本時間: ${formatJapanDateTime(u.ts)}`;
 
-            // --- 倍速ごとの正確なスピード制御に修正 ---
             let nextDelay = 30;
             if (replaySpeed === 1) {
                 if (replayCurrentIndex < replayLogsAll.length - 1) {
@@ -690,7 +778,6 @@
                 }
                 replayCurrentIndex += 1;
             } else {
-                // 倍速（5x, 10x, 20x）のときは、時間差分を「replaySpeed」で割ることで正確な倍速を実現
                 if (replayCurrentIndex < replayLogsAll.length - 1) {
                     const nextU = replayLogsAll[replayCurrentIndex + 1];
                     const realDiff = nextU.ts - u.ts;
@@ -830,18 +917,37 @@
         if (card) return;
 
         const labelText = key.length > 5 ? '🚩' : key;
+        const currentType = obj.type || 'buoy';
+        const currentShape = obj.shape || 'triangle';
+        const currentColor = obj.color || '#ff3b30';
+
+        let colorOptionsHtml = '';
+        COLOR_OPTIONS.forEach(c => {
+            colorOptionsHtml += `<option value="${c.hex}" ${currentColor === c.hex ? 'selected' : ''}>${c.name}</option>`;
+        });
 
         const div = document.createElement('div');
         div.className = 'point-card';
         div.dataset.key = key; 
         div.innerHTML = `
-            <span class="point-label" style="color:${MARK_COLORS[key] || '#007AFF'}">${labelText}</span>
-            <select class="type-select" onchange="updateMarkerAppearance('${key}')" style="padding:4px;border-radius:4px;font-size:11px;">
-                <option value="buoy" ${obj.type!=='ship'?'selected':''}>マーク</option>
-                <option value="boat" ${obj.type==='ship'?'selected':''}>船</option>
-            </select>
-            <input type="text" class="comment-input" value="${obj.comment||''}" placeholder="メモ" oninput="updateMarkerAppearance('${key}')" style="padding:4px;border-radius:4px;font-size:11px;flex-grow:1;margin:0 4px;">
-            <button class="delete-btn" onclick="deleteObject('${key}')" style="background:#ff3b30;color:white;border:none;padding:4px 8px;border-radius:4px;font-size:11px;">削除</button>
+            <span class="point-label" style="color:${currentColor}">${labelText}</span>
+            <div style="display:flex; flex-direction:column; gap:3px; flex-grow:1;">
+                <div style="display:flex; gap:4px;">
+                    <select class="type-select" onchange="updateMarkerAppearance('${key}')" style="padding:2px;border-radius:4px;font-size:10px; flex:1;">
+                        <option value="buoy" ${currentType!=='ship'?'selected':''}>マーク</option>
+                        <option value="ship" ${currentType==='ship'?'selected':''}>ゴムボート</option>
+                    </select>
+                    <select class="shape-select" onchange="updateMarkerAppearance('${key}')" style="padding:2px;border-radius:4px;font-size:10px; flex:1; ${currentType==='ship'?'display:none;':''}">
+                        <option value="triangle" ${currentShape==='triangle'?'selected':''}>三角</option>
+                        <option value="rect" ${currentShape==='rect'?'selected':''}>長方形</option>
+                    </select>
+                    <select class="color-select" onchange="updateMarkerAppearance('${key}')" style="padding:2px;border-radius:4px;font-size:10px; flex:1;">
+                        ${colorOptionsHtml}
+                    </select>
+                </div>
+                <input type="text" class="comment-input" value="${obj.comment||''}" placeholder="メモ" oninput="updateMarkerAppearance('${key}')" style="padding:3px;border-radius:4px;font-size:11px;">
+            </div>
+            <button class="delete-btn" onclick="deleteObject('${key}')" style="background:#ff3b30;color:white;border:none;padding:6px 8px;border-radius:4px;font-size:11px;cursor:pointer;">削除</button>
         `;
         listContainer.appendChild(div);
     }
@@ -850,10 +956,20 @@
         const card = document.querySelector(`.point-card[data-key="${key}"]`);
         if (!card) return;
         const type = card.querySelector('.type-select').value;
+        const shapeSelect = card.querySelector('.shape-select');
+        shapeSelect.style.display = (type === 'ship') ? 'none' : 'block';
+        
+        const shape = shapeSelect.value;
+        const color = card.querySelector('.color-select').value;
         const comment = card.querySelector('.comment-input').value;
 
+        const labelSpan = card.querySelector('.point-label');
+        if (labelSpan) labelSpan.style.color = color;
+
         db.ref('objects/' + key).update({
-            type: type === 'boat' ? 'ship' : 'buoy',
+            type: type,
+            shape: shape,
+            color: color,
             comment: comment
         });
     };
@@ -877,7 +993,7 @@
                     
                     newObjects[key] = {
                         type: 'buoy',
-                        color: MARK_COLORS[key] || '#ff9900',
+                        color: MARK_COLORS[key] || '#ff3b30',
                         lat: lat,
                         lng: lng,
                         comment: `${key}点 (${course.toUpperCase()})`,
@@ -915,15 +1031,11 @@
             const obj = objects[key];
             const isShip = obj.type === 'ship';
             
-            let iconHtml = isShip 
-                ? `<div style="font-size:24px; filter: drop-shadow(0 0 2px white);">🚤</div>` 
-                : `<svg width="18" height="22" viewBox="0 0 100 120"><path d="M50 5 L95 100 Q95 115 50 115 Q5 115 5 100 Z" fill="${obj.color|| MARK_COLORS[key] || '#ff9900'}" stroke="white" stroke-width="8" /></svg>`;
-            
             const marker = L.marker([obj.lat, obj.lng], { 
-                icon: L.divIcon({ html: iconHtml, className: '', iconSize: [24, 24], iconAnchor: [12, 12] }) 
+                icon: createObjectIcon(obj.type, obj.shape, obj.color) 
             }).addTo(map);
 
-            const displayTitle = isShip ? '本部船' : (key.length > 5 ? 'マーク' : key);
+            const displayTitle = isShip ? 'ゴムボート' : (key.length > 5 ? 'マーク' : key);
             marker.bindPopup(`<b>${displayTitle}</b><br>${obj.comment||''}<br><button class="btn-del" onclick="deleteObject('${key}')">削除</button>`);
             objectMarkers[key] = marker;
 
@@ -960,10 +1072,23 @@
         }
         
         if (isAddPointMode) {
+            let colorOpts = '';
+            COLOR_OPTIONS.forEach(c => { colorOpts += `<option value="${c.hex}">${c.name}</option>`; });
+
             const popupContent = `
                 <div class="popup-form">
                     <b>新規設置</b>
-                    <select id="new_type"><option value="buoy">🚩 マーク</option><option value="ship">🚤 本部船</option></select>
+                    <select id="new_type" onchange="document.getElementById('new_shape_row').style.display = this.value==='ship'?'none':'block';">
+                        <option value="buoy">🚩 マーク</option>
+                        <option value="ship">🚤 ゴムボート</option>
+                    </select>
+                    <div id="new_shape_row" style="margin:4px 0;">
+                        <select id="new_shape">
+                            <option value="triangle">縦長三角形</option>
+                            <option value="rect">縦長長方形</option>
+                        </select>
+                    </div>
+                    <select id="new_color">${colorOpts}</select>
                     <input type="text" id="new_comment" placeholder="コメント">
                     <button class="btn-save" onclick="manualSave(${lat}, ${lng})">設置</button>
                 </div>`;
@@ -977,9 +1102,20 @@
 
     window.manualSave = (lat, lng) => {
         const type = document.getElementById('new_type').value;
+        const shape = type === 'ship' ? 'triangle' : document.getElementById('new_shape').value;
+        const color = document.getElementById('new_color').value;
         const comment = document.getElementById('new_comment').value;
-        const randomKey = "M" + Math.floor(Math.random() * 100);
-        db.ref('objects/' + randomKey).set({ type: type, color: '#ff9900', lat: lat, lng: lng, comment: comment, ts: Date.now() });
+        const randomKey = "M" + Math.floor(Math.random() * 1000);
+        
+        db.ref('objects/' + randomKey).set({ 
+            type: type, 
+            shape: shape,
+            color: color, 
+            lat: lat, 
+            lng: lng, 
+            comment: comment, 
+            ts: Date.now() 
+        });
         map.closePopup();
         document.getElementById('pointSettingsPanel').style.display = 'block';
     };
@@ -1033,6 +1169,21 @@
     function createArrowIcon(color, heading, size = 30) {
         const html = `<div class="arrow-icon-wrapper" style="transform: rotate(${heading||0}deg);"><svg viewBox="0 0 100 100" width="${size}" height="${size}"><path d="M50 5 L90 90 L50 75 L10 90 Z" fill="${color}" stroke="white" stroke-width="5" /></svg></div>`;
         return L.divIcon({ html: html, className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
+    }
+
+    function createObjectIcon(type, shape, color) {
+        let iconHtml = '';
+        if (type === 'ship') {
+            iconHtml = `<div style="font-size:26px; filter: drop-shadow(0 0 3px rgba(0,0,0,0.8)); text-align:center; line-height:26px;" title="ゴムボート">🚤</div>`;
+        } else {
+            const hexColor = color || '#ff3b30';
+            if (shape === 'rect') {
+                iconHtml = `<svg width="18" height="24" viewBox="0 0 100 133"><rect x="15" y="5" width="70" height="123" rx="6" fill="${hexColor}" stroke="white" stroke-width="8" /></svg>`;
+            } else {
+                iconHtml = `<svg width="18" height="24" viewBox="0 0 100 133"><path d="M50 5 L95 125 Q95 128 50 128 Q5 128 5 125 Z" fill="${hexColor}" stroke="white" stroke-width="8" /></svg>`;
+            }
+        }
+        return L.divIcon({ html: iconHtml, className: '', iconSize: [24, 26], iconAnchor: [12, 13] });
     }
 
     function handleGPSError(error) {
@@ -1151,7 +1302,7 @@
     };
 
     window.triggerGPSRetry = () => {
-        showToast("🔄 GPS를強制リセット・再接続します");
+        showToast("🔄 GPSを強制リセット・再接続します");
         document.getElementById('status').style.background = "#ff9900";
         document.getElementById('status').innerText = "GPSシグナルを強制再起動中...";
         navigator.geolocation.getCurrentPosition(
