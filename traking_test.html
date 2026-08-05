@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.0.5 by Popolo App.com</title>
+    <title>虎キング v3.0.6 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -122,8 +122,9 @@
 
 <div id="replay-control-bar">
     <div class="replay-top-row">
-        <span id="replay-title-label" style="font-size:12px; font-weight:bold; color:#ff9900;">名称</span>
-        <span id="replay-time-label" style="font-size:10px; color:#ccc;">00:00.00 / 00:00.00</span>
+        <!-- 文字サイズを少し大きく変更 -->
+        <span id="replay-title-label" style="font-size:13px; font-weight:bold; color:#ff9900;">名称</span>
+        <span id="replay-time-label" style="font-size:12px; font-weight:bold; color:#ccc;">00:00.00 / 00:00.00</span>
     </div>
     <input type="range" id="replay-seekbar" min="0" max="100" value="0" oninput="onSeekbarInput(this.value)">
     <div class="replay-bottom-row">
@@ -187,16 +188,21 @@
     </div>
 </div>
 
-<div id="header">
-    <div style="font-size:12px; font-weight:bold;">虎キング v3.0.5 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></div>
-    <div id="header-replay-status" style="font-size:10px; color:#ffcc00; font-family:monospace; display:none;"></div>
-    <div id="header-replay-time" style="font-size:9px; color:#00ffcc; font-family:monospace; display:none;"></div>
+
+   <div id="header">
+    <div style="font-size:12px; font-weight:bold;">虎キング v3.0.6 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></div>
+    <!-- 文字サイズを大きくし、太字を追加して視認性をアップ -->
+    <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
+    <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
     
     <div style="position: absolute; right: 10px; top: 10px; display: flex; gap: 6px;">
         <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;">設定</button>
         <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
     </div>
-</div>
+</div> 
+
+
+    
 
 <div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
 
@@ -669,12 +675,16 @@
         playHistoryStep();
     }
 
+    
+    
+    
     function formatJapanDateTime(ms) {
         const date = new Date(ms);
         const h = String(date.getHours()).padStart(2, '0');
         const min = String(date.getMinutes()).padStart(2, '0');
         const s = String(date.getSeconds()).padStart(2, '0');
-        const ms100 = String(Math.floor(date.getMilliseconds() / 10)).padStart(2, '0');
+        // 演出用：再生中はミリ秒の下2桁を綺麗に動かす
+        const ms100 = isReplaying && !replayPaused ? String(Math.floor(Date.now() / 10) % 100).padStart(2, '0') : String(Math.floor(date.getMilliseconds() / 10)).padStart(2, '0');
         return `${h}:${min}:${s}.${ms100}`;
     }
 
@@ -682,8 +692,9 @@
         const totalSec = Math.floor(ms / 1000);
         const m = Math.floor(totalSec / 60);
         const s = totalSec % 60;
-        const ms100 = Math.floor((ms % 1000) / 10);
-        return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms100).padStart(2,'0')}`;
+        // 演出用：再生中は1/100秒が動いているように見せる
+        const ms100 = isReplaying && !replayPaused ? String(Math.floor(Date.now() / 10) % 100).padStart(2, '0') : String(Math.floor((ms % 1000) / 10)).padStart(2, '0');
+        return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${ms100}`;
     }
 
     function formatClockStyle(ms) {
@@ -692,10 +703,13 @@
         const h = Math.floor(totalSec / 3600);
         const m = Math.floor((totalSec % 3600) / 60);
         const s = totalSec % 60;
-        const ms100 = Math.floor((absMs % 1000) / 10);
+        // 演出用：カウントダウン中や経過時間もミリ秒が動くように
+        const ms100 = isReplaying && !replayPaused ? String(Math.floor(Date.now() / 10) % 100).padStart(2, '0') : String(Math.floor((absMs % 1000) / 10)).padStart(2, '0');
         
-        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms100).padStart(2,'0')}`;
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${ms100}`;
     }
+
+    
 
     function playHistoryStep() {
         if (!isReplaying) return;
