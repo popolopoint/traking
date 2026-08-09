@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+    <title>虎キング v3.1.1 by Popolo App.com</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
+        #header { background: #1a1a1a; color: #ff9900; padding: 6px 10px; text-align: center; font-weight: bold; position: fixed; width: 100%; height: 55px; z-index: 3000; border-bottom: 2px solid #ff9900; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; }
+        
+        #recording-banner { position: fixed; top: 55px; left: 0; width: 100%; background: #c0392b; color: white; text-align: center; font-size: 12px; font-weight: bold; padding: 4px 0; z-index: 2900; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.5); letter-spacing: 1px; animation: flashBanner 1.5s infinite; }
+        @keyframes flashBanner { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+
+        #start-flash-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(231, 76, 60, 0.85); z-index: 8000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; pointer-events: none; animation: flashAlert 0.8s infinite alternate; }
+        @keyframes flashAlert { from { opacity: 0.6; } to { opacity: 1; } }
+
+        #replay-start-alert { position: fixed; top: 62px; left: 50%; transform: translateX(-50%); background: rgba(231, 76, 60, 0.95); color: white; padding: 6px 16px; border-radius: 15px; font-size: 14px; font-weight: bold; z-index: 9000; display: none; box-shadow: 0 2px 10px rgba(0,0,0,0.5); border: 2px solid white; text-align: center; pointer-events: none; animation: pulseAlert 0.5s infinite alternate; }
+        @keyframes pulseAlert { from { transform: translateX(-50%) scale(1); } to { transform: translateX(-50%) scale(1.05); } }
+
+        #replay-countdown-alert { position: fixed; top: 62px; left: 50%; transform: translateX(-50%); background: rgba(243, 156, 18, 0.95); color: white; padding: 6px 20px; border-radius: 15px; font-size: 18px; font-weight: bold; z-index: 9000; display: none; box-shadow: 0 2px 10px rgba(0,0,0,0.5); border: 2px solid white; text-align: center; pointer-events: none; animation: pulseAlert 0.5s infinite alternate; }
+
+        #floating-stop-btn { position: fixed; top: 90px; right: 10px; z-index: 3500; background: #e74c3c; color: white; border: 2px solid #fff; padding: 10px 16px; border-radius: 25px; font-size: 14px; font-weight: bold; cursor: pointer; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.4); animation: flashBanner 1.5s infinite; }
+
+        #map { height: 100vh; width: 100vw; z-index: 1; background: #222; }
+        #unit-toggle { background: #333; color: #ff9900; border: 1px solid #ff9900; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; }
+        #course-create-btn { background: #27ae60; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; }
+        
+        #setup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 4000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; backdrop-filter: blur(4px); }
+        .setup-box { background: rgba(34, 34, 34, 0.9); padding: 20px; border-radius: 15px; border: 2px solid #ff9900; text-align: center; width: 80%; max-width: 320px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .color-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .color-btn { width: 100%; aspect-ratio: 1/1; border-radius: 50%; border: 2px solid #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; text-shadow: 1px 1px 2px #000; color: #fff; }
+        
+        #user-list { position: fixed; top: 135px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 8px; border-radius: 8px; width: 100px; max-height: 200px; overflow-y: auto; border: 1px solid #ff9900; font-size: 10px; }
+        .list-title { color: #ff9900; font-weight: bold; border-bottom: 1px solid #ff9900; margin-bottom: 5px; }
+        .user-item { border-bottom: 1px solid #444; padding: 4px 0; }
+        .user-item.me { color: #00ff00; font-weight: bold; }
+        .user-label { background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #ff9900; font-size: 10px; font-weight: bold; padding: 2px 4px; border-radius: 3px; white-space: nowrap; }
+        .status-panel { position: fixed; bottom: 10px; left: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 11px; max-width: 80%; border: 1px solid #ff9900; }
+        
+        #replay-control-bar { 
+            position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%); z-index: 3500; 
+            background: rgba(30, 39, 46, 0.75); border: 1.5px solid rgba(255, 255, 255, 0.3); 
+            padding: 10px 15px; border-radius: 18px; display: none; flex-direction: column; gap: 8px; color: white; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+            width: 300px; max-width: 90vw; box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+        .replay-top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .replay-bottom-row { display: flex; align-items: center; gap: 6px; width: 100%; justify-content: center; }
+        
+        #replay-seekbar { width: 100%; accent-color: #ff9900; cursor: pointer; height: 5px; }
+
+        .replay-ctrl-btn { background: rgba(50, 50, 50, 0.6); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 4px 7px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 10px; }
+        .replay-ctrl-btn.active { background: #ff9900; color: #000; border-color: #ff9900; }
+
+        #replay-minimized-btn {
+            position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%); z-index: 3500;
+            background: rgba(30, 39, 46, 0.75); color: white; border: 1.5px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer;
+            display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+        }
+
+        .action-btn { 
+            position: fixed; right: 10px; z-index: 3000; 
+            background: rgba(44, 62, 80, 0.45); color: white; 
+            border: 1.5px solid rgba(255, 255, 255, 0.3); border-radius: 50%; 
+            width: 50px; height: 50px; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; 
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15); 
+            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            font-size: 22px; user-select: none;
+        }
+        .action-btn:active { background: rgba(52, 152, 219, 0.6); }
+        
+        #recenter-btn { bottom: 20px; font-size: 22px; background: rgba(41, 128, 185, 0.45); }
+        #menu-toggle-btn { bottom: 80px; background: rgba(44, 62, 80, 0.45); font-weight: bold; }
+        
+        .menu-child { opacity: 0; transform: translateY(20px) scale(0.8); pointer-events: none; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+        .menu-active .menu-child { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+        
+        #logout-btn    { bottom: 140px; background: rgba(231, 76, 60, 0.45); }
+        #name-btn       { bottom: 200px; }
+        #manual-btn     { bottom: 260px; background: rgba(39, 174, 96, 0.45); }
+        #replay-btn     { bottom: 320px; background: rgba(155, 89, 182, 0.45); }
+        
+        #record-start-btn { bottom: 380px; background: rgba(39, 174, 96, 0.6); }
+        #admin-user-del-btn { bottom: 440px; background: rgba(192, 57, 43, 0.6); }
+
+        #hosei-btn      { bottom: 500px; background: rgba(241, 196, 15, 0.45); }
+        #gps-retry-btn  { bottom: 560px; }
+        #add-point-btn  { bottom: 620px; background: rgba(52, 152, 219, 0.45); }
+        
+        .popup-form { color: #333; min-width: 140px; font-size: 12px; }
+        .popup-form select, .popup-form input { width: 100%; margin: 4px 0; padding: 4px; box-sizing: border-box; }
+        .btn-save { background: #ff9900; color: white; border: none; width: 100%; padding: 6px; cursor: pointer; border-radius: 4px; font-weight: bold; }
+        .btn-del { background: #ff4444; color: white; border: none; width: 100%; padding: 4px; margin-top: 8px; cursor: pointer; border-radius: 4px; font-size: 10px; }
+        .arrow-icon-wrapper { transition: transform 0.2s linear; }
+
+        .point-card { display: flex; align-items: center; gap: 8px; padding: 10px; background: white; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 14px; }
+        .point-label { font-weight: bold; min-width: 25px; color: #007AFF; text-align: center; }
+        
+        #toast-notice { position: fixed; top: 65px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 6000; border: 1px solid #ff9900; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: center; pointer-events: none; }
+        
+        .modal-body-scroll { max-height: 60vh; overflow-y: auto; margin-top: 10px; font-size: 0.85rem; line-height: 1.5; color: #333; text-align: left; }
+        .modal-body-scroll h4 { color: #2c3e50; margin: 10px 0 4px 0; border-bottom: 2px solid #3498db; padding-bottom: 2px; font-size: 0.9rem; }
+        .modal-body-scroll p { margin: 4px 0 8px 0; }
+
+        /* コース作成モード用コントロールバー */
+        #course-builder-bar {
+            position: fixed; top: 62px; left: 50%; transform: translateX(-50%); z-index: 3500;
+            background: rgba(30, 39, 46, 0.9); border: 1.5px solid #ff9900;
+            padding: 8px 12px; border-radius: 12px; display: none; flex-wrap: wrap; gap: 6px; color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); align-items: center; justify-content: center; font-size: 12px;
+        }
+        .cb-btn { background: rgba(50, 50, 50, 0.8); color: white; border: 1px solid rgba(255,255,255,0.4); padding: 4px 8px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11px; }
+        .cb-btn.active { background: #ff9900; color: #000; border-color: #ff9900; }
+    </style>
+</head>
+<body>
+
+<div id="toast-notice"></div>
+<div id="replay-start-alert">🚨 スタート！</div>
+<div id="replay-countdown-alert">10</div>
+
+<div id="start-flash-overlay">
+    <div style="font-size: 40px; font-weight: bold; text-shadow: 2px 2px 10px rgba(0,0,0,0.5);">🚨 競技スタート！ 🚨</div>
+    <div style="font-size: 18px; margin-top: 10px; font-weight: bold;">レースの記録を開始しました</div>
+</div>
+
+<div id="recording-banner">🔴 【録画中・記録中】レース航跡を蓄積しています</div>
+<button id="floating-stop-btn" onclick="stopRaceRecording()">⏹️ 記録ストップ＆保存</button>
+
+<!-- コース作成モード操作バー -->
+<div id="course-builder-bar">
+    <button class="cb-btn" id="cb-mode-ship" onclick="setCourseBuilderMode('ship')">🚤 船</button>
+    <button class="cb-btn" id="cb-mode-buoy" onclick="setCourseBuilderMode('buoy')">🚩 ブイ</button>
+    <button class="cb-btn" id="cb-mode-dashed" onclick="setCourseBuilderMode('dashed')">┈ 点線</button>
+    <button class="cb-btn" id="cb-mode-solid" onclick="setCourseBuilderMode('solid')">━ 実線</button>
+    <button class="cb-btn" id="cb-mode-data" onclick="setCourseBuilderMode('data')">📊 データ</button>
+    <div style="display:flex; align-items:center; gap:4px; margin-left:4px; border-left:1px solid #666; padding-left:6px;">
+        <span>風向:</span>
+        <input type="number" id="cb-wind-deg" value="0" style="width:50px; padding:2px; font-size:11px; text-align:center;" placeholder="°">°
+    </div>
+    <button class="cb-btn" onclick="exitCourseBuilder()" style="background:#c0392b; margin-left:4px;">終了</button>
+</div>
+
+<!-- データ距離・角度リストモーダル -->
+<div id="course-data-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:18px; border-radius:12px; width:90%; max-width:380px; box-sizing:border-box; text-align:center;">
+        <h3 style="margin:0 0 10px 0; color:#2c3e50; font-size:1.1rem;">📊 選択点間の距離・角度データ</h3>
+        <div id="course-data-list" class="modal-body-scroll" style="min-height:100px; max-height:45vh; text-align:left;"></div>
+        <button onclick="document.getElementById('course-data-modal').style.display='none'" style="width:100%; margin-top:12px; background:#7f8c8d; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
+    </div>
+</div>
+
+<div id="replay-control-bar"> 
+    <div class="replay-top-row">
+        <span id="replay-title-label" style="font-size:13px; font-weight:bold; color:#ff9900;">名称</span>
+        <span id="replay-time-label" style="font-size:12px; font-weight:bold; color:#ccc;">00:00.00 / 00:00.00</span>
+    </div>
+    <input type="range" id="replay-seekbar" min="0" max="100" value="0" oninput="onSeekbarInput(this.value)">
+    <div class="replay-bottom-row">
+        <button class="replay-ctrl-btn" id="btn-pause" onclick="toggleReplayPause()">一時停止</button>
+        <button class="replay-ctrl-btn" onclick="setReplaySpeed(1)">1x</button>
+        <button class="replay-ctrl-btn active" onclick="setReplaySpeed(5)">5x</button>
+        <button class="replay-ctrl-btn" onclick="setReplaySpeed(10)">10x</button>
+        <button class="replay-ctrl-btn" onclick="setReplaySpeed(20)">20x</button>
+        <button class="replay-ctrl-btn" onclick="exitReplay()" style="background:rgba(231,76,60,0.8);">終了</button>
+    </div>
+</div>
+
+<button id="replay-minimized-btn" onclick="expandReplayBar()">▶️ <span id="minimized-title">再生中</span> (開く)</button>
+
+<!-- セットアップ画面 -->
+<div id="setup-overlay" style="display:none;">
+    <div class="setup-box">
+        <h3 style="margin-top:0; color:#ff9900; font-size:18px;">虎キング 設定</h3>
+        <input type="text" id="setup-name" placeholder="あなたの名前（例: 本部A）" style="padding:10px; width:90%; border-radius:8px; border:1px solid #ccc; margin-bottom:10px; font-size:16px;">
+        <p style="font-size:12px; margin-bottom:10px;">色を選んで参加するか、見る専で開く</p>
+        <div class="color-grid" id="color-grid"></div>
+        <div style="display: flex; gap: 8px; margin-top: 15px;">
+            <button onclick="saveProfileAsViewer()" style="flex: 1; background: #34495e; color: white; border: none; padding: 8px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; cursor: pointer;">👀 登録せず見る専</button>
+            <button onclick="closeSetup()" style="flex: 1; background: #555; color: white; border: none; padding: 8px; border-radius: 6px; font-size: 0.85rem; cursor: pointer;">キャンセル</button>
+        </div>
+    </div>
+</div>
+
+<!-- アイコン・操作ガイド説明モーダル -->
+<div id="manual-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:18px; border-radius:12px; width:90%; max-width:380px; box-sizing:border-box;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #3498db; padding-bottom:8px;">
+            <h3 style="margin:0; color:#2c3e50; font-size:1.1rem;">📖 アイコン・操作ガイド</h3>
+            <button onclick="closeManualModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">✖</button>
+        </div>
+        <div class="modal-body-scroll">
+            <h4>🛡️ 管理者参加者削除機能</h4>
+            <p>・メニューの「🛡️」ボタンから管理者パスワードを入力することで、現在参加しているメンバーをチェックボックスで選択して強制削除できるようになりました。</p>
+        </div>
+        <button onclick="closeManualModal()" style="width:100%; margin-top:12px; background:#3498db; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
+    </div>
+</div>
+
+<!-- ヒート名を選んでリプレイするモーダル -->
+<div id="saved-courses-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:18px; border-radius:12px; width:90%; max-width:360px; box-sizing:border-box; text-align:center;">
+        <h3 style="margin:0 0 10px 0; color:#2c3e50; font-size:1.1rem;">📁 レース記録・ヒート一覧</h3>
+        <div id="saved-courses-list" class="modal-body-scroll" style="min-height:100px; max-height:40vh;"></div>
+        <button onclick="document.getElementById('saved-courses-modal').style.display='none'" style="width:100%; margin-top:12px; background:#7f8c8d; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
+    </div>
+</div>
+
+<!-- 管理者用・参加者削除モーダル -->
+<div id="admin-users-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:18px; border-radius:12px; width:90%; max-width:360px; box-sizing:border-box; text-align:center;">
+        <h3 style="margin:0 0 10px 0; color:#c0392b; font-size:1.1rem;">🛡️ 管理者: 参加者削除</h3>
+        <p style="font-size:11px; color:#555; margin-bottom:10px;">削除したい参加者にチェックを入れてください</p>
+        <div id="admin-users-list" class="modal-body-scroll" style="min-height:80px; max-height:35vh; text-align:left;"></div>
+        <button onclick="executeSelectedUsersDelete()" style="width:100%; margin-top:12px; background:#c0392b; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">チェックした参加者を強制退出（削除）</button>
+        <button onclick="document.getElementById('admin-users-modal').style.display='none'" style="width:100%; margin-top:6px; background:#7f8c8d; color:white; border:none; padding:8px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
+    </div>
+</div>
+
+<div id="header">
+    <div style="font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;">
+        <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
+        <span>虎キング v3.1.1 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
+    </div>
+    <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
+    <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
+    
+    <div style="position: absolute; right: 10px; top: 10px; display: flex; gap: 6px;">
+        <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;">設定</button>
+        <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
+    </div>
+</div>
+
+<div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
+
+<div id="pointSettingsPanel" style="position: fixed; top: 135px; left: 10px; z-index: 5000; width: 280px; max-height: 50vh; overflow-y: auto; background: rgba(255, 255, 255, 0.95); padding: 10px; border-radius: 12px; border: 2px solid #007AFF; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: #333; display:none;">
+    <h3 onclick="toggleSettingsPanel()" style="margin: 0 0 10px 0; padding-bottom: 5px; font-size: 16px; color: #007AFF; border-bottom: 1px solid #ddd; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+        <span>🚩 コース地点設定</span>
+        <span style="font-size: 10px; color: #999;">[ 閉じる ]</span>
+    </h3>
+    <div id="pointListContainer">
+        <p id="noPointMsg" style="color: #666; font-size: 13px; margin: 0;">座標データが読み込まれていません</p>
+    </div>
+</div>
+
+<div id="map"></div>
+
+<div class="status-panel" id="status">GPSシグナル待機中...</div>
+
+<!-- メニューボタン群 -->
+<div id="button-container">
+    <button id="logout-btn" class="action-btn menu-child" onclick="triggerLogout()" title="ログアウト">🏃</button>
+    <button id="name-btn" class="action-btn menu-child" onclick="triggerSetup()" title="再設定">👤</button>
+    <button id="manual-btn" class="action-btn menu-child" onclick="openManualModal()" title="使い方・アイコン説明">❓</button>
+    <button id="replay-btn" class="action-btn menu-child" onclick="openReplayMenu()" title="航跡リプレイ再生">▶️</button>
+    
+    <button id="record-start-btn" class="action-btn menu-child" onclick="startRaceRecording()" title="レース記録スタート">🔴</button>
+    <button id="admin-user-del-btn" class="action-btn menu-child" onclick="openAdminUsersModal()" title="参加者管理・削除">🛡️</button>
+
+    <button id="hosei-btn" class="action-btn menu-child" onclick="triggerHoseiMode()" title="位置補正">🔧</button>
+    <button id="gps-retry-btn" class="action-btn menu-child" onclick="triggerGPSRetry()" title="GPS再接続">🔄</button>
+    <button id="add-point-btn" class="action-btn menu-child" onclick="triggerAddPointMode()" title="マーク追加">🚩</button>
+    
+    <button id="menu-toggle-btn" class="action-btn" onclick="toggleMenu()" title="メニュー">☰</button>
+    <button id="recenter-btn" class="action-btn" onclick="triggerRecenter()" title="現在地追従">🎯</button>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAHhxSJK-IhYiT9XBRwE1MX7DHhghBQQQk"></script>
+<script src="https://unpkg.com/leaflet.gridlayer.googlemutant@latest/dist/Leaflet.GoogleMutant.js"></script>
+
+<script>
+    const firebaseConfig = { 
+        apiKey: "AIzaSyB_OOgXiE1YkFzQK0Nujhnx3lNM_7dp66U", 
+        authDomain: "tra-king.firebaseapp.com", 
+        databaseURL: "https://tra-king-default-rtdb.firebaseio.com", 
+        projectId: "tra-king", 
+        storageBucket: "tra-king.firebasestorage.app", 
+        messagingSenderId: "355068381368", 
+        appId: "1:355068381368:web:440efbe59649791404cc4d" 
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const RECORD_PASSWORD = "1234";
+
+    let myId = localStorage.getItem('tora_king_id') || "tiger_" + Math.floor(Math.random()*10000);
+    localStorage.setItem('tora_king_id', myId);
+
+    let myName = localStorage.getItem('tora_king_name');
+    let myColor = localStorage.getItem('tora_king_color');
+    let isViewerMode = localStorage.getItem('tora_king_viewer') === 'true';
+
+    let speedUnitMode = parseInt(localStorage.getItem('tora_king_unit') || "0");
+    const units = ["kt", "km/h", "m/s"];
+    const colorPresets = {"赤":"#ff0000","青":"#0000ff","ピンク":"#ff66cc","紫":"#800080","橙":"#ff9900","黄":"#ffff00","緑":"#32cd32","黒":"#222222","白":"#ffffff"};
+    const savedPos = JSON.parse(localStorage.getItem('tora_king_pos')) || { lat: 26.3, lng: 127.8, zoom: 12 };
+
+    const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([savedPos.lat, savedPos.lng], savedPos.zoom);
+    try { L.gridLayer.googleMutant({ type: 'roadmap' }).addTo(map); } catch(e) {}
+    L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
+
+    let myMarker = null, isFollowing = true;
+    let watchIdHigh = null, watchIdLow = null;
+
+    let offsetLat = parseFloat(localStorage.getItem('tora_king_offset_lat') || "0");
+    let offsetLng = parseFloat(localStorage.getItem('tora_king_offset_lng') || "0");
+    let isHoseiMode = false; 
+    let isAddPointMode = false; 
+    let isMenuOpen = false;
+
+    let isRecordingActive = false;
+
+    // コース作成モード用変数
+    let isCourseBuilderActive = false;
+    let cbMode = 'ship'; // 'ship' | 'buoy' | 'dashed' | 'solid' | 'data'
+    let cbSelectedFirstObj = null;
+
+    const userMarkers = {}, objectMarkers = {}, userTrails = {}, userPolylineLines = {};
+    let coursePolyline = null;
+    let customLinesGroup = L.layerGroup().addTo(map);
+
+    let isReplaying = false;
+    let replayPaused = false;
+    let replaySpeed = 5;
+    let replayTimer = null;
+    let replayMinimizeTimer = null;
+    
+    let replayLogsAll = [];
+    let replayCurrentIndex = 0;
+    let isSeeking = false;
+    let replayStartTimeMs = null;
+    let hasAlertedStart = false;
+    let lastCountdownNum = null;
+
+    const MARK_COLORS = { 
+        赤: '#ff3b30', 
+        オレンジ: '#ff9500', 
+        黄色: '#ffcc00', 
+        ピンク: '#ff2d55', 
+        黄緑: '#34c759', 
+        青: '#007aff', 
+        白: '#ffffff', 
+        黒: '#2c2c2e' 
+    };
+    
+    const COLOR_OPTIONS = [
+        { name: '赤', hex: '#ff3b30' },
+        { name: 'オレンジ', hex: '#ff9500' },
+        { name: '黄色', hex: '#ffcc00' },
+        { name: 'ピンク', hex: '#ff2d55' },
+        { name: '黄緑', hex: '#34c759' },
+        { name: '青', hex: '#007aff' },
+        { name: '白', hex: '#ffffff' },
+        { name: '黒', hex: '#2c2c2e' }
+    ];
+
+    function showToast(message) {
+        const toast = document.getElementById('toast-notice');
+        toast.innerText = message;
+        toast.style.display = 'block';
+        if (window.toastTimeout) clearTimeout(window.toastTimeout);
+        window.toastTimeout = setTimeout(() => { toast.style.display = 'none'; }, 2500);
+    }
+
+    window.toggleSettingsPanel = () => {
+        const panel = document.getElementById('pointSettingsPanel');
+        panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
+    };
+
+    function openManualModal() {
+        toggleMenu();
+        document.getElementById('manual-modal').style.display = 'flex';
+    }
+    function closeManualModal() {
+        document.getElementById('manual-modal').style.display = 'none';
+    }
+
+    // コース作成モード起動
+    window.promptCourseCreate = () => {
+        const inputPass = prompt("コース作成用のパスワードを入力してください:");
+        if (inputPass === null) return;
+        if (inputPass !== RECORD_PASSWORD) {
+            alert("❌ パスワードが違います！");
+            return;
+        }
+        isCourseBuilderActive = true;
+        document.getElementById('course-builder-bar').style.display = 'flex';
+        setCourseBuilderMode('ship');
+        showToast("🛠️ コース作成モードを起動しました");
+    };
+
+    window.setCourseBuilderMode = (mode) => {
+        cbMode = mode;
+        cbSelectedFirstObj = null;
+        document.querySelectorAll('.cb-btn').forEach(btn => btn.classList.remove('active'));
+        if (mode === 'ship') document.getElementById('cb-mode-ship').classList.add('active');
+        if (mode === 'buoy') document.getElementById('cb-mode-buoy').classList.add('active');
+        if (mode === 'dashed') document.getElementById('cb-mode-dashed').classList.add('active');
+        if (mode === 'solid') document.getElementById('cb-mode-solid').classList.add('active');
+        if (mode === 'data') document.getElementById('cb-mode-data').classList.add('active');
+    };
+
+    window.exitCourseBuilder = () => {
+        isCourseBuilderActive = false;
+        document.getElementById('course-builder-bar').style.display = 'none';
+        showToast("コース作成モードを終了しました");
+    };
+
+    window.openAdminUsersModal = () => {
+        toggleMenu();
+        const inputPass = prompt("管理者用パスワードを入力してください:");
+        if (inputPass === null) return;
+
+        if (inputPass !== RECORD_PASSWORD) {
+            alert("❌ パスワードが違います！");
+            return;
+        }
+
+        const listDiv = document.getElementById('admin-users-list');
+        listDiv.innerHTML = "読み込み中...";
+        document.getElementById('admin-users-modal').style.display = 'flex';
+
+        db.ref('users').once('value', snap => {
+            const users = snap.val();
+            if (!users) {
+                listDiv.innerHTML = "<p style='color:#666; padding:10px;'>現在参加しているユーザーはいません</p>";
+                return;
+            }
+
+            let html = "";
+            for (let id in users) {
+                const u = users[id];
+                if (!u.name) continue;
+                html += `<div style="padding:6px 0; border-bottom:1px solid #eee; display:flex; align-items:center; gap:8px;">
+                    <input type="checkbox" class="target-user-chk" value="${id}" id="chk_${id}" style="transform:scale(1.2);">
+                    <label for="chk_${id}" style="font-size:12px; cursor:pointer;"><span style="color:${u.color}">●</span> <b>${u.name}</b></label>
+                </div>`;
+            }
+            listDiv.innerHTML = html || "<p style='color:#666;'>有効なユーザーがいません</p>";
+        });
+    };
+
+    window.executeSelectedUsersDelete = () => {
+        const checkboxes = document.querySelectorAll('.target-user-chk:checked');
+        if (checkboxes.length === 0) {
+            alert("削除するユーザーが選択されていません");
+            return;
+        }
+
+        if (confirm(`選択した ${checkboxes.length} 名の参加者を強制退出（削除）させますか？`)) {
+            let promises = [];
+            checkboxes.forEach(chk => {
+                const userId = chk.value;
+                promises.push(db.ref('users/' + userId).remove());
+            });
+
+            Promise.all(promises).then(() => {
+                showToast("🗑️ 選択した参加者を削除しました");
+                document.getElementById('admin-users-modal').style.display = 'none';
+            }).catch(err => {
+                alert("削除に失敗しました: " + err.message);
+            });
+        }
+    };
+
+    window.startRaceRecording = () => {
+        toggleMenu();
+        const inputPass = prompt("本部スタッフ用パスワードを入力してください:");
+        if (inputPass === null) return;
+
+        if (inputPass !== RECORD_PASSWORD) {
+            alert("❌ パスワードが違います！記録を開始できません。");
+            return;
+        }
+
+        if (confirm("パスワード認証成功。レースの記録を開始しますか？（前回の未保存一時履歴はリセットされます）")) {
+            db.ref('temp_history').remove().then(() => {
+                isRecordingActive = true;
+                document.getElementById('recording-banner').style.display = 'block';
+                document.getElementById('floating-stop-btn').style.display = 'block';
+                
+                const flashOverlay = document.getElementById('start-flash-overlay');
+                flashOverlay.style.display = 'flex';
+                setTimeout(() => { flashOverlay.style.display = 'none'; }, 3000);
+
+                showToast("🔴 レース記録をスタートしました！");
+            }).catch(err => {
+                isRecordingActive = true;
+                document.getElementById('recording-banner').style.display = 'block';
+                document.getElementById('floating-stop-btn').style.display = 'block';
+                
+                const flashOverlay = document.getElementById('start-flash-overlay');
+                flashOverlay.style.display = 'flex';
+                setTimeout(() => { flashOverlay.style.display = 'none'; }, 3000);
+
+                showToast("🔴 レース記録をスタートしました！(ローカル)");
+            });
+        }
+    };
+
+    window.stopRaceRecording = () => {
+        if (!isRecordingActive) {
+            alert("現在、記録はスタートしていません");
+            document.getElementById('floating-stop-btn').style.display = 'none';
+            document.getElementById('recording-banner').style.display = 'none';
+            return;
+        }
+
+        isRecordingActive = false;
+        document.getElementById('recording-banner').style.display = 'none';
+        document.getElementById('floating-stop-btn').style.display = 'none';
+
+        const heatName = prompt("記録するヒート名を入力してください\n（例: 第1ヒート、決勝など）", "第1ヒート");
+        if (!heatName) {
+            showToast("⚠️ 保存がキャンセルされました（記録は停止しました）");
+            return;
+        }
+
+        const nowTimeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const startTimeInput = prompt("スタート時刻を入力してください\n（例: 10:30）", nowTimeStr);
+
+        db.ref('temp_history').once('value', tempSnap => {
+            const historyData = tempSnap.val() || {};
+
+            db.ref('objects').once('value', objSnap => {
+                const currentObjects = objSnap.val() || {};
+
+                db.ref('saved_courses').push({
+                    title: heatName,
+                    startTime: startTimeInput || '時刻不明',
+                    objects: currentObjects,
+                    history: historyData,
+                    createdAt: Date.now()
+                }, err => {
+                    if (!err) {
+                        showToast(`💾 「${heatName} (スタート: ${startTimeInput || '不明'})」を保存しました！`);
+                        db.ref('temp_history').remove();
+                    } else {
+                        alert("サーバーへの保存に失敗しました");
+                    }
+                });
+            });
+        });
+    };
+
+    window.openReplayMenu = () => {
+        toggleMenu();
+        const listDiv = document.getElementById('saved-courses-list');
+        listDiv.innerHTML = "読み込み中...";
+        document.getElementById('saved-courses-modal').style.display = 'flex';
+
+        db.ref('saved_courses').once('value', snap => {
+            const saved = snap.val();
+            if (!saved) {
+                listDiv.innerHTML = "<p style='color:#666; padding:20px;'>保存されたヒート記録はありません</p>";
+                return;
+            }
+            let html = "";
+            for (let id in saved) {
+                const c = saved[id];
+                const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleString() : '日時不明';
+                const startInfo = c.startTime ? ` スタート: ${c.startTime}` : '';
+                html += `<div style="background:#f1f2f6; padding:8px; border-radius:6px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+                    <div style="text-align:left; max-width:130px; overflow:hidden;"><b>🏁 ${c.title || '無題'}</b><br><span style="font-size:9px; color:#555;">${startInfo}</span><br><span style="font-size:8px; color:#888;">${dateStr}</span></div>
+                    <div style="display:flex; gap:4px; flex-direction:column;">
+                        <button onclick="startReplay('${id}')" style="background:#8e44ad; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:10px; font-weight:bold; cursor:pointer;">再生</button>
+                        <button onclick="trimAndSaveCourse('${id}')" style="background:#27ae60; color:white; border:none; padding:3px 6px; border-radius:4px; font-size:9px; cursor:pointer;" title="このデータから一部分を切り出し">✂️ 切り出し</button>
+                    </div>
+                    <div style="display:flex; gap:3px;">
+                        <button onclick="renameCourse('${id}', '${c.title}')" style="background:#2980b9; color:white; border:none; padding:4px 6px; border-radius:4px; font-size:10px; cursor:pointer;" title="名前変更">✏️</button>
+                        <button onclick="deleteCourse('${id}')" style="background:#c0392b; color:white; border:none; padding:4px 6px; border-radius:4px; font-size:10px; cursor:pointer;" title="削除">🗑️</button>
+                    </div>
+                </div>`;
+            }
+            listDiv.innerHTML = html;
+        }, (error) => {
+            listDiv.innerHTML = `<p style='color:#e74c3c;'>取得失敗: ${error.message}</p>`;
+        });
+    };
+
+    window.trimAndSaveCourse = (id) => {
+        db.ref('saved_courses/' + id).once('value', snap => {
+            const data = snap.val();
+            if (!data || !data.history) {
+                alert("切り出しできる履歴データがありません");
+                return;
+            }
+
+            let allTs = [];
+            for (let uid in data.history) {
+                for (let pushId in data.history[uid]) {
+                    allTs.push(data.history[uid][pushId].ts);
+                }
+            }
+            if (allTs.length === 0) {
+                alert("有効なログがありません");
+                return;
+            }
+            allTs.sort((a,b) => a - b);
+            const minTs = allTs[0];
+
+            const startMinutesFromMin = prompt(`全記録の開始から「何分後」を新しいスタート地点にしますか？\n（例: 5 と入力すると、記録開始から5分後以降を切り出します）`, "0");
+            if (startMinutesFromMin === null) return;
+            const durationMinutes = prompt(`そこから「何分間」を切り出しますか？\n（例: 3 と入力すると、3分間のレース分を切り出します）`, "3");
+            if (durationMinutes === null) return;
+
+            const targetStartTs = minTs + (parseFloat(startMinutesFromMin) || 0) * 60000;
+            const targetEndTs = targetStartTs + (parseFloat(durationMinutes) || 3) * 60000;
+
+            const newHeatName = prompt("切り出した新しいヒート名を入力してください", (data.title || "ヒート") + " (切出)");
+            if (!newHeatName) return;
+            
+            const newStartTimeStr = prompt("新しいスタート時刻（文字表示用）を入力してください\n（例: 10:35）", data.startTime || "10:30");
+
+            let newHistory = {};
+            for (let uid in data.history) {
+                newHistory[uid] = {};
+                for (let pushId in data.history[uid]) {
+                    const log = data.history[uid][pushId];
+                    if (log.ts >= targetStartTs && log.ts <= targetEndTs) {
+                        newHistory[uid][pushId] = log;
+                    }
+                }
+            }
+
+            db.ref('saved_courses').push({
+                title: newHeatName,
+                startTime: newStartTimeStr || '10:30',
+                objects: data.objects || {},
+                history: newHistory,
+                createdAt: Date.now()
+            }, err => {
+                if (!err) {
+                    showToast(`✂️ 「${newHeatName}」として切り出し保存しました！`);
+                    openReplayMenu();
+                } else {
+                    alert("切り出し保存に失敗しました");
+                }
+            });
+        });
+    };
+
+    window.renameCourse = (id, currentTitle) => {
+        const newTitle = prompt("新しいヒート名を入力してください", currentTitle);
+        if (!newTitle) return;
+        db.ref('saved_courses/' + id).update({ title: newTitle }, err => {
+            if (!err) {
+                showToast("✏️ ヒート名を変更しました");
+                openReplayMenu();
+            } else {
+                alert("変更に失敗しました");
+            }
+        });
+    };
+
+    window.deleteCourse = (id) => {
+        if (confirm("このレース記録を削除しますか？（元に戻せません）")) {
+            db.ref('saved_courses/' + id).remove(err => {
+                if (!err) {
+                    showToast("🗑️ 記録を削除しました");
+                    openReplayMenu();
+                } else {
+                    alert("削除に失敗しました");
+                }
+            });
+        }
+    };
+
+    window.startReplay = (id) => {
+        document.getElementById('saved-courses-modal').style.display = 'none';
+        db.ref('saved_courses/' + id).once('value', snap => {
+            const data = snap.val();
+            if (!data) return;
+
+            if (data.objects) {
+                db.ref('objects').set(data.objects);
+            }
+
+            const heatTitle = data.title || '再生中';
+            const startStr = data.startTime ? ` (${data.startTime} スタート)` : '';
+            document.getElementById('replay-title-label').innerText = heatTitle + startStr;
+            document.getElementById('minimized-title').innerText = heatTitle;
+            
+            document.getElementById('header-replay-status').style.display = 'block';
+            document.getElementById('header-replay-time').style.display = 'block';
+
+            let baseDate = new Date();
+            if (data.history) {
+                let firstTs = null;
+                for (let uid in data.history) {
+                    for (let pushId in data.history[uid]) {
+                        const ts = data.history[uid][pushId].ts;
+                        if (!firstTs || ts < firstTs) firstTs = ts;
+                    }
+                }
+                if (firstTs) baseDate = new Date(firstTs);
+            }
+
+            if (data.startTime && data.startTime.includes(':')) {
+                const parts = data.startTime.split(':');
+                baseDate.setHours(parseInt(parts[0]), parseInt(parts[1]), 0, 0);
+                replayStartTimeMs = baseDate.getTime();
+            } else {
+                replayStartTimeMs = null;
+            }
+            hasAlertedStart = false;
+            lastCountdownNum = null;
+
+            document.getElementById('replay-control-bar').style.display = 'flex';
+            document.getElementById('replay-minimized-btn').style.display = 'none';
+            resetMinimizeTimer();
+
+            isReplaying = true;
+            replayPaused = false;
+            document.getElementById('btn-pause').innerText = "一時停止";
+
+            for (let name in userPolylineLines) {
+                if(userPolylineLines[name]) {
+                    userPolylineLines[name].forEach(seg => map.removeLayer(seg));
+                }
+            }
+            Object.keys(userPolylineLines).forEach(k => delete userPolylineLines[k]);
+            Object.keys(userTrails).forEach(k => delete userTrails[k]);
+            Object.keys(userMarkers).forEach(k => { map.removeLayer(userMarkers[k]); delete userMarkers[k]; });
+
+            showToast(`▶️ 「${heatTitle}」のリプレイを開始します`);
+            
+            if (data.history) {
+                prepareHistoryTimeline(data.history);
+            }
+        });
+    };
+
+    function prepareHistoryTimeline(historyObj) {
+        replayLogsAll = [];
+        for (let userId in historyObj) {
+            const userTracks = historyObj[userId];
+            for (let pushId in userTracks) {
+                replayLogsAll.push(userTracks[pushId]);
+            }
+        }
+        replayLogsAll.sort((a, b) => a.ts - b.ts);
+
+        if (replayLogsAll.length === 0) return;
+
+        if (!replayStartTimeMs && replayLogsAll.length > 0) {
+            replayStartTimeMs = replayLogsAll[0].ts;
+        }
+
+        replayCurrentIndex = 0;
+        document.getElementById('replay-seekbar').max = replayLogsAll.length - 1;
+        document.getElementById('replay-seekbar').value = 0;
+
+        playHistoryStep();
+    }
+
+    function formatJapanDateTime(ms) {
+        const date = new Date(ms);
+        const h = String(date.getHours()).padStart(2, '0');
+        const min = String(date.getMinutes()).padStart(2, '0');
+        const s = String(date.getSeconds()).padStart(2, '0');
+        const ms100 = isReplaying && !replayPaused ? String(Math.floor(Date.now() / 10) % 100).padStart(2, '0') : String(Math.floor(date.getMilliseconds() / 10)).padStart(2, '0');
+        return `${h}:${min}:${s}.${ms100}`;
+    }
+
+    function formatElapsedTime(ms) {
+        const totalSec = Math.floor(ms / 1000);
+        const m = Math.floor(totalSec / 60);
+        const s = totalSec % 60;
+        const ms100 = isReplaying && !replayPaused ? String(Math.floor(Date.now() / 10) % 100).padStart(2, '0') : String(Math.floor((ms % 1000) / 10)).padStart(2, '0');
+        return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${ms100}`;
+    }
+
+    function formatClockStyle(ms) {
+        const absMs = Math.abs(ms);
+        const totalSec = Math.floor(absMs / 1000);
+        const h = Math.floor(totalSec / 3600);
+        const m = Math.floor((totalSec % 3600) / 60);
+        const s = totalSec % 60;
+        const ms100 = isReplaying && !replayPaused ? String(Math.floor(Date.now() / 10) % 100).padStart(2, '0') : String(Math.floor((absMs % 1000) / 10)).padStart(2, '0');
+        
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${ms100}`;
+    }
+
+    function playHistoryStep() {
+        if (!isReplaying) return;
+        if (replayPaused) {
+            replayTimer = setTimeout(playHistoryStep, 100);
+            return;
+        }
+
+        if (replayCurrentIndex < replayLogsAll.length) {
+            const u = replayLogsAll[replayCurrentIndex];
+            updateUserTrailAndMarker(u.name, u.lat, u.lng, u.color, u.heading, u.ts);
+
+            const seekbar = document.getElementById('replay-seekbar');
+            if (!isSeeking) seekbar.value = replayCurrentIndex;
+
+            const startTime = replayLogsAll[0].ts;
+            const curTime = u.ts - startTime;
+            const totalTime = replayLogsAll[replayLogsAll.length - 1].ts - startTime;
+            
+            const timeStr = `${formatElapsedTime(curTime)} / ${formatElapsedTime(totalTime)}`;
+            document.getElementById('replay-time-label').innerText = timeStr;
+
+            if (replayStartTimeMs) {
+                const diffMs = replayStartTimeMs - u.ts;
+                const diffSec = diffMs / 1000;
+
+                let statusText = "";
+                if (diffSec > 10) {
+                    statusText = `⏳ スタートまであと ${formatClockStyle(diffMs)}`;
+                    document.getElementById('replay-countdown-alert').style.display = 'none';
+                } else if (diffSec > 0 && diffSec <= 10) {
+                    statusText = `⏳ スタートまであと ${formatClockStyle(diffMs)}`;
+                    const secInt = Math.ceil(diffSec);
+                    const alertBox = document.getElementById('replay-countdown-alert');
+                    alertBox.innerText = secInt;
+                    alertBox.style.display = 'block';
+                } else if (diffSec <= 0 && diffSec > -1.5) {
+                    statusText = `🚨 スタート！`;
+                    document.getElementById('replay-countdown-alert').style.display = 'none';
+                    if (!hasAlertedStart) {
+                        hasAlertedStart = true;
+                        triggerStartAlertOverlay();
+                    }
+                } else {
+                    const elapsedAfterStartMs = u.ts - replayStartTimeMs;
+                    statusText = `⏱️ スタートから ${formatClockStyle(elapsedAfterStartMs)} 経過`;
+                    document.getElementById('replay-countdown-alert').style.display = 'none';
+                    if (diffSec < -1.5) hasAlertedStart = false;
+                }
+
+                document.getElementById('header-replay-status').innerText = statusText;
+            }
+
+            document.getElementById('header-replay-time').innerText = `🕒 日本時間: ${formatJapanDateTime(u.ts)}`;
+
+            let nextDelay = 30;
+            if (replaySpeed === 1) {
+                if (replayCurrentIndex < replayLogsAll.length - 1) {
+                    const nextU = replayLogsAll[replayCurrentIndex + 1];
+                    const realDiff = nextU.ts - u.ts;
+                    nextDelay = Math.max(10, realDiff);
+                }
+                replayCurrentIndex += 1;
+            } else {
+                if (replayCurrentIndex < replayLogsAll.length - 1) {
+                    const nextU = replayLogsAll[replayCurrentIndex + 1];
+                    const realDiff = nextU.ts - u.ts;
+                    nextDelay = Math.max(15, Math.floor(realDiff / replaySpeed));
+                }
+                replayCurrentIndex += 1;
+            }
+
+            replayTimer = setTimeout(playHistoryStep, nextDelay);
+        } else {
+            showToast("🏁 リプレイが終了しました");
+        }
+    }
+
+    function triggerStartAlertOverlay() {
+        const alertBox = document.getElementById('replay-start-alert');
+        alertBox.style.display = 'block';
+        setTimeout(() => {
+            alertBox.style.display = 'none';
+        }, 1200);
+    }
+
+    window.onSeekbarInput = (val) => {
+        isSeeking = true;
+        replayCurrentIndex = parseInt(val);
+        
+        const u = replayLogsAll[replayCurrentIndex];
+        if (u) {
+            updateUserTrailAndMarker(u.name, u.lat, u.lng, u.color, u.heading, u.ts);
+            const startTime = replayLogsAll[0].ts;
+            const curTime = u.ts - startTime;
+            const totalTime = replayLogsAll[replayLogsAll.length - 1].ts - startTime;
+            
+            const timeStr = `${formatElapsedTime(curTime)} / ${formatElapsedTime(totalTime)}`;
+            document.getElementById('replay-time-label').innerText = timeStr;
+            document.getElementById('header-replay-time').innerText = `🕒 日本時間: ${formatJapanDateTime(u.ts)}`;
+        }
+        setTimeout(() => { isSeeking = false; }, 200);
+    };
+
+    function resetMinimizeTimer() {
+        if (replayMinimizeTimer) clearTimeout(replayMinimizeTimer);
+        replayMinimizeTimer = setTimeout(() => {
+            if (isReplaying) {
+                document.getElementById('replay-control-bar').style.display = 'none';
+                document.getElementById('replay-minimized-btn').style.display = 'block';
+            }
+        }, 10000);
+    }
+
+    window.expandReplayBar = () => {
+        document.getElementById('replay-control-bar').style.display = 'flex';
+        document.getElementById('replay-minimized-btn').style.display = 'none';
+        resetMinimizeTimer();
+    };
+
+    window.toggleReplayPause = () => {
+        replayPaused = !replayPaused;
+        document.getElementById('btn-pause').innerText = replayPaused ? "再生再開" : "一時停止";
+        showToast(replayPaused ? "⏸️ リプレイ一時停止" : "▶️ 再生再開");
+        resetMinimizeTimer();
+    };
+
+    window.setReplaySpeed = (speed) => {
+        replaySpeed = speed;
+        document.querySelectorAll('.replay-ctrl-btn').forEach(btn => {
+            if(btn.innerText.includes('x')) {
+                btn.classList.toggle('active', btn.innerText.includes(speed + 'x'));
+            }
+        });
+        showToast(`⚡ 再生速度: ${speed === 1 ? '等倍 (1x)' : speed + '倍速'}`);
+        resetMinimizeTimer();
+    };
+
+    window.exitReplay = () => {
+        isReplaying = false;
+        if(replayTimer) clearTimeout(replayTimer);
+        if(replayMinimizeTimer) clearTimeout(replayMinimizeTimer);
+        document.getElementById('replay-control-bar').style.display = 'none';
+        document.getElementById('replay-minimized-btn').style.display = 'none';
+        document.getElementById('header-replay-status').style.display = 'none';
+        document.getElementById('header-replay-time').style.display = 'none';
+        document.getElementById('replay-countdown-alert').style.display = 'none';
+        showToast("⏹️ リプレイを終了しました");
+        location.reload();
+    };
+
+    function updateUserTrailAndMarker(name, lat, lng, color, heading, timestamp) {
+        if (!userTrails[name]) userTrails[name] = [];
+        userTrails[name].push({ lat: lat, lng: lng, ts: timestamp });
+        
+        userTrails[name] = userTrails[name].filter(p => timestamp - p.ts <= 10000);
+
+        if (userPolylineLines[name]) {
+            userPolylineLines[name].forEach(seg => map.removeLayer(seg));
+        }
+        userPolylineLines[name] = [];
+
+        const points = userTrails[name];
+        if (points.length > 1) {
+            for (let i = 0; i < points.length - 1; i++) {
+                const p1 = points[i];
+                const p2 = points[i+1];
+                const age = timestamp - p2.ts;
+                
+                let opacity = 0.8;
+                if (age > 8000) {
+                    opacity = 0.8 * (1.0 - (age - 8000) / 2000);
+                    if (opacity < 0) opacity = 0;
+                }
+
+                if (opacity > 0) {
+                    const segLine = L.polyline([[p1.lat, p1.lng], [p2.lat, p2.lng]], {
+                        color: color || '#ff9900',
+                        weight: 2,
+                        opacity: opacity
+                    }).addTo(map);
+                    userPolylineLines[name].push(segLine);
+                }
+            }
+        }
+
+        if (userMarkers[name]) {
+            userMarkers[name].setLatLng([lat, lng]).setIcon(createArrowIcon(color, heading, 20));
+        } else {
+            userMarkers[name] = L.marker([lat, lng], { icon: createArrowIcon(color, heading, 20) }).addTo(map);
+            userMarkers[name].bindTooltip(name, { permanent: true, direction: 'top', className: 'user-label' });
+        }
+    }
+
+    function createPointCard(key, obj) {
+        const listContainer = document.getElementById('pointListContainer');
+        const msg = document.getElementById('noPointMsg');
+        if (msg) msg.style.display = 'none';
+
+        let card = document.querySelector(`.point-card[data-key="${key}"]`);
+        if (card) return;
+
+        const labelText = key.length > 5 ? '🚩' : key;
+        const currentType = obj.type || 'buoy';
+        const currentShape = obj.shape || 'triangle';
+        const currentColor = obj.color || '#ff3b30';
+
+        let colorOptionsHtml = '';
+        COLOR_OPTIONS.forEach(c => {
+            colorOptionsHtml += `<option value="${c.hex}" ${currentColor === c.hex ? 'selected' : ''}>${c.name}</option>`;
+        });
+
+        const div = document.createElement('div');
+        div.className = 'point-card';
+        div.dataset.key = key; 
+        div.innerHTML = `
+            <span class="point-label" style="color:${currentColor}">${labelText}</span>
+            <div style="display:flex; flex-direction:column; gap:3px; flex-grow:1;">
+                <div style="display:flex; gap:4px;">
+                    <select class="type-select" onchange="updateMarkerAppearance('${key}')" style="padding:2px;border-radius:4px;font-size:10px; flex:1;">
+                        <option value="buoy" ${currentType!=='ship'?'selected':''}>マーク</option>
+                        <option value="ship" ${currentType==='ship'?'selected':''}>ゴムボート</option>
+                    </select>
+                    <select class="shape-select" onchange="updateMarkerAppearance('${key}')" style="padding:2px;border-radius:4px;font-size:10px; flex:1; ${currentType==='ship'?'display:none;':''}">
+                        <option value="triangle" ${currentShape==='triangle'?'selected':''}>三角</option>
+                        <option value="rect" ${currentShape==='rect'?'selected':''}>長方形</option>
+                    </select>
+                    <select class="color-select" onchange="updateMarkerAppearance('${key}')" style="padding:2px;border-radius:4px;font-size:10px; flex:1;">
+                        ${colorOptionsHtml}
+                    </select>
+                </div>
+                <input type="text" class="comment-input" value="${obj.comment||''}" placeholder="メモ" oninput="updateMarkerAppearance('${key}')" style="padding:3px;border-radius:4px;font-size:11px;">
+            </div>
+            <button class="delete-btn" onclick="deleteObject('${key}')" style="background:#ff3b30;color:white;border:none;padding:6px 8px;border-radius:4px;font-size:11px;cursor:pointer;">削除</button>
+        `;
+        listContainer.appendChild(div);
+    }
+
+    window.updateMarkerAppearance = (key) => {
+        const card = document.querySelector(`.point-card[data-key="${key}"]`);
+        if (!card) return;
+        const type = card.querySelector('.type-select').value;
+        const shapeSelect = card.querySelector('.shape-select');
+        shapeSelect.style.display = (type === 'ship') ? 'none' : 'block';
+        
+        const shape = shapeSelect.value;
+        const color = card.querySelector('.color-select').value;
+        const comment = card.querySelector('.comment-input').value;
+
+        const labelSpan = card.querySelector('.point-label');
+        if (labelSpan) labelSpan.style.color = color;
+
+        db.ref('objects/' + key).update({
+            type: type,
+            shape: shape,
+            color: color,
+            comment: comment
+        });
+    };
+
+    // Firebaseからオブジェクト＆線を同期
+    db.ref('objects').on('value', snap => {
+        const listContainer = document.getElementById('pointListContainer');
+        listContainer.innerHTML = '<p id="noPointMsg" style="color: #666; font-size: 13px; margin: 0;">座標データが読み込まれていません</p>';
+        
+        for (let key in objectMarkers) map.removeLayer(objectMarkers[key]);
+        if (coursePolyline) { map.removeLayer(coursePolyline); coursePolyline = null; }
+
+        const objects = snap.val();
+        if (!objects) return;
+
+        for (let key in objects) {
+            const obj = objects[key];
+            const isShip = obj.type === 'ship';
+            
+            const marker = L.marker([obj.lat, obj.lng], { 
+                icon: createObjectIcon(obj.type, obj.shape, obj.color) 
+            }).addTo(map);
+
+            marker.on('click', (e) => {
+                if (isCourseBuilderActive) {
+                    handleCourseBuilderClick(key, obj);
+                    L.DomEvent.stopPropagation(e);
+                }
+            });
+
+            const displayTitle = isShip ? 'ゴムボート' : (key.length > 5 ? 'マーク' : key);
+            marker.bindPopup(`<b>${displayTitle}</b><br>${obj.comment||''}<br><button class="btn-del" onclick="deleteObject('${key}')">削除</button>`);
+            objectMarkers[key] = marker;
+
+            createPointCard(key, obj);
+        }
+
+        const orderMap = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'K'];
+        let polyPath = [];
+        orderMap.forEach(k => {
+            if (objects[k]) polyPath.push([objects[k].lat, objects[k].lng]);
+        });
+        
+        if (polyPath.length > 1) {
+            coursePolyline = L.polyline(polyPath, {color: '#ffffff', weight: 3, opacity: 0.6, dashArray: '5, 10'}).addTo(map);
+        }
+    });
+
+    // カスタム線の読み込み＆描画
+    db.ref('custom_lines').on('value', snap => {
+        customLinesGroup.clearLayers();
+        const lines = snap.val();
+        if (!lines) return;
+
+        db.ref('objects').once('value', objSnap => {
+            const objs = objSnap.val() || {};
+            for (let lineId in lines) {
+                const l = lines[lineId];
+                if (objs[l.from] && objs[l.to]) {
+                    const p1 = [objs[l.from].lat, objs[l.from].lng];
+                    const p2 = [objs[l.to].lat, objs[l.to].lng];
+                    const poly = L.polyline([p1, p2], {
+                        color: '#ffffff',
+                        weight: 3,
+                        dashArray: l.type === 'dashed' ? '5, 10' : null
+                    });
+                    poly.bindPopup(`<b>${l.type === 'dashed' ? '点線' : '実線'} (${l.from} - ${l.to})</b><br><button class="btn-del" onclick="deleteCustomLine('${lineId}')">削除</button>`);
+                    customLinesGroup.addLayer(poly);
+                }
+            }
+        });
+    });
+
+    window.deleteCustomLine = (lineId) => {
+        if (confirm("この線を削除しますか？")) {
+            db.ref('custom_lines/' + lineId).remove();
+            map.closePopup();
+        }
+    };
+
+    // コース作成モード中のオブジェクトクリック処理
+    function handleCourseBuilderClick(key, obj) {
+        if (cbMode === 'dashed' || cbMode === 'solid') {
+            if (!cbSelectedFirstObj) {
+                cbSelectedFirstObj = key;
+                showToast(`点を選択しました (${key})。もう一方の点を選んでください。`);
+            } else {
+                if (cbSelectedFirstObj === key) {
+                    showToast("同じ点は選べません");
+                    return;
+                }
+                const fromKey = cbSelectedFirstObj;
+                const toKey = key;
+                db.ref('custom_lines').push({
+                    from: fromKey,
+                    to: toKey,
+                    type: cbMode,
+                    ts: Date.now()
+                }, err => {
+                    if (!err) {
+                        showToast(`線を結びました (${fromKey} - ${toKey})`);
+                    }
+                });
+                cbSelectedFirstObj = null;
+            }
+        } else if (cbMode === 'data') {
+            if (!cbSelectedFirstObj) {
+                cbSelectedFirstObj = key;
+                showToast(`データ起点を設定 (${key})。もう一方の点を選んでください。`);
+            } else {
+                if (cbSelectedFirstObj === key) return;
+                const fromKey = cbSelectedFirstObj;
+                const toKey = key;
+                cbSelectedFirstObj = null;
+                calculateAndShowData(fromKey, toKey);
+            }
+        }
+    }
+
+    // 距離・角度の計算とモーダル表示
+    function calculateAndShowData(fromKey, toKey) {
+        db.ref('objects').once('value', snap => {
+            const objs = snap.val() || {};
+            if (!objs[fromKey] || !objs[toKey]) return;
+
+            const p1 = L.latLng(objs[fromKey].lat, objs[fromKey].lng);
+            const p2 = L.latLng(objs[toKey].lat, objs[toKey].lng);
+            const dist = Math.round(p1.distanceTo(p2)); // メートル
+
+            // 方位角 (0-360)
+            const lat1 = p1.lat * Math.PI / 180;
+            const lon1 = p1.lng * Math.PI / 180;
+            const lat2 = p2.lat * Math.PI / 180;
+            const lon2 = p2.lng * Math.PI / 180;
+            const dLon = lon2 - lon1;
+            const y = Math.sin(dLon) * Math.cos(lat2);
+            const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+            let brng = Math.atan2(y, x) * 180 / Math.PI;
+            brng = (brng + 360) % 360;
+
+            const windInput = parseFloat(document.getElementById('cb-wind-deg').value) || 0;
+            // {風向からの角度} = ターゲット方位角 - 風向 (またはその差)
+            const angleFromWind = (brng - windInput + 360) % 360;
+            const val1 = Math.round(angleFromWind - 90);
+            const val2 = Math.round(270 - angleFromWind);
+
+            const titlePair = `${fromKey}${toKey}`;
+            const html = `
+                <div style="border-bottom:1px solid #eee; padding:6px 0;">
+                    <b>${titlePair}距離:</b> ${dist}m<br>
+                    <b>角度1:</b> ${val1}° ({風向からの角度} - 90°)<br>
+                    <b>角度2:</b> ${val2}° (270° - {風向からの角度})<br>
+                    <span style="font-size:10px; color:#666;">(風向設定: ${windInput}°, 方位角: ${Math.round(brng)}°)</span>
+                </div>
+            `;
+            const listDiv = document.getElementById('course-data-list');
+            listDiv.innerHTML += html;
+            document.getElementById('course-data-modal').style.display = 'flex';
+        });
+    }
+
+    map.on('click', e => {
+        const { lat, lng } = e.latlng;
+        
+        if (isCourseBuilderActive) {
+            if (cbMode === 'ship' || cbMode === 'buoy') {
+                const commentText = cbMode === 'ship' ? 'ゴムボート' : 'マーク';
+                const randomKey = "C" + Math.floor(Math.random() * 1000);
+                db.ref('objects/' + randomKey).set({ 
+                    type: cbMode, 
+                    shape: 'triangle',
+                    color: '#ff3b30', 
+                    lat: lat, 
+                    lng: lng, 
+                    comment: commentText, 
+                    ts: Date.now() 
+                }, err => {
+                    if (!err) showToast(`📍 ${commentText}を設置しました`);
+                });
+            }
+            return;
+        }
+
+        if (isHoseiMode) {
+            if (confirm("現在地をこの場所に補正しますか？")) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    offsetLat = lat - pos.coords.latitude;
+                    offsetLng = lng - pos.coords.longitude;
+                    localStorage.setItem('tora_king_offset_lat', offsetLat);
+                    localStorage.setItem('tora_king_offset_lng', offsetLng);
+                    alert("位置補正完了");
+                    triggerHoseiMode(); 
+                    startTracking();   
+                }, err => { alert("位置の取得に失敗しました。"); }, {enableHighAccuracy: false, timeout: 5000});
+            }
+            return;
+        }
+        
+        if (isAddPointMode) {
+            let colorOpts = '';
+            COLOR_OPTIONS.forEach(c => { colorOpts += `<option value="${c.hex}">${c.name}</option>`; });
+
+            const popupContent = `
+                <div class="popup-form">
+                    <b>新規設置</b>
+                    <select id="new_type" onchange="document.getElementById('new_shape_row').style.display = this.value==='ship'?'none':'block';">
+                        <option value="buoy">🚩 マーク</option>
+                        <option value="ship">🚤 ゴムボート</option>
+                    </select>
+                    <div id="new_shape_row" style="margin:4px 0;">
+                        <select id="new_shape">
+                            <option value="triangle">縦長三角形</option>
+                            <option value="rect">縦長長方形</option>
+                        </select>
+                    </div>
+                    <select id="new_color">${colorOpts}</select>
+                    <input type="text" id="new_comment" placeholder="コメント">
+                    <button class="btn-save" onclick="manualSave(${lat}, ${lng})">設置</button>
+                </div>`;
+            L.popup().setLatLng(e.latlng).setContent(popupContent).openOn(map);
+            
+            setAddPointMode(false);
+            toggleMenu();
+            return;
+        }
+    });
+
+    window.manualSave = (lat, lng) => {
+        const type = document.getElementById('new_type').value;
+        const shape = type === 'ship' ? 'triangle' : document.getElementById('new_shape').value;
+        const color = document.getElementById('new_color').value;
+        const comment = document.getElementById('new_comment').value;
+        const randomKey = "M" + Math.floor(Math.random() * 1000);
+        
+        db.ref('objects/' + randomKey).set({ 
+            type: type, 
+            shape: shape,
+            color: color, 
+            lat: lat, 
+            lng: lng, 
+            comment: comment, 
+            ts: Date.now() 
+        });
+        map.closePopup();
+        document.getElementById('pointSettingsPanel').style.display = 'block';
+    };
+
+    function initSetupUI() {
+        const grid = document.getElementById('color-grid');
+        grid.innerHTML = "";
+        for (let label in colorPresets) {
+            const btn = document.createElement('div');
+            btn.className = 'color-btn';
+            btn.style.backgroundColor = colorPresets[label];
+            btn.innerText = label;
+            btn.onclick = () => saveProfile(colorPresets[label]);
+            grid.appendChild(btn);
+        }
+    }
+
+    function openSetup() {
+        document.getElementById('setup-name').value = (myName && !isViewerMode) ? myName : "";
+        document.getElementById('setup-overlay').style.display = 'flex';
+    }
+
+    function closeSetup() {
+        const nameInp = document.getElementById('setup-name').value;
+        if (!nameInp) return alert("名前を入力するか、「登録せず見る専」を選んでください");
+        saveProfile(myColor || "#ff9900");
+    }
+
+    function saveProfile(color) {
+        const nameInp = document.getElementById('setup-name').value;
+        if (!nameInp) return alert("名前を入力してください");
+        myName = nameInp; myColor = color; isViewerMode = false;
+        localStorage.setItem('tora_king_name', myName); 
+        localStorage.setItem('tora_king_color', myColor);
+        localStorage.removeItem('tora_king_viewer');
+        document.getElementById('setup-overlay').style.display = 'none'; 
+        startTracking();
+    }
+
+    window.saveProfileAsViewer = () => {
+        isViewerMode = true;
+        myName = "👀 観戦者";
+        myColor = "#7f8c8d";
+        localStorage.setItem('tora_king_viewer', 'true');
+        localStorage.removeItem('tora_king_name');
+        document.getElementById('setup-overlay').style.display = 'none';
+        showToast("👀 観戦モード（見る専）で開始しました");
+        startTracking();
+    };
+
+    function createArrowIcon(color, heading, size = 30) {
+        const html = `<div class="arrow-icon-wrapper" style="transform: rotate(${heading||0}deg);"><svg viewBox="0 0 100 100" width="${size}" height="${size}"><path d="M50 5 L90 90 L50 75 L10 90 Z" fill="${color}" stroke="white" stroke-width="5" /></svg></div>`;
+        return L.divIcon({ html: html, className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
+    }
+
+    function createObjectIcon(type, shape, color) {
+        let iconHtml = '';
+        if (type === 'ship') {
+            iconHtml = `<div style="font-size:26px; filter: drop-shadow(0 0 3px rgba(0,0,0,0.8)); text-align:center; line-height:26px;" title="ゴムボート">🚤</div>`;
+        } else {
+            const hexColor = color || '#ff3b30';
+            if (shape === 'rect') {
+                iconHtml = `<svg width="18" height="24" viewBox="0 0 100 133"><rect x="15" y="5" width="70" height="123" rx="6" fill="${hexColor}" stroke="white" stroke-width="8" /></svg>`;
+            } else {
+                iconHtml = `<svg width="18" height="24" viewBox="0 0 100 133"><path d="M50 5 L95 125 Q95 128 50 128 Q5 128 5 125 Z" fill="${hexColor}" stroke="white" stroke-width="8" /></svg>`;
+            }
+        }
+        return L.divIcon({ html: iconHtml, className: '', iconSize: [24, 26], iconAnchor: [12, 13] });
+    }
+
+    function handleGPSError(error) {
+        let msg = "Status: ";
+        switch(error.code) {
+            case error.PERMISSION_DENIED: msg += "位置情報が拒否されています"; break;
+            case error.POSITION_UNAVAILABLE: msg += "GPS判定待ち/電波微弱"; break;
+            case error.TIMEOUT: msg += "タイムアウト(再探索中)"; break;
+            default: msg += "検索中(" + error.code + ")"; break;
+        }
+        document.getElementById('status').style.background = "rgba(180,100,0,0.8)";
+        document.getElementById('status').innerText = msg;
+    }
+
+    function updateLocation(pos) {
+        if (isReplaying) return;
+
+        const latitude = pos.coords.latitude + offsetLat;
+        const longitude = pos.coords.longitude + offsetLng;
+        const speed = pos.coords.speed || 0;
+        const heading = pos.coords.heading || 0;
+        const now = Date.now();
+        
+        if (!isViewerMode && myName) {
+            const userData = {lat: latitude, lng: longitude, name: myName, color: myColor, speed: speed, heading: heading, ts: now};
+            db.ref('users/'+myId).set(userData);
+            
+            if (isRecordingActive) {
+                db.ref('temp_history/' + myId).push(userData);
+            }
+        }
+        
+        const latlng = [latitude, longitude];
+        if (!myMarker) {
+            myMarker = L.marker(latlng, { icon: createArrowIcon(myColor || '#7f8c8d', heading, 30) }).addTo(map);
+            myMarker.bindTooltip(myName || '観戦者', { permanent: true, direction: 'top', className: 'user-label' });
+            map.setView(latlng, 16);
+        } else {
+            myMarker.setLatLng(latlng).setIcon(createArrowIcon(myColor || '#7f8c8d', heading, 30));
+        }
+        
+        if (isFollowing) map.panTo(latlng);
+        
+        let statusText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)} (GPS良好)`;
+        if (isRecordingActive) {
+            statusText = `🔴 [記録中] ${statusText}`;
+            document.getElementById('status').style.background = "rgba(192, 57, 43, 0.9)";
+        } else {
+            document.getElementById('status').style.background = "rgba(0,128,0,0.8)";
+        }
+        document.getElementById('status').innerText = statusText;
+    }
+
+    function stopTracking() {
+        if (watchIdHigh) { navigator.geolocation.clearWatch(watchIdHigh); watchIdHigh = null; }
+        if (watchIdLow) { navigator.geolocation.clearWatch(watchIdLow); watchIdLow = null; }
+    }
+
+    function startTracking() {
+        if (!navigator.geolocation) {
+            document.getElementById('status').innerText = "Error: GPS非対応環境";
+            return;
+        }
+        stopTracking();
+        document.getElementById('status').style.background = "rgba(0,0,0,0.8)";
+        document.getElementById('status').innerText = "GPS接続を開始中...";
+
+        watchIdHigh = navigator.geolocation.watchPosition(updateLocation, (err) => {
+            if(err.code === err.TIMEOUT) console.log("High accuracy timeout.");
+        }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+
+        watchIdLow = navigator.geolocation.watchPosition(updateLocation, handleGPSError, 
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 });
+    }
+
+    window.toggleMenu = () => {
+        isMenuOpen = !isMenuOpen;
+        const container = document.getElementById('button-container');
+        const toggleBtn = document.getElementById('menu-toggle-btn');
+        
+        if (isMenuOpen) {
+            container.classList.add('menu-active');
+            toggleBtn.innerText = "✕";
+            toggleBtn.style.background = "rgba(52, 152, 219, 0.7)";
+        } else {
+            container.classList.remove('menu-active');
+            toggleBtn.innerText = "☰";
+            toggleBtn.style.background = "rgba(44, 62, 80, 0.45)";
+            
+            if (isAddPointMode) setAddPointMode(false);
+            if (isHoseiMode) { isHoseiMode = false; document.getElementById('hosei-btn').style.background = "rgba(241, 196, 15, 0.45)"; }
+        }
+    };
+
+    window.triggerAddPointMode = () => {
+        if (isHoseiMode) { isHoseiMode = false; document.getElementById('hosei-btn').style.background = "rgba(241, 196, 15, 0.45)"; }
+        setAddPointMode(!isAddPointMode);
+    };
+
+    function setAddPointMode(active) {
+        isAddPointMode = active;
+        const btn = document.getElementById('add-point-btn');
+        if (isAddPointMode) {
+            btn.style.background = "rgba(230, 126, 34, 0.7)";
+            showToast("🚩 マーク追加モード：ON (設置したい地図上を1回タップ)");
+        } else {
+            btn.style.background = "rgba(52, 152, 219, 0.45)";
+            showToast("🚩 マーク追加モード：OFF");
+        }
+    }
+
+    window.triggerRecenter = () => {
+        showToast("🎯 現在地を画面の中心に追従します");
+        isFollowing = true; 
+        if(myMarker) map.panTo(myMarker.getLatLng());
+    };
+
+    window.triggerGPSRetry = () => {
+        showToast("🔄 GPSを強制リセット・再接続します");
+        document.getElementById('status').style.background = "#ff9900";
+        document.getElementById('status').innerText = "GPSシグナルを強制再起動中...";
+        navigator.geolocation.getCurrentPosition(
+            (pos) => { updateLocation(pos); startTracking(); },
+            (err) => { alert("強制取得も応答なし。スマホ本体の設定を確認してください。"); startTracking(); },
+            { enableHighAccuracy: false, timeout: 5000 }
+        );
+        toggleMenu();
+    };
+
+    window.triggerHoseiMode = () => {
+        if (isAddPointMode) setAddPointMode(false);
+        isHoseiMode = !isHoseiMode;
+        document.getElementById('hosei-btn').style.background = isHoseiMode ? "rgba(231, 76, 60, 0.7)" : "rgba(241, 196, 15, 0.45)";
+        if(isHoseiMode) {
+            showToast("🔧 位置補正モード：ON (地図上をタップして現在地をズラせます)");
+        } else {
+            showToast("🔧 位置補正モード：OFF");
+        }
+    };
+
+    window.triggerSetup = () => {
+        showToast("👤 プロフィール（名前・色）の再設定を開きます");
+        toggleMenu();
+        setTimeout(openSetup, 400);
+    };
+
+    window.triggerLogout = () => {
+        showToast("🏃 ログアウトしています...");
+        toggleMenu();
+        setTimeout(() => {
+            if(confirm("ログアウトしますか？（登録情報がリセットされます）")) { 
+                db.ref('users/'+myId).remove().then(() => {
+                    localStorage.removeItem('tora_king_name');
+                    localStorage.removeItem('tora_king_color');
+                    localStorage.removeItem('tora_king_viewer');
+                    location.reload();
+                }).catch(() => {
+                    localStorage.removeItem('tora_king_name');
+                    localStorage.removeItem('tora_king_color');
+                    localStorage.removeItem('tora_king_viewer');
+                    location.reload();
+                });
+            }
+        }, 300);
+    };
+
+    initSetupUI();
+    if (!myName && !isViewerMode) openSetup(); else startTracking();
+
+    db.ref('users').on('value', snap => {
+        if (isReplaying) return;
+
+        const users = snap.val();
+        let listHtml = "";
+        const now = Date.now();
+        const activeUserNames = {};
+
+        for (let id in users) {
+            const u = users[id];
+            if (!u.name || now - u.ts > 600000) {
+                if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
+                continue;
+            }
+
+            if (u.name === myName && id !== myId && !isViewerMode) {
+                if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
+                continue;
+            }
+
+            activeUserNames[u.name] = true;
+            const isMe = (id === myId);
+            const s = (u.speed * (speedUnitMode === 0 ? 1.94384 : (speedUnitMode === 1 ? 3.6 : 1))).toFixed(1);
+            listHtml += `<div class="user-item ${isMe ? 'me' : ''}"><span style="color:${u.color}">●</span> ${u.name} ${s}${units[speedUnitMode]}</div>`;
+            
+            updateUserTrailAndMarker(u.name, u.lat, u.lng, u.color, u.heading, now);
+        }
+
+        for (let name in userTrails) {
+            if (!activeUserNames[name]) {
+                if (userPolylineLines[name]) {
+                    userPolylineLines[name].forEach(seg => map.removeLayer(seg));
+                    delete userPolylineLines[name];
+                }
+                delete userTrails[name];
+                if (userMarkers[name]) {
+                    map.removeLayer(userMarkers[name]);
+                    delete userMarkers[name];
+                }
+            }
+        }
+
+        document.getElementById('list-content').innerHTML = listHtml;
+    });
+
+    window.toggleSpeedUnit = () => {
+        speedUnitMode = (speedUnitMode + 1) % 3;
+        localStorage.setItem('tora_king_unit', speedUnitMode);
+        document.getElementById('unit-toggle').innerText = units[speedUnitMode];
+    };
+    window.deleteObject = (key) => { if(confirm("消去しますか？")) { db.ref('objects/' + key).remove(); const c = document.querySelector(`.point-card[data-key="${key}"]`); if(c) c.remove(); }};
+    
+    map.on('movestart', () => isFollowing = false);
+</script>
+</body>
+</html>
