@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.1.8 by Popolo App.com</title>
+    <title>虎キング v3.1.9 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -235,7 +235,7 @@
 <div id="header">
     <div style="font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;">
         <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
-        <span>虎キング v3.1.8 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
+        <span>虎キング v3.1.9 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
     </div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
@@ -248,7 +248,7 @@
 
 <div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
 
-<!-- 設定パネル（自由なマーク名編集対応） -->
+<!-- 設定パネル（マーク名自由編集対応） -->
 <div id="pointSettingsPanel" style="position: fixed; top: 135px; left: 10px; z-index: 5000; width: 300px; max-height: 55vh; overflow-y: auto; background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 12px; border: 2px solid #007AFF; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: #333; display:none;">
     <h3 onclick="toggleSettingsPanel()" style="margin: 0 0 10px 0; padding-bottom: 5px; font-size: 15px; color: #007AFF; border-bottom: 1px solid #ddd; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
         <span>🚩 コース地点設定</span>
@@ -1097,7 +1097,7 @@
         sortedKeys.forEach((key) => {
             let obj = objects[key];
             let letter = obj.assignedLabel;
-            if (letter === undefined || letter === null) {
+            if (letter === undefined) {
                 letter = String.fromCharCode(nextCharCode <= 90 ? nextCharCode : 90);
                 nextCharCode++;
                 db.ref('objects/' + key).update({ assignedLabel: letter });
@@ -1107,7 +1107,7 @@
                 icon: createObjectIcon(obj.type, obj.shape, obj.color) 
             }).addTo(map);
 
-            marker.bindTooltip(letter, { permanent: true, direction: 'top', className: 'object-label' });
+            marker.bindTooltip(letter || '', { permanent: true, direction: 'top', className: 'object-label' });
 
             marker.on('click', (e) => {
                 if (isCourseBuilderActive) {
@@ -1167,7 +1167,7 @@
         if (cbMode === 'dashed' || cbMode === 'solid') {
             if (!cbSelectedFirstObj) {
                 cbSelectedFirstObj = key;
-                showToast(`1つ目の点 (${letter}) を選択しました。2つ目の点を選んでください。`);
+                showToast(`1つ目の点 (${letter || '点'}) を選択しました。2つ目の点を選んでください。`);
             } else {
                 if (cbSelectedFirstObj === key) {
                     showToast("同じ点は選べません。別の点を選んでください。");
@@ -1191,12 +1191,12 @@
             }
         } else if (cbMode === 'data') {
             if (!cbSelectedFirstObj) {
-                cbSelectedFirstObj = { key: key, letter: letter };
-                showToast(`データ起点 (${letter}) を設定。もう一方の点を選んでください。`);
+                cbSelectedFirstObj = { key: key, letter: letter || '' };
+                showToast(`データ起点 (${letter || '点'}) を設定。もう一方の点を選んでください。`);
             } else {
                 if (cbSelectedFirstObj.key === key) return;
                 const fromObj = cbSelectedFirstObj;
-                const toObj = { key: key, letter: letter };
+                const toObj = { key: key, letter: letter || '' };
                 cbSelectedFirstObj = null;
                 calculateAndShowData(fromObj, toObj);
             }
@@ -1227,7 +1227,7 @@
             const val1 = Math.round(angleFromWind - 90);
             const val2 = Math.round(270 - angleFromWind);
 
-            const titlePair = `${fromObj.letter}${toObj.letter}`;
+            const titlePair = `${fromObj.letter || 'A'}${toObj.letter || 'B'}`;
             
             const dataPayload = {
                 title: titlePair,
