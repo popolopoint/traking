@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.0.8 by Popolo App.com</title>
+    <title>虎キング v3.1.1 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -24,6 +24,7 @@
 
         #map { height: 100vh; width: 100vw; z-index: 1; background: #222; }
         #unit-toggle { background: #333; color: #ff9900; border: 1px solid #ff9900; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; }
+        #course-create-btn { background: #27ae60; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; }
         
         #setup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 4000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; backdrop-filter: blur(4px); }
         .setup-box { background: rgba(34, 34, 34, 0.9); padding: 20px; border-radius: 15px; border: 2px solid #ff9900; text-align: center; width: 80%; max-width: 320px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
@@ -78,7 +79,7 @@
         .menu-child { opacity: 0; transform: translateY(20px) scale(0.8); pointer-events: none; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
         .menu-active .menu-child { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
         
-        #logout-btn     { bottom: 140px; background: rgba(231, 76, 60, 0.45); }
+        #logout-btn    { bottom: 140px; background: rgba(231, 76, 60, 0.45); }
         #name-btn       { bottom: 200px; }
         #manual-btn     { bottom: 260px; background: rgba(39, 174, 96, 0.45); }
         #replay-btn     { bottom: 320px; background: rgba(155, 89, 182, 0.45); }
@@ -104,6 +105,16 @@
         .modal-body-scroll { max-height: 60vh; overflow-y: auto; margin-top: 10px; font-size: 0.85rem; line-height: 1.5; color: #333; text-align: left; }
         .modal-body-scroll h4 { color: #2c3e50; margin: 10px 0 4px 0; border-bottom: 2px solid #3498db; padding-bottom: 2px; font-size: 0.9rem; }
         .modal-body-scroll p { margin: 4px 0 8px 0; }
+
+        /* コース作成モード用コントロールバー */
+        #course-builder-bar {
+            position: fixed; top: 62px; left: 50%; transform: translateX(-50%); z-index: 3500;
+            background: rgba(30, 39, 46, 0.9); border: 1.5px solid #ff9900;
+            padding: 8px 12px; border-radius: 12px; display: none; flex-wrap: wrap; gap: 6px; color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); align-items: center; justify-content: center; font-size: 12px;
+        }
+        .cb-btn { background: rgba(50, 50, 50, 0.8); color: white; border: 1px solid rgba(255,255,255,0.4); padding: 4px 8px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11px; }
+        .cb-btn.active { background: #ff9900; color: #000; border-color: #ff9900; }
     </style>
 </head>
 <body>
@@ -120,7 +131,30 @@
 <div id="recording-banner">🔴 【録画中・記録中】レース航跡を蓄積しています</div>
 <button id="floating-stop-btn" onclick="stopRaceRecording()">⏹️ 記録ストップ＆保存</button>
 
-<div id="replay-control-bar">
+<!-- コース作成モード操作バー -->
+<div id="course-builder-bar">
+    <button class="cb-btn" id="cb-mode-ship" onclick="setCourseBuilderMode('ship')">🚤 船</button>
+    <button class="cb-btn" id="cb-mode-buoy" onclick="setCourseBuilderMode('buoy')">🚩 ブイ</button>
+    <button class="cb-btn" id="cb-mode-dashed" onclick="setCourseBuilderMode('dashed')">┈ 点線</button>
+    <button class="cb-btn" id="cb-mode-solid" onclick="setCourseBuilderMode('solid')">━ 実線</button>
+    <button class="cb-btn" id="cb-mode-data" onclick="setCourseBuilderMode('data')">📊 データ</button>
+    <div style="display:flex; align-items:center; gap:4px; margin-left:4px; border-left:1px solid #666; padding-left:6px;">
+        <span>風向:</span>
+        <input type="number" id="cb-wind-deg" value="0" style="width:50px; padding:2px; font-size:11px; text-align:center;" placeholder="°">°
+    </div>
+    <button class="cb-btn" onclick="exitCourseBuilder()" style="background:#c0392b; margin-left:4px;">終了</button>
+</div>
+
+<!-- データ距離・角度リストモーダル -->
+<div id="course-data-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:18px; border-radius:12px; width:90%; max-width:380px; box-sizing:border-box; text-align:center;">
+        <h3 style="margin:0 0 10px 0; color:#2c3e50; font-size:1.1rem;">📊 選択点間の距離・角度データ</h3>
+        <div id="course-data-list" class="modal-body-scroll" style="min-height:100px; max-height:45vh; text-align:left;"></div>
+        <button onclick="document.getElementById('course-data-modal').style.display='none'" style="width:100%; margin-top:12px; background:#7f8c8d; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
+    </div>
+</div>
+
+<div id="replay-control-bar"> 
     <div class="replay-top-row">
         <span id="replay-title-label" style="font-size:13px; font-weight:bold; color:#ff9900;">名称</span>
         <span id="replay-time-label" style="font-size:12px; font-weight:bold; color:#ccc;">00:00.00 / 00:00.00</span>
@@ -188,7 +222,10 @@
 </div>
 
 <div id="header">
-    <div style="font-size:12px; font-weight:bold;">虎キング v3.0.8 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></div>
+    <div style="font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;">
+        <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
+        <span>虎キング v3.1.1 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
+    </div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
     
@@ -280,8 +317,14 @@
 
     let isRecordingActive = false;
 
+    // コース作成モード用変数
+    let isCourseBuilderActive = false;
+    let cbMode = 'ship'; // 'ship' | 'buoy' | 'dashed' | 'solid' | 'data'
+    let cbSelectedFirstObj = null;
+
     const userMarkers = {}, objectMarkers = {}, userTrails = {}, userPolylineLines = {};
     let coursePolyline = null;
+    let customLinesGroup = L.layerGroup().addTo(map);
 
     let isReplaying = false;
     let replayPaused = false;
@@ -338,6 +381,37 @@
     function closeManualModal() {
         document.getElementById('manual-modal').style.display = 'none';
     }
+
+    // コース作成モード起動
+    window.promptCourseCreate = () => {
+        const inputPass = prompt("コース作成用のパスワードを入力してください:");
+        if (inputPass === null) return;
+        if (inputPass !== RECORD_PASSWORD) {
+            alert("❌ パスワードが違います！");
+            return;
+        }
+        isCourseBuilderActive = true;
+        document.getElementById('course-builder-bar').style.display = 'flex';
+        setCourseBuilderMode('ship');
+        showToast("🛠️ コース作成モードを起動しました");
+    };
+
+    window.setCourseBuilderMode = (mode) => {
+        cbMode = mode;
+        cbSelectedFirstObj = null;
+        document.querySelectorAll('.cb-btn').forEach(btn => btn.classList.remove('active'));
+        if (mode === 'ship') document.getElementById('cb-mode-ship').classList.add('active');
+        if (mode === 'buoy') document.getElementById('cb-mode-buoy').classList.add('active');
+        if (mode === 'dashed') document.getElementById('cb-mode-dashed').classList.add('active');
+        if (mode === 'solid') document.getElementById('cb-mode-solid').classList.add('active');
+        if (mode === 'data') document.getElementById('cb-mode-data').classList.add('active');
+    };
+
+    window.exitCourseBuilder = () => {
+        isCourseBuilderActive = false;
+        document.getElementById('course-builder-bar').style.display = 'none';
+        showToast("コース作成モードを終了しました");
+    };
 
     window.openAdminUsersModal = () => {
         toggleMenu();
@@ -974,49 +1048,7 @@
         });
     };
 
-    function checkIncomingCourse() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const mode = urlParams.get('mode');
-        const course = urlParams.get('course');
-        
-        if (mode === 'committee' && course) {
-            const targetKeys = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'K', 'S'];
-            let newObjects = {};
-            let firstPos = null;
-
-            targetKeys.forEach(key => {
-                const latStr = urlParams.get(`lat${key}`);
-                const lngStr = urlParams.get(`lng${key}`);
-                if (latStr && lngStr) {
-                    const lat = parseFloat(latStr);
-                    const lng = parseFloat(lngStr);
-                    
-                    newObjects[key] = {
-                        type: 'buoy',
-                        color: MARK_COLORS[key] || '#ff3b30',
-                        lat: lat,
-                        lng: lng,
-                        comment: `${key}点 (${course.toUpperCase()})`,
-                        ts: Date.now()
-                    };
-                    if (!firstPos) firstPos = [lat, lng];
-                }
-            });
-
-            if (Object.keys(newObjects).length > 0) {
-                db.ref('objects').set(newObjects, (error) => {
-                    if (!error) {
-                        showToast(`コースデータ【${course.toUpperCase()}】を読込＆全体配信しました`);
-                        if (firstPos) {
-                            isFollowing = false; 
-                            map.setView(firstPos, 15);
-                        }
-                    }
-                });
-            }
-        }
-    }
-
+    // Firebaseからオブジェクト＆線を同期
     db.ref('objects').on('value', snap => {
         const listContainer = document.getElementById('pointListContainer');
         listContainer.innerHTML = '<p id="noPointMsg" style="color: #666; font-size: 13px; margin: 0;">座標データが読み込まれていません</p>';
@@ -1034,6 +1066,13 @@
             const marker = L.marker([obj.lat, obj.lng], { 
                 icon: createObjectIcon(obj.type, obj.shape, obj.color) 
             }).addTo(map);
+
+            marker.on('click', (e) => {
+                if (isCourseBuilderActive) {
+                    handleCourseBuilderClick(key, obj);
+                    L.DomEvent.stopPropagation(e);
+                }
+            });
 
             const displayTitle = isShip ? 'ゴムボート' : (key.length > 5 ? 'マーク' : key);
             marker.bindPopup(`<b>${displayTitle}</b><br>${obj.comment||''}<br><button class="btn-del" onclick="deleteObject('${key}')">削除</button>`);
@@ -1053,9 +1092,141 @@
         }
     });
 
+    // カスタム線の読み込み＆描画
+    db.ref('custom_lines').on('value', snap => {
+        customLinesGroup.clearLayers();
+        const lines = snap.val();
+        if (!lines) return;
+
+        db.ref('objects').once('value', objSnap => {
+            const objs = objSnap.val() || {};
+            for (let lineId in lines) {
+                const l = lines[lineId];
+                if (objs[l.from] && objs[l.to]) {
+                    const p1 = [objs[l.from].lat, objs[l.from].lng];
+                    const p2 = [objs[l.to].lat, objs[l.to].lng];
+                    const poly = L.polyline([p1, p2], {
+                        color: '#ffffff',
+                        weight: 3,
+                        dashArray: l.type === 'dashed' ? '5, 10' : null
+                    });
+                    poly.bindPopup(`<b>${l.type === 'dashed' ? '点線' : '実線'} (${l.from} - ${l.to})</b><br><button class="btn-del" onclick="deleteCustomLine('${lineId}')">削除</button>`);
+                    customLinesGroup.addLayer(poly);
+                }
+            }
+        });
+    });
+
+    window.deleteCustomLine = (lineId) => {
+        if (confirm("この線を削除しますか？")) {
+            db.ref('custom_lines/' + lineId).remove();
+            map.closePopup();
+        }
+    };
+
+    // コース作成モード中のオブジェクトクリック処理
+    function handleCourseBuilderClick(key, obj) {
+        if (cbMode === 'dashed' || cbMode === 'solid') {
+            if (!cbSelectedFirstObj) {
+                cbSelectedFirstObj = key;
+                showToast(`点を選択しました (${key})。もう一方の点を選んでください。`);
+            } else {
+                if (cbSelectedFirstObj === key) {
+                    showToast("同じ点は選べません");
+                    return;
+                }
+                const fromKey = cbSelectedFirstObj;
+                const toKey = key;
+                db.ref('custom_lines').push({
+                    from: fromKey,
+                    to: toKey,
+                    type: cbMode,
+                    ts: Date.now()
+                }, err => {
+                    if (!err) {
+                        showToast(`線を結びました (${fromKey} - ${toKey})`);
+                    }
+                });
+                cbSelectedFirstObj = null;
+            }
+        } else if (cbMode === 'data') {
+            if (!cbSelectedFirstObj) {
+                cbSelectedFirstObj = key;
+                showToast(`データ起点を設定 (${key})。もう一方の点を選んでください。`);
+            } else {
+                if (cbSelectedFirstObj === key) return;
+                const fromKey = cbSelectedFirstObj;
+                const toKey = key;
+                cbSelectedFirstObj = null;
+                calculateAndShowData(fromKey, toKey);
+            }
+        }
+    }
+
+    // 距離・角度の計算とモーダル表示
+    function calculateAndShowData(fromKey, toKey) {
+        db.ref('objects').once('value', snap => {
+            const objs = snap.val() || {};
+            if (!objs[fromKey] || !objs[toKey]) return;
+
+            const p1 = L.latLng(objs[fromKey].lat, objs[fromKey].lng);
+            const p2 = L.latLng(objs[toKey].lat, objs[toKey].lng);
+            const dist = Math.round(p1.distanceTo(p2)); // メートル
+
+            // 方位角 (0-360)
+            const lat1 = p1.lat * Math.PI / 180;
+            const lon1 = p1.lng * Math.PI / 180;
+            const lat2 = p2.lat * Math.PI / 180;
+            const lon2 = p2.lng * Math.PI / 180;
+            const dLon = lon2 - lon1;
+            const y = Math.sin(dLon) * Math.cos(lat2);
+            const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+            let brng = Math.atan2(y, x) * 180 / Math.PI;
+            brng = (brng + 360) % 360;
+
+            const windInput = parseFloat(document.getElementById('cb-wind-deg').value) || 0;
+            // {風向からの角度} = ターゲット方位角 - 風向 (またはその差)
+            const angleFromWind = (brng - windInput + 360) % 360;
+            const val1 = Math.round(angleFromWind - 90);
+            const val2 = Math.round(270 - angleFromWind);
+
+            const titlePair = `${fromKey}${toKey}`;
+            const html = `
+                <div style="border-bottom:1px solid #eee; padding:6px 0;">
+                    <b>${titlePair}距離:</b> ${dist}m<br>
+                    <b>角度1:</b> ${val1}° ({風向からの角度} - 90°)<br>
+                    <b>角度2:</b> ${val2}° (270° - {風向からの角度})<br>
+                    <span style="font-size:10px; color:#666;">(風向設定: ${windInput}°, 方位角: ${Math.round(brng)}°)</span>
+                </div>
+            `;
+            const listDiv = document.getElementById('course-data-list');
+            listDiv.innerHTML += html;
+            document.getElementById('course-data-modal').style.display = 'flex';
+        });
+    }
+
     map.on('click', e => {
         const { lat, lng } = e.latlng;
         
+        if (isCourseBuilderActive) {
+            if (cbMode === 'ship' || cbMode === 'buoy') {
+                const commentText = cbMode === 'ship' ? 'ゴムボート' : 'マーク';
+                const randomKey = "C" + Math.floor(Math.random() * 1000);
+                db.ref('objects/' + randomKey).set({ 
+                    type: cbMode, 
+                    shape: 'triangle',
+                    color: '#ff3b30', 
+                    lat: lat, 
+                    lng: lng, 
+                    comment: commentText, 
+                    ts: Date.now() 
+                }, err => {
+                    if (!err) showToast(`📍 ${commentText}を設置しました`);
+                });
+            }
+            return;
+        }
+
         if (isHoseiMode) {
             if (confirm("現在地をこの場所に補正しますか？")) {
                 navigator.geolocation.getCurrentPosition(pos => {
@@ -1406,10 +1577,6 @@
     window.deleteObject = (key) => { if(confirm("消去しますか？")) { db.ref('objects/' + key).remove(); const c = document.querySelector(`.point-card[data-key="${key}"]`); if(c) c.remove(); }};
     
     map.on('movestart', () => isFollowing = false);
-
-    window.addEventListener('load', () => {
-        setTimeout(checkIncomingCourse, 1000);
-    });
 </script>
 </body>
 </html>
