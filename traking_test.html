@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.1.5 by Popolo App.com</title>
+    <title>虎キング v3.1.6 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -235,7 +235,7 @@
 <div id="header">
     <div style="font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;">
         <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
-        <span>虎キング v3.1.5 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
+        <span>虎キング v3.1.6 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
     </div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
@@ -248,7 +248,7 @@
 
 <div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
 
-<!-- 設定パネル（ラベル名書き換え・チェックボックス削除対応） -->
+<!-- 設定パネル（文字削除誤動作修正・ラベル名書き換え対応） -->
 <div id="pointSettingsPanel" style="position: fixed; top: 135px; left: 10px; z-index: 5000; width: 300px; max-height: 55vh; overflow-y: auto; background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 12px; border: 2px solid #007AFF; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: #333; display:none;">
     <h3 onclick="toggleSettingsPanel()" style="margin: 0 0 10px 0; padding-bottom: 5px; font-size: 15px; color: #007AFF; border-bottom: 1px solid #ddd; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
         <span>🚩 コース地点設定</span>
@@ -1055,7 +1055,7 @@
         const shape = shapeSelect.value;
         const color = card.querySelector('.color-select').value;
         const comment = card.querySelector('.comment-input').value;
-        const assignedLabel = card.querySelector('.label-input').value || '';
+        const assignedLabel = card.querySelector('.label-input').value;
 
         const labelInput = card.querySelector('.label-input');
         if (labelInput) labelInput.style.color = color;
@@ -1086,7 +1086,7 @@
         sortedKeys.forEach((key) => {
             let obj = objects[key];
             let letter = obj.assignedLabel;
-            if (letter === undefined || letter === null || letter === '') {
+            if (letter === undefined || letter === null) {
                 letter = String.fromCharCode(nextCharCode);
                 nextCharCode++;
                 db.ref('objects/' + key).update({ assignedLabel: letter });
@@ -1268,8 +1268,8 @@
                 `;
             }
             container.innerHTML = html;
-        }, (error) => {
-            container.innerHTML = `<p style='color:#e74c3c;'>取得エラー: ${error.message}</p>`;
+        }).catch(err => {
+            container.innerHTML = `<p style='color:#e74c3c;'>取得エラー: ${err.message}</p>`;
         });
     };
 
