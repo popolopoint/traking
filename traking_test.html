@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.1.2 by Popolo App.com</title>
+    <title>虎キング v3.1.3 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -103,6 +103,7 @@
         
         #toast-notice { position: fixed; top: 65px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 6000; border: 1px solid #ff9900; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: center; pointer-events: none; }
         
+        /* モーダル全体の拡大（倍サイズ指定） */
         .modal-body-scroll { max-height: 60vh; overflow-y: auto; margin-top: 10px; font-size: 1.1rem; line-height: 1.6; color: #333; text-align: left; }
         .modal-body-scroll h4 { color: #2c3e50; margin: 10px 0 4px 0; border-bottom: 2px solid #3498db; padding-bottom: 2px; font-size: 1.2rem; }
         .modal-body-scroll p { margin: 6px 0 10px 0; font-size: 1rem; }
@@ -139,6 +140,7 @@
     <button class="cb-btn" id="cb-mode-dashed" onclick="setCourseBuilderMode('dashed')">┈ 点線</button>
     <button class="cb-btn" id="cb-mode-solid" onclick="setCourseBuilderMode('solid')">━ 実線</button>
     <button class="cb-btn" id="cb-mode-data" onclick="setCourseBuilderMode('data')">📊 コースデータ</button>
+    <button class="cb-btn" id="cb-mode-datalist" onclick="openDataListModal()" style="background:#2980b9;">📋 データ一覧</button>
     <div style="display:flex; align-items:center; gap:4px; margin-left:4px; border-left:1px solid #666; padding-left:6px;">
         <span>風向:</span>
         <input type="number" id="cb-wind-deg" value="0" style="width:50px; padding:2px; font-size:11px; text-align:center;" placeholder="°">°
@@ -146,12 +148,21 @@
     <button class="cb-btn" onclick="exitCourseBuilder()" style="background:#c0392b; margin-left:4px;">終了</button>
 </div>
 
-<!-- データ距離・角度リストモーダル (文字サイズ倍) -->
+<!-- データ距離・角度リストモーダル (倍サイズ) -->
 <div id="course-data-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
     <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:440px; box-sizing:border-box; text-align:center;">
         <h3 style="margin:0 0 12px 0; color:#2c3e50; font-size:1.4rem;">📊 選択点間の距離・角度データ</h3>
         <div id="course-data-list" class="modal-body-scroll" style="min-height:120px; max-height:50vh; text-align:left;"></div>
         <button onclick="document.getElementById('course-data-modal').style.display='none'" style="width:100%; margin-top:16px; background:#7f8c8d; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
+    </div>
+</div>
+
+<!-- データ一覧閲覧・削除用モーダル (倍サイズ) -->
+<div id="data-list-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:440px; box-sizing:border-box; text-align:center;">
+        <h3 style="margin:0 0 12px 0; color:#2c3e50; font-size:1.4rem;">📋 保存されたコースデータ一覧</h3>
+        <div id="data-list-container" class="modal-body-scroll" style="min-height:140px; max-height:50vh; text-align:left;"></div>
+        <button onclick="document.getElementById('data-list-modal').style.display='none'" style="width:100%; margin-top:16px; background:#7f8c8d; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
 </div>
 
@@ -187,7 +198,7 @@
     </div>
 </div>
 
-<!-- アイコン・操作ガイド説明モーダル (文字サイズ倍) -->
+<!-- アイコン・操作ガイド説明モーダル (倍サイズ) -->
 <div id="manual-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
     <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:440px; box-sizing:border-box;">
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #3498db; padding-bottom:8px;">
@@ -202,7 +213,7 @@
     </div>
 </div>
 
-<!-- ヒート名を選んでリプレイするモーダル (文字サイズ倍) -->
+<!-- ヒート名を選んでリプレイするモーダル (倍サイズ) -->
 <div id="saved-courses-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
     <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:420px; box-sizing:border-box; text-align:center;">
         <h3 style="margin:0 0 12px 0; color:#2c3e50; font-size:1.3rem;">📁 レース記録・ヒート一覧</h3>
@@ -211,7 +222,7 @@
     </div>
 </div>
 
-<!-- 管理者用・参加者削除モーダル (文字サイズ倍) -->
+<!-- 管理者用・参加者削除モーダル (倍サイズ) -->
 <div id="admin-users-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
     <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:420px; box-sizing:border-box; text-align:center;">
         <h3 style="margin:0 0 12px 0; color:#c0392b; font-size:1.3rem;">🛡️ 管理者: 参加者削除</h3>
@@ -225,7 +236,7 @@
 <div id="header">
     <div style="font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;">
         <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
-        <span>虎キング v3.1.2 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
+        <span>虎キング v3.1.3 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
     </div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
@@ -238,14 +249,16 @@
 
 <div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
 
-<div id="pointSettingsPanel" style="position: fixed; top: 135px; left: 10px; z-index: 5000; width: 280px; max-height: 50vh; overflow-y: auto; background: rgba(255, 255, 255, 0.95); padding: 10px; border-radius: 12px; border: 2px solid #007AFF; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: #333; display:none;">
-    <h3 onclick="toggleSettingsPanel()" style="margin: 0 0 10px 0; padding-bottom: 5px; font-size: 16px; color: #007AFF; border-bottom: 1px solid #ddd; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+<!-- 設定パネル（複数チェックボックス＆一括削除対応） -->
+<div id="pointSettingsPanel" style="position: fixed; top: 135px; left: 10px; z-index: 5000; width: 300px; max-height: 55vh; overflow-y: auto; background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 12px; border: 2px solid #007AFF; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: #333; display:none;">
+    <h3 onclick="toggleSettingsPanel()" style="margin: 0 0 10px 0; padding-bottom: 5px; font-size: 15px; color: #007AFF; border-bottom: 1px solid #ddd; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
         <span>🚩 コース地点設定</span>
         <span style="font-size: 10px; color: #999;">[ 閉じる ]</span>
     </h3>
     <div id="pointListContainer">
         <p id="noPointMsg" style="color: #666; font-size: 13px; margin: 0;">座標データが読み込まれていません</p>
     </div>
+    <button onclick="deleteSelectedObjects()" style="width:100%; margin-top:10px; background:#e74c3c; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">🗑️ 選択した項目を一括削除</button>
 </div>
 
 <div id="map"></div>
@@ -383,7 +396,6 @@
         document.getElementById('manual-modal').style.display = 'none';
     }
 
-    // コース作成モード起動
     window.promptCourseCreate = () => {
         const inputPass = prompt("コース作成用のパスワードを入力してください:");
         if (inputPass === null) return;
@@ -403,8 +415,14 @@
         document.querySelectorAll('.cb-btn').forEach(btn => btn.classList.remove('active'));
         if (mode === 'ship') document.getElementById('cb-mode-ship').classList.add('active');
         if (mode === 'buoy') document.getElementById('cb-mode-buoy').classList.add('active');
-        if (mode === 'dashed') document.getElementById('cb-mode-dashed').classList.add('active');
-        if (mode === 'solid') document.getElementById('cb-mode-solid').classList.add('active');
+        if (mode === 'dashed') {
+            document.getElementById('cb-mode-dashed').classList.add('active');
+            showToast("┈ 点線モード：1つ目の点を選択してください");
+        }
+        if (mode === 'solid') {
+            document.getElementById('cb-mode-solid').classList.add('active');
+            showToast("━ 実線モード：1つ目の点を選択してください");
+        }
         if (mode === 'data') document.getElementById('cb-mode-data').classList.add('active');
     };
 
@@ -991,7 +1009,6 @@
         let card = document.querySelector(`.point-card[data-key="${key}"]`);
         if (card) return;
 
-        const labelText = labelChar;
         const currentType = obj.type || 'buoy';
         const currentShape = obj.shape || 'triangle';
         const currentColor = obj.color || '#ff3b30';
@@ -1005,7 +1022,8 @@
         div.className = 'point-card';
         div.dataset.key = key; 
         div.innerHTML = `
-            <span class="point-label" style="color:${currentColor}">${labelText}</span>
+            <input type="checkbox" class="point-del-chk" value="${key}" style="transform:scale(1.3); cursor:pointer;">
+            <span class="point-label" style="color:${currentColor}">${labelChar}</span>
             <div style="display:flex; flex-direction:column; gap:3px; flex-grow:1;">
                 <div style="display:flex; gap:4px;">
                     <select class="type-select" onchange="updateMarkerAppearance('${key}')" style="padding:2px;border-radius:4px;font-size:10px; flex:1;">
@@ -1026,6 +1044,28 @@
         `;
         listContainer.appendChild(div);
     }
+
+    // 複数一括削除処理
+    window.deleteSelectedObjects = () => {
+        const checkedBoxes = document.querySelectorAll('.point-del-chk:checked');
+        if (checkedBoxes.length === 0) {
+            alert("削除する項目が選択されていません");
+            return;
+        }
+        if (confirm(`選択した ${checkedBoxes.length} 件のポイントを削除しますか？`)) {
+            let updates = {};
+            checkedBoxes.forEach(chk => {
+                updates['objects/' + chk.value] = null;
+            });
+            db.ref().update(updates, err => {
+                if (!err) {
+                    showToast("🗑️ 選択したポイントを削除しました");
+                } else {
+                    alert("削除に失敗しました");
+                }
+            });
+        }
+    };
 
     window.updateMarkerAppearance = (key) => {
         const card = document.querySelector(`.point-card[data-key="${key}"]`);
@@ -1049,7 +1089,7 @@
         });
     };
 
-    // Firebaseからオブジェクト＆線を同期 (ABCD通し番号)
+    // Firebaseからオブジェクト＆線を同期（キーが削除されても他のアルファベットがずれない固定方式）
     db.ref('objects').on('value', snap => {
         const listContainer = document.getElementById('pointListContainer');
         listContainer.innerHTML = '<p id="noPointMsg" style="color: #666; font-size: 13px; margin: 0;">座標データが読み込まれていません</p>';
@@ -1061,14 +1101,24 @@
         const objects = snap.val();
         if (!objects) return;
 
-        // タイムスタンプ順にソートしてABCDを割り当て
-        const sortedKeys = Object.keys(objects).sort((a, b) => (objects[a].ts || 0) - (objects[b].ts || 0));
-        
+        // 生成順にソートし、かつ一度割り当てた文字が消去されてもずれないようインデックス固定または一意キー連動
+        const sortedKeys = Object.keys(objects).sort((a, b) => {
+            const timeA = objects[a].fixedIndex !== undefined ? objects[a].fixedIndex : (objects[a].ts || 0);
+            const timeB = objects[b].fixedIndex !== undefined ? objects[b].fixedIndex : (objects[b].ts || 0);
+            return timeA - timeB;
+        });
+
+        // アルファベットを割り当て (A=65)
         sortedKeys.forEach((key, index) => {
             const obj = objects[key];
-            const letter = String.fromCharCode(65 + index); // A, B, C, D...
-            const isShip = obj.type === 'ship';
+            const letter = String.fromCharCode(65 + index); // A, B, C...
             
+            // fixedIndexが未設定なら保存しておく（アルファベット固定化用）
+            if (obj.fixedIndex === undefined) {
+                db.ref('objects/' + key).update({ fixedIndex: index });
+            }
+
+            const isShip = obj.type === 'ship';
             const marker = L.marker([obj.lat, obj.lng], { 
                 icon: createObjectIcon(obj.type, obj.shape, obj.color) 
             }).addTo(map);
@@ -1086,7 +1136,6 @@
             createPointCard(key, obj, letter);
         });
 
-        // カスタム線の再描画を促すためcustomLinesも連動
         triggerCustomLinesRedraw();
     });
 
@@ -1098,7 +1147,7 @@
 
             db.ref('objects').once('value', objSnap => {
                 const objs = objSnap.val() || {};
-                const sortedKeys = Object.keys(objs).sort((a, b) => (objs[a].ts || 0) - (objs[b].ts || 0));
+                const sortedKeys = Object.keys(objs).sort((a, b) => (objs[a].fixedIndex || 0) - (objs[b].fixedIndex || 0));
                 const keyToLetter = {};
                 sortedKeys.forEach((k, idx) => { keyToLetter[k] = String.fromCharCode(65 + idx); });
 
@@ -1134,15 +1183,15 @@
         }
     };
 
-    // コース作成モード中のオブジェクトクリック処理
+    // コース作成モード中のオブジェクトクリック処理（点線・実線の2点選択不具合修正対応）
     function handleCourseBuilderClick(key, obj, letter) {
         if (cbMode === 'dashed' || cbMode === 'solid') {
             if (!cbSelectedFirstObj) {
                 cbSelectedFirstObj = key;
-                showToast(`点 ${letter} を選択しました。もう一方の点を選んでください。`);
+                showToast(`1つ目の点 (${letter}) を選択しました。2つ目の点を選んでください。`);
             } else {
                 if (cbSelectedFirstObj === key) {
-                    showToast("同じ点は選べません");
+                    showToast("同じ点は選べません。別の点を選んでください。");
                     return;
                 }
                 const fromKey = cbSelectedFirstObj;
@@ -1154,7 +1203,9 @@
                     ts: Date.now()
                 }, err => {
                     if (!err) {
-                        showToast(`線を結びました`);
+                        showToast(`直線（${cbMode === 'dashed' ? '点線' : '実線'}）を結びました！`);
+                    } else {
+                        alert("線の結びつけに失敗しました");
                     }
                 });
                 cbSelectedFirstObj = null;
@@ -1173,7 +1224,7 @@
         }
     }
 
-    // 距離・角度の計算とモーダル表示（個別削除機能付き）
+    // 距離・角度の計算と保存・モーダル表示
     function calculateAndShowData(fromObj, toObj) {
         db.ref('objects').once('value', snap => {
             const objs = snap.val() || {};
@@ -1199,23 +1250,71 @@
             const val2 = Math.round(270 - angleFromWind);
 
             const titlePair = `${fromObj.letter}${toObj.letter}`;
-            const itemKey = 'item_' + Date.now();
+            
+            // Firebaseに計算結果データを保存（いつでも見られるようにするため）
+            const dataPayload = {
+                title: titlePair,
+                dist: dist,
+                val1: val1,
+                val2: val2,
+                wind: windInput,
+                ts: Date.now()
+            };
+            db.ref('saved_course_data').push(dataPayload);
+
             const html = `
-                <div id="${itemKey}" style="border-bottom:1px solid #ddd; padding:10px 0; display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <b>${titlePair}距離:</b> ${dist}m<br>
-                        <b>角度1:</b> ${val1}° ({風向からの角度} - 90°)<br>
-                        <b>角度2:</b> ${val2}° (270° - {風向からの角度})<br>
-                        <span style="font-size:0.9rem; color:#666;">(風向: ${windInput}°, 方位: ${Math.round(brng)}°)</span>
-                    </div>
-                    <button onclick="document.getElementById('${itemKey}').remove()" style="background:#e74c3c; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:0.9rem; cursor:pointer;">削除</button>
+                <div style="border-bottom:1px solid #ddd; padding:10px 0;">
+                    <b>${titlePair}距離:</b> ${dist}m<br>
+                    <b>角度1:</b> ${val1}° ({風向からの角度} - 90°)<br>
+                    <b>角度2:</b> ${val2}° (270° - {風向からの角度})<br>
+                    <span style="font-size:0.9rem; color:#666;">(風向: ${windInput}°, 方位: ${Math.round(brng)}°)</span>
                 </div>
             `;
             const listDiv = document.getElementById('course-data-list');
-            listDiv.innerHTML += html;
+            listDiv.innerHTML = html;
             document.getElementById('course-data-modal').style.display = 'flex';
         });
     }
+
+    // 「データ一覧」ボタンでみるだけ・削除できるモーダルを開く
+    window.openDataListModal = () => {
+        const container = document.getElementById('data-list-container');
+        container.innerHTML = "読み込み中...";
+        document.getElementById('data-list-modal').style.display = 'flex';
+
+        db.ref('saved_course_data').once('value', snap => {
+            const dataObj = snap.val();
+            if (!dataObj) {
+                container.innerHTML = "<p style='color:#666; padding:10px;'>保存されたコースデータはありません</p>";
+                return;
+            }
+            let html = "";
+            for (let dataId in dataObj) {
+                const d = dataObj[dataId];
+                html += `
+                    <div id="data_item_${dataId}" style="border-bottom:1px solid #ddd; padding:10px 0; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <b>${d.title}距離:</b> ${d.dist}m<br>
+                            <b>角度1:</b> ${d.val1}°<br>
+                            <b>角度2:</b> ${d.val2}°<br>
+                            <span style="font-size:0.85rem; color:#666;">風向設定: ${d.wind}°</span>
+                        </div>
+                        <button onclick="deleteCourseData('${dataId}')" style="background:#e74c3c; color:white; border:none; padding:8px 12px; border-radius:6px; font-size:1rem; cursor:pointer;">削除</button>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        });
+    };
+
+    window.deleteCourseData = (dataId) => {
+        if (confirm("このコースデータを削除しますか？")) {
+            db.ref('saved_course_data/' + dataId).remove().then(() => {
+                showToast("🗑️ データを削除しました");
+                openDataListModal(); // リスト更新
+            });
+        }
+    };
 
     map.on('click', e => {
         const { lat, lng } = e.latlng;
