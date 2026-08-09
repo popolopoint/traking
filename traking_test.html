@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.1.1 by Popolo App.com</title>
+    <title>虎キング v3.1.2 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -36,6 +36,7 @@
         .user-item { border-bottom: 1px solid #444; padding: 4px 0; }
         .user-item.me { color: #00ff00; font-weight: bold; }
         .user-label { background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #ff9900; font-size: 10px; font-weight: bold; padding: 2px 4px; border-radius: 3px; white-space: nowrap; }
+        .object-label { background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #ff9900; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
         .status-panel { position: fixed; bottom: 10px; left: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 11px; max-width: 80%; border: 1px solid #ff9900; }
         
         #replay-control-bar { 
@@ -102,9 +103,9 @@
         
         #toast-notice { position: fixed; top: 65px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 6000; border: 1px solid #ff9900; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: center; pointer-events: none; }
         
-        .modal-body-scroll { max-height: 60vh; overflow-y: auto; margin-top: 10px; font-size: 0.85rem; line-height: 1.5; color: #333; text-align: left; }
-        .modal-body-scroll h4 { color: #2c3e50; margin: 10px 0 4px 0; border-bottom: 2px solid #3498db; padding-bottom: 2px; font-size: 0.9rem; }
-        .modal-body-scroll p { margin: 4px 0 8px 0; }
+        .modal-body-scroll { max-height: 60vh; overflow-y: auto; margin-top: 10px; font-size: 1.1rem; line-height: 1.6; color: #333; text-align: left; }
+        .modal-body-scroll h4 { color: #2c3e50; margin: 10px 0 4px 0; border-bottom: 2px solid #3498db; padding-bottom: 2px; font-size: 1.2rem; }
+        .modal-body-scroll p { margin: 6px 0 10px 0; font-size: 1rem; }
 
         /* コース作成モード用コントロールバー */
         #course-builder-bar {
@@ -133,11 +134,11 @@
 
 <!-- コース作成モード操作バー -->
 <div id="course-builder-bar">
-    <button class="cb-btn" id="cb-mode-ship" onclick="setCourseBuilderMode('ship')">🚤 船</button>
+    <button class="cb-btn" id="cb-mode-ship" onclick="setCourseBuilderMode('ship')">🚤 フネ</button>
     <button class="cb-btn" id="cb-mode-buoy" onclick="setCourseBuilderMode('buoy')">🚩 ブイ</button>
     <button class="cb-btn" id="cb-mode-dashed" onclick="setCourseBuilderMode('dashed')">┈ 点線</button>
     <button class="cb-btn" id="cb-mode-solid" onclick="setCourseBuilderMode('solid')">━ 実線</button>
-    <button class="cb-btn" id="cb-mode-data" onclick="setCourseBuilderMode('data')">📊 データ</button>
+    <button class="cb-btn" id="cb-mode-data" onclick="setCourseBuilderMode('data')">📊 コースデータ</button>
     <div style="display:flex; align-items:center; gap:4px; margin-left:4px; border-left:1px solid #666; padding-left:6px;">
         <span>風向:</span>
         <input type="number" id="cb-wind-deg" value="0" style="width:50px; padding:2px; font-size:11px; text-align:center;" placeholder="°">°
@@ -145,12 +146,12 @@
     <button class="cb-btn" onclick="exitCourseBuilder()" style="background:#c0392b; margin-left:4px;">終了</button>
 </div>
 
-<!-- データ距離・角度リストモーダル -->
+<!-- データ距離・角度リストモーダル (文字サイズ倍) -->
 <div id="course-data-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
-    <div style="background:white; padding:18px; border-radius:12px; width:90%; max-width:380px; box-sizing:border-box; text-align:center;">
-        <h3 style="margin:0 0 10px 0; color:#2c3e50; font-size:1.1rem;">📊 選択点間の距離・角度データ</h3>
-        <div id="course-data-list" class="modal-body-scroll" style="min-height:100px; max-height:45vh; text-align:left;"></div>
-        <button onclick="document.getElementById('course-data-modal').style.display='none'" style="width:100%; margin-top:12px; background:#7f8c8d; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
+    <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:440px; box-sizing:border-box; text-align:center;">
+        <h3 style="margin:0 0 12px 0; color:#2c3e50; font-size:1.4rem;">📊 選択点間の距離・角度データ</h3>
+        <div id="course-data-list" class="modal-body-scroll" style="min-height:120px; max-height:50vh; text-align:left;"></div>
+        <button onclick="document.getElementById('course-data-modal').style.display='none'" style="width:100%; margin-top:16px; background:#7f8c8d; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
 </div>
 
@@ -186,45 +187,45 @@
     </div>
 </div>
 
-<!-- アイコン・操作ガイド説明モーダル -->
+<!-- アイコン・操作ガイド説明モーダル (文字サイズ倍) -->
 <div id="manual-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
-    <div style="background:white; padding:18px; border-radius:12px; width:90%; max-width:380px; box-sizing:border-box;">
+    <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:440px; box-sizing:border-box;">
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #3498db; padding-bottom:8px;">
-            <h3 style="margin:0; color:#2c3e50; font-size:1.1rem;">📖 アイコン・操作ガイド</h3>
-            <button onclick="closeManualModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">✖</button>
+            <h3 style="margin:0; color:#2c3e50; font-size:1.3rem;">📖 アイコン・操作ガイド</h3>
+            <button onclick="closeManualModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">✖</button>
         </div>
         <div class="modal-body-scroll">
             <h4>🛡️ 管理者参加者削除機能</h4>
             <p>・メニューの「🛡️」ボタンから管理者パスワードを入力することで、現在参加しているメンバーをチェックボックスで選択して強制削除できるようになりました。</p>
         </div>
-        <button onclick="closeManualModal()" style="width:100%; margin-top:12px; background:#3498db; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
+        <button onclick="closeManualModal()" style="width:100%; margin-top:16px; background:#3498db; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
 </div>
 
-<!-- ヒート名を選んでリプレイするモーダル -->
+<!-- ヒート名を選んでリプレイするモーダル (文字サイズ倍) -->
 <div id="saved-courses-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
-    <div style="background:white; padding:18px; border-radius:12px; width:90%; max-width:360px; box-sizing:border-box; text-align:center;">
-        <h3 style="margin:0 0 10px 0; color:#2c3e50; font-size:1.1rem;">📁 レース記録・ヒート一覧</h3>
-        <div id="saved-courses-list" class="modal-body-scroll" style="min-height:100px; max-height:40vh;"></div>
-        <button onclick="document.getElementById('saved-courses-modal').style.display='none'" style="width:100%; margin-top:12px; background:#7f8c8d; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
+    <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:420px; box-sizing:border-box; text-align:center;">
+        <h3 style="margin:0 0 12px 0; color:#2c3e50; font-size:1.3rem;">📁 レース記録・ヒート一覧</h3>
+        <div id="saved-courses-list" class="modal-body-scroll" style="min-height:140px; max-height:50vh;"></div>
+        <button onclick="document.getElementById('saved-courses-modal').style.display='none'" style="width:100%; margin-top:16px; background:#7f8c8d; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
 </div>
 
-<!-- 管理者用・参加者削除モーダル -->
+<!-- 管理者用・参加者削除モーダル (文字サイズ倍) -->
 <div id="admin-users-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
-    <div style="background:white; padding:18px; border-radius:12px; width:90%; max-width:360px; box-sizing:border-box; text-align:center;">
-        <h3 style="margin:0 0 10px 0; color:#c0392b; font-size:1.1rem;">🛡️ 管理者: 参加者削除</h3>
-        <p style="font-size:11px; color:#555; margin-bottom:10px;">削除したい参加者にチェックを入れてください</p>
-        <div id="admin-users-list" class="modal-body-scroll" style="min-height:80px; max-height:35vh; text-align:left;"></div>
-        <button onclick="executeSelectedUsersDelete()" style="width:100%; margin-top:12px; background:#c0392b; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">チェックした参加者を強制退出（削除）</button>
-        <button onclick="document.getElementById('admin-users-modal').style.display='none'" style="width:100%; margin-top:6px; background:#7f8c8d; color:white; border:none; padding:8px; border-radius:8px; font-weight:bold; cursor:pointer;">閉じる</button>
+    <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:420px; box-sizing:border-box; text-align:center;">
+        <h3 style="margin:0 0 12px 0; color:#c0392b; font-size:1.3rem;">🛡️ 管理者: 参加者削除</h3>
+        <p style="font-size:1rem; color:#555; margin-bottom:12px;">削除したい参加者にチェックを入れてください</p>
+        <div id="admin-users-list" class="modal-body-scroll" style="min-height:100px; max-height:40vh; text-align:left;"></div>
+        <button onclick="executeSelectedUsersDelete()" style="width:100%; margin-top:16px; background:#c0392b; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">チェックした参加者を強制退出（削除）</button>
+        <button onclick="document.getElementById('admin-users-modal').style.display='none'" style="width:100%; margin-top:8px; background:#7f8c8d; color:white; border:none; padding:10px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
 </div>
 
 <div id="header">
     <div style="font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;">
         <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
-        <span>虎キング v3.1.1 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
+        <span>虎キング v3.1.2 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
     </div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
@@ -438,9 +439,9 @@
             for (let id in users) {
                 const u = users[id];
                 if (!u.name) continue;
-                html += `<div style="padding:6px 0; border-bottom:1px solid #eee; display:flex; align-items:center; gap:8px;">
-                    <input type="checkbox" class="target-user-chk" value="${id}" id="chk_${id}" style="transform:scale(1.2);">
-                    <label for="chk_${id}" style="font-size:12px; cursor:pointer;"><span style="color:${u.color}">●</span> <b>${u.name}</b></label>
+                html += `<div style="padding:8px 0; border-bottom:1px solid #eee; display:flex; align-items:center; gap:10px; font-size:1.1rem;">
+                    <input type="checkbox" class="target-user-chk" value="${id}" id="chk_${id}" style="transform:scale(1.4);">
+                    <label for="chk_${id}" style="cursor:pointer;"><span style="color:${u.color}">●</span> <b>${u.name}</b></label>
                 </div>`;
             }
             listDiv.innerHTML = html || "<p style='color:#666;'>有効なユーザーがいません</p>";
@@ -567,15 +568,15 @@
                 const c = saved[id];
                 const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleString() : '日時不明';
                 const startInfo = c.startTime ? ` スタート: ${c.startTime}` : '';
-                html += `<div style="background:#f1f2f6; padding:8px; border-radius:6px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
-                    <div style="text-align:left; max-width:130px; overflow:hidden;"><b>🏁 ${c.title || '無題'}</b><br><span style="font-size:9px; color:#555;">${startInfo}</span><br><span style="font-size:8px; color:#888;">${dateStr}</span></div>
-                    <div style="display:flex; gap:4px; flex-direction:column;">
-                        <button onclick="startReplay('${id}')" style="background:#8e44ad; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:10px; font-weight:bold; cursor:pointer;">再生</button>
-                        <button onclick="trimAndSaveCourse('${id}')" style="background:#27ae60; color:white; border:none; padding:3px 6px; border-radius:4px; font-size:9px; cursor:pointer;" title="このデータから一部分を切り出し">✂️ 切り出し</button>
+                html += `<div style="background:#f1f2f6; padding:10px; border-radius:6px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; font-size:1.1rem;">
+                    <div style="text-align:left; max-width:160px; overflow:hidden;"><b>🏁 ${c.title || '無題'}</b><br><span style="font-size:0.9rem; color:#555;">${startInfo}</span><br><span style="font-size:0.8rem; color:#888;">${dateStr}</span></div>
+                    <div style="display:flex; gap:6px; flex-direction:column;">
+                        <button onclick="startReplay('${id}')" style="background:#8e44ad; color:white; border:none; padding:6px 12px; border-radius:4px; font-size:1rem; font-weight:bold; cursor:pointer;">再生</button>
+                        <button onclick="trimAndSaveCourse('${id}')" style="background:#27ae60; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:0.9rem; cursor:pointer;" title="このデータから一部分を切り出し">✂️ 切り出し</button>
                     </div>
-                    <div style="display:flex; gap:3px;">
-                        <button onclick="renameCourse('${id}', '${c.title}')" style="background:#2980b9; color:white; border:none; padding:4px 6px; border-radius:4px; font-size:10px; cursor:pointer;" title="名前変更">✏️</button>
-                        <button onclick="deleteCourse('${id}')" style="background:#c0392b; color:white; border:none; padding:4px 6px; border-radius:4px; font-size:10px; cursor:pointer;" title="削除">🗑️</button>
+                    <div style="display:flex; gap:4px; flex-direction:column;">
+                        <button onclick="renameCourse('${id}', '${c.title}')" style="background:#2980b9; color:white; border:none; padding:5px 8px; border-radius:4px; font-size:0.9rem; cursor:pointer;" title="名前変更">✏️</button>
+                        <button onclick="deleteCourse('${id}')" style="background:#c0392b; color:white; border:none; padding:5px 8px; border-radius:4px; font-size:0.9rem; cursor:pointer;" title="削除">🗑️</button>
                     </div>
                 </div>`;
             }
@@ -982,7 +983,7 @@
         }
     }
 
-    function createPointCard(key, obj) {
+    function createPointCard(key, obj, labelChar) {
         const listContainer = document.getElementById('pointListContainer');
         const msg = document.getElementById('noPointMsg');
         if (msg) msg.style.display = 'none';
@@ -990,7 +991,7 @@
         let card = document.querySelector(`.point-card[data-key="${key}"]`);
         if (card) return;
 
-        const labelText = key.length > 5 ? '🚩' : key;
+        const labelText = labelChar;
         const currentType = obj.type || 'buoy';
         const currentShape = obj.shape || 'triangle';
         const currentColor = obj.color || '#ff3b30';
@@ -1009,7 +1010,7 @@
                 <div style="display:flex; gap:4px;">
                     <select class="type-select" onchange="updateMarkerAppearance('${key}')" style="padding:2px;border-radius:4px;font-size:10px; flex:1;">
                         <option value="buoy" ${currentType!=='ship'?'selected':''}>マーク</option>
-                        <option value="ship" ${currentType==='ship'?'selected':''}>ゴムボート</option>
+                        <option value="ship" ${currentType==='ship'?'selected':''}>フネ</option>
                     </select>
                     <select class="shape-select" onchange="updateMarkerAppearance('${key}')" style="padding:2px;border-radius:4px;font-size:10px; flex:1; ${currentType==='ship'?'display:none;':''}">
                         <option value="triangle" ${currentShape==='triangle'?'selected':''}>三角</option>
@@ -1048,73 +1049,82 @@
         });
     };
 
-    // Firebaseからオブジェクト＆線を同期
+    // Firebaseからオブジェクト＆線を同期 (ABCD通し番号)
     db.ref('objects').on('value', snap => {
         const listContainer = document.getElementById('pointListContainer');
         listContainer.innerHTML = '<p id="noPointMsg" style="color: #666; font-size: 13px; margin: 0;">座標データが読み込まれていません</p>';
         
         for (let key in objectMarkers) map.removeLayer(objectMarkers[key]);
+        Object.keys(objectMarkers).forEach(k => delete objectMarkers[k]);
         if (coursePolyline) { map.removeLayer(coursePolyline); coursePolyline = null; }
 
         const objects = snap.val();
         if (!objects) return;
 
-        for (let key in objects) {
+        // タイムスタンプ順にソートしてABCDを割り当て
+        const sortedKeys = Object.keys(objects).sort((a, b) => (objects[a].ts || 0) - (objects[b].ts || 0));
+        
+        sortedKeys.forEach((key, index) => {
             const obj = objects[key];
+            const letter = String.fromCharCode(65 + index); // A, B, C, D...
             const isShip = obj.type === 'ship';
             
             const marker = L.marker([obj.lat, obj.lng], { 
                 icon: createObjectIcon(obj.type, obj.shape, obj.color) 
             }).addTo(map);
 
+            marker.bindTooltip(letter, { permanent: true, direction: 'top', className: 'object-label' });
+
             marker.on('click', (e) => {
                 if (isCourseBuilderActive) {
-                    handleCourseBuilderClick(key, obj);
+                    handleCourseBuilderClick(key, obj, letter);
                     L.DomEvent.stopPropagation(e);
                 }
             });
 
-            const displayTitle = isShip ? 'ゴムボート' : (key.length > 5 ? 'マーク' : key);
-            marker.bindPopup(`<b>${displayTitle}</b><br>${obj.comment||''}<br><button class="btn-del" onclick="deleteObject('${key}')">削除</button>`);
             objectMarkers[key] = marker;
-
-            createPointCard(key, obj);
-        }
-
-        const orderMap = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'K'];
-        let polyPath = [];
-        orderMap.forEach(k => {
-            if (objects[k]) polyPath.push([objects[k].lat, objects[k].lng]);
+            createPointCard(key, obj, letter);
         });
-        
-        if (polyPath.length > 1) {
-            coursePolyline = L.polyline(polyPath, {color: '#ffffff', weight: 3, opacity: 0.6, dashArray: '5, 10'}).addTo(map);
-        }
+
+        // カスタム線の再描画を促すためcustomLinesも連動
+        triggerCustomLinesRedraw();
     });
 
-    // カスタム線の読み込み＆描画
-    db.ref('custom_lines').on('value', snap => {
-        customLinesGroup.clearLayers();
-        const lines = snap.val();
-        if (!lines) return;
+    function triggerCustomLinesRedraw() {
+        db.ref('custom_lines').once('value', lineSnap => {
+            customLinesGroup.clearLayers();
+            const lines = lineSnap.val();
+            if (!lines) return;
 
-        db.ref('objects').once('value', objSnap => {
-            const objs = objSnap.val() || {};
-            for (let lineId in lines) {
-                const l = lines[lineId];
-                if (objs[l.from] && objs[l.to]) {
-                    const p1 = [objs[l.from].lat, objs[l.from].lng];
-                    const p2 = [objs[l.to].lat, objs[l.to].lng];
-                    const poly = L.polyline([p1, p2], {
-                        color: '#ffffff',
-                        weight: 3,
-                        dashArray: l.type === 'dashed' ? '5, 10' : null
-                    });
-                    poly.bindPopup(`<b>${l.type === 'dashed' ? '点線' : '実線'} (${l.from} - ${l.to})</b><br><button class="btn-del" onclick="deleteCustomLine('${lineId}')">削除</button>`);
-                    customLinesGroup.addLayer(poly);
+            db.ref('objects').once('value', objSnap => {
+                const objs = objSnap.val() || {};
+                const sortedKeys = Object.keys(objs).sort((a, b) => (objs[a].ts || 0) - (objs[b].ts || 0));
+                const keyToLetter = {};
+                sortedKeys.forEach((k, idx) => { keyToLetter[k] = String.fromCharCode(65 + idx); });
+
+                for (let lineId in lines) {
+                    const l = lines[lineId];
+                    if (objs[l.from] && objs[l.to]) {
+                        const p1 = [objs[l.from].lat, objs[l.from].lng];
+                        const p2 = [objs[l.to].lat, objs[l.to].lng];
+                        const fromLet = keyToLetter[l.from] || '?';
+                        const toLet = keyToLetter[l.to] || '?';
+                        
+                        const poly = L.polyline([p1, p2], {
+                            color: '#ffffff',
+                            weight: 3,
+                            dashArray: l.type === 'dashed' ? '5, 10' : null
+                        });
+                        poly.bindPopup(`<b>${l.type === 'dashed' ? '点線' : '実線'} (${fromLet} - ${toLet})</b><br><button class="btn-del" onclick="deleteCustomLine('${lineId}')">削除</button>`);
+                        customLinesGroup.addLayer(poly);
+                    }
                 }
-            }
+            });
         });
+    }
+
+    db.ref('custom_lines').on('value', () => {
+        triggerCustomLinesRedraw();
     });
 
     window.deleteCustomLine = (lineId) => {
@@ -1125,11 +1135,11 @@
     };
 
     // コース作成モード中のオブジェクトクリック処理
-    function handleCourseBuilderClick(key, obj) {
+    function handleCourseBuilderClick(key, obj, letter) {
         if (cbMode === 'dashed' || cbMode === 'solid') {
             if (!cbSelectedFirstObj) {
                 cbSelectedFirstObj = key;
-                showToast(`点を選択しました (${key})。もう一方の点を選んでください。`);
+                showToast(`点 ${letter} を選択しました。もう一方の点を選んでください。`);
             } else {
                 if (cbSelectedFirstObj === key) {
                     showToast("同じ点は選べません");
@@ -1144,36 +1154,35 @@
                     ts: Date.now()
                 }, err => {
                     if (!err) {
-                        showToast(`線を結びました (${fromKey} - ${toKey})`);
+                        showToast(`線を結びました`);
                     }
                 });
                 cbSelectedFirstObj = null;
             }
         } else if (cbMode === 'data') {
             if (!cbSelectedFirstObj) {
-                cbSelectedFirstObj = key;
-                showToast(`データ起点を設定 (${key})。もう一方の点を選んでください。`);
+                cbSelectedFirstObj = { key: key, letter: letter };
+                showToast(`データ起点 (${letter}) を設定。もう一方の点を選んでください。`);
             } else {
-                if (cbSelectedFirstObj === key) return;
-                const fromKey = cbSelectedFirstObj;
-                const toKey = key;
+                if (cbSelectedFirstObj.key === key) return;
+                const fromObj = cbSelectedFirstObj;
+                const toObj = { key: key, letter: letter };
                 cbSelectedFirstObj = null;
-                calculateAndShowData(fromKey, toKey);
+                calculateAndShowData(fromObj, toObj);
             }
         }
     }
 
-    // 距離・角度の計算とモーダル表示
-    function calculateAndShowData(fromKey, toKey) {
+    // 距離・角度の計算とモーダル表示（個別削除機能付き）
+    function calculateAndShowData(fromObj, toObj) {
         db.ref('objects').once('value', snap => {
             const objs = snap.val() || {};
-            if (!objs[fromKey] || !objs[toKey]) return;
+            if (!objs[fromObj.key] || !objs[toObj.key]) return;
 
-            const p1 = L.latLng(objs[fromKey].lat, objs[fromKey].lng);
-            const p2 = L.latLng(objs[toKey].lat, objs[toKey].lng);
+            const p1 = L.latLng(objs[fromObj.key].lat, objs[fromObj.key].lng);
+            const p2 = L.latLng(objs[toObj.key].lat, objs[toObj.key].lng);
             const dist = Math.round(p1.distanceTo(p2)); // メートル
 
-            // 方位角 (0-360)
             const lat1 = p1.lat * Math.PI / 180;
             const lon1 = p1.lng * Math.PI / 180;
             const lat2 = p2.lat * Math.PI / 180;
@@ -1185,18 +1194,21 @@
             brng = (brng + 360) % 360;
 
             const windInput = parseFloat(document.getElementById('cb-wind-deg').value) || 0;
-            // {風向からの角度} = ターゲット方位角 - 風向 (またはその差)
             const angleFromWind = (brng - windInput + 360) % 360;
             const val1 = Math.round(angleFromWind - 90);
             const val2 = Math.round(270 - angleFromWind);
 
-            const titlePair = `${fromKey}${toKey}`;
+            const titlePair = `${fromObj.letter}${toObj.letter}`;
+            const itemKey = 'item_' + Date.now();
             const html = `
-                <div style="border-bottom:1px solid #eee; padding:6px 0;">
-                    <b>${titlePair}距離:</b> ${dist}m<br>
-                    <b>角度1:</b> ${val1}° ({風向からの角度} - 90°)<br>
-                    <b>角度2:</b> ${val2}° (270° - {風向からの角度})<br>
-                    <span style="font-size:10px; color:#666;">(風向設定: ${windInput}°, 方位角: ${Math.round(brng)}°)</span>
+                <div id="${itemKey}" style="border-bottom:1px solid #ddd; padding:10px 0; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <b>${titlePair}距離:</b> ${dist}m<br>
+                        <b>角度1:</b> ${val1}° ({風向からの角度} - 90°)<br>
+                        <b>角度2:</b> ${val2}° (270° - {風向からの角度})<br>
+                        <span style="font-size:0.9rem; color:#666;">(風向: ${windInput}°, 方位: ${Math.round(brng)}°)</span>
+                    </div>
+                    <button onclick="document.getElementById('${itemKey}').remove()" style="background:#e74c3c; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:0.9rem; cursor:pointer;">削除</button>
                 </div>
             `;
             const listDiv = document.getElementById('course-data-list');
@@ -1210,7 +1222,7 @@
         
         if (isCourseBuilderActive) {
             if (cbMode === 'ship' || cbMode === 'buoy') {
-                const commentText = cbMode === 'ship' ? 'ゴムボート' : 'マーク';
+                const commentText = cbMode === 'ship' ? 'フネ' : 'マーク';
                 const randomKey = "C" + Math.floor(Math.random() * 1000);
                 db.ref('objects/' + randomKey).set({ 
                     type: cbMode, 
@@ -1251,7 +1263,7 @@
                     <b>新規設置</b>
                     <select id="new_type" onchange="document.getElementById('new_shape_row').style.display = this.value==='ship'?'none':'block';">
                         <option value="buoy">🚩 マーク</option>
-                        <option value="ship">🚤 ゴムボート</option>
+                        <option value="ship">🚤 フネ</option>
                     </select>
                     <div id="new_shape_row" style="margin:4px 0;">
                         <select id="new_shape">
@@ -1345,7 +1357,7 @@
     function createObjectIcon(type, shape, color) {
         let iconHtml = '';
         if (type === 'ship') {
-            iconHtml = `<div style="font-size:26px; filter: drop-shadow(0 0 3px rgba(0,0,0,0.8)); text-align:center; line-height:26px;" title="ゴムボート">🚤</div>`;
+            iconHtml = `<div style="font-size:26px; filter: drop-shadow(0 0 3px rgba(0,0,0,0.8)); text-align:center; line-height:26px;" title="フネ">🚤</div>`;
         } else {
             const hexColor = color || '#ff3b30';
             if (shape === 'rect') {
