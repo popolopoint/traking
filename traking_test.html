@@ -1833,7 +1833,15 @@ function checkIncomingCourse() {
         localStorage.setItem('tora_king_unit', speedUnitMode);
         document.getElementById('unit-toggle').innerText = units[speedUnitMode];
     };
-    window.deleteObject = (key) => { if(confirm("消去しますか？")) { db.ref('objects/' + key).remove(); const c = document.querySelector(`.point-card[data-key="${key}"]`); if(c) c.remove(); }};
+    window.deleteObject = (key) => { 
+    if (confirm("消去しますか？")) { 
+        db.ref('objects/' + key).remove().then(() => {
+            const c = document.querySelector(`.point-card[data-key="${key}"]`); 
+            if (c) c.remove();
+            showToast("🗑️ 削除しました");
+        }); 
+    }
+};
     
     map.on('movestart', () => isFollowing = false);
 
