@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.2.1 by Popolo App.com</title>
+    <title>虎キング v3.2.2 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -100,8 +100,8 @@
 
         .point-card { display: flex; align-items: center; gap: 8px; padding: 10px; background: white; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 14px; }
         
-        /* トースト通知位置をメニューと被らないように調整（top: 130px） */
-        #toast-notice { position: fixed; top: 130px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 6000; border: 1px solid #ff9900; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: center; pointer-events: none; }
+        /* ② トースト通知は画面下部（bottom: 80px）に配置して上部メニューとの被りを完全防止 */
+        #toast-notice { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 6000; border: 1px solid #ff9900; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: center; pointer-events: none; }
         
         .modal-body-scroll { max-height: 60vh; overflow-y: auto; margin-top: 10px; font-size: 1.1rem; line-height: 1.6; color: #333; text-align: left; }
         .modal-body-scroll h4 { color: #2c3e50; margin: 10px 0 4px 0; border-bottom: 2px solid #3498db; padding-bottom: 2px; font-size: 1.2rem; }
@@ -155,12 +155,21 @@
     </div>
 </div>
 
-<!-- データ一覧閲覧・削除用モーダル -->
+<!-- データ一覧閲覧・削除用モーダル（v3.1.1ベース＋詳細・削除ボタン追加） -->
 <div id="data-list-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
     <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:440px; box-sizing:border-box; text-align:center;">
         <h3 style="margin:0 0 12px 0; color:#2c3e50; font-size:1.4rem;">📋 保存されたコースデータ一覧</h3>
         <div id="data-list-container" class="modal-body-scroll" style="min-height:140px; max-height:50vh; text-align:left;"></div>
         <button onclick="document.getElementById('data-list-modal').style.display='none'" style="width:100%; margin-top:16px; background:#7f8c8d; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
+    </div>
+</div>
+
+<!-- 詳細表示用モーダル -->
+<div id="data-detail-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7500; justify-content:center; align-items:center;">
+    <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:400px; box-sizing:border-box; text-align:center;">
+        <h3 style="margin:0 0 12px 0; color:#2c3e50; font-size:1.3rem;">🔍 コースデータ詳細</h3>
+        <div id="data-detail-content" class="modal-body-scroll" style="min-height:80px; max-height:40vh; text-align:left; background:#f8f9fa; padding:10px; border-radius:6px;"></div>
+        <button onclick="document.getElementById('data-detail-modal').style.display='none'" style="width:100%; margin-top:16px; background:#7f8c8d; color:white; border:none; padding:10px; border-radius:8px; font-size:1rem; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
 </div>
 
@@ -234,7 +243,7 @@
 <div id="header">
     <div style="font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;">
         <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
-        <span>虎キング v3.2.1 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
+        <span>虎キング v3.2.2 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
     </div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
@@ -1079,7 +1088,12 @@
         });
     };
 
+    // ① 設定パネルが開いているときは自動全再描画を抑制し、フォーカス外れを防ぐ
     db.ref('objects').on('value', snap => {
+        const panel = document.getElementById('pointSettingsPanel');
+        const isPanelOpen = (panel && panel.style.display === 'block');
+        if (isPanelOpen) return; 
+
         const listContainer = document.getElementById('pointListContainer');
         listContainer.innerHTML = '<p id="noPointMsg" style="color: #666; font-size: 13px; margin: 0;">座標データが読み込まれていません</p>';
         
@@ -1160,6 +1174,7 @@
         }
     };
 
+    // ④ 線結び処理の根本修正
     function handleCourseBuilderClick(key, obj, letter) {
         if (cbMode === 'dashed' || cbMode === 'solid') {
             if (!cbSelectedFirstObj) {
@@ -1250,6 +1265,7 @@
         });
     }
 
+    // ⑤ v3.1.1ベースの堅牢なデータ一覧と「詳細」「削除」ボタンの追加
     window.openDataListModal = () => {
         const container = document.getElementById('data-list-container');
         container.innerHTML = "読み込み中...";
@@ -1267,17 +1283,36 @@
                 html += `
                     <div id="data_item_${dataId}" style="border-bottom:1px solid #ddd; padding:10px 0; display:flex; justify-content:space-between; align-items:center;">
                         <div>
-                            <b>${d.title || 'データ'} 距離:</b> ${d.dist}m<br>
-                            <b>角度1:</b> ${d.val1}° / <b>角度2:</b> ${d.val2}°<br>
-                            <span style="font-size:0.85rem; color:#666;">風向設定: ${d.wind || 0}°</span>
+                            <b>🏷️ ${d.title || 'データ'}</b><br>
+                            <span style="font-size:0.9rem; color:#333;">距離: ${d.dist}m</span>
                         </div>
-                        <button onclick="deleteCourseData('${dataId}')" style="background:#e74c3c; color:white; border:none; padding:8px 12px; border-radius:6px; font-size:1rem; cursor:pointer;">削除</button>
+                        <div style="display:flex; gap:6px;">
+                            <button onclick="showDataDetail('${dataId}')" style="background:#2980b9; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:0.9rem; cursor:pointer;">詳細</button>
+                            <button onclick="deleteCourseData('${dataId}')" style="background:#e74c3c; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:0.9rem; cursor:pointer;">削除</button>
+                        </div>
                     </div>
                 `;
             }
             container.innerHTML = html;
         }).catch(err => {
-            container.innerHTML = `<p style='color:#666; padding:10px;'>保存されたデータはありません (${err.message || ''})</p>`;
+            container.innerHTML = `<p style='color:#e74c3c;'>取得エラー: ${err.message || ''}</p>`;
+        });
+    };
+
+    window.showDataDetail = (dataId) => {
+        db.ref('saved_course_data/' + dataId).once('value', snap => {
+            const d = snap.val();
+            if (!d) return;
+            const detailHtml = `
+                <b>区間・名称:</b> ${d.title || '不明'}<br>
+                <b>距離:</b> ${d.dist}m<br>
+                <b>角度1:</b> ${d.val1}°<br>
+                <b>角度2:</b> ${d.val2}°<br>
+                <b>風向設定:</b> ${d.wind || 0}°<br>
+                <span style="font-size:0.8rem; color:#888;">保存日時: ${new Date(d.ts || Date.now()).toLocaleString()}</span>
+            `;
+            document.getElementById('data-detail-content').innerHTML = detailHtml;
+            document.getElementById('data-detail-modal').style.display = 'flex';
         });
     };
 
