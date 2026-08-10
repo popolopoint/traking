@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.2.4 by Popolo App.com</title>
+    <title>虎キング v3.2.5 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -154,21 +154,12 @@
     </div>
 </div>
 
-<!-- ⑤ データ・履歴一覧モーダル（v3.1.1仕様ベース＋「見る」＆「削除」ボタン） -->
+<!-- ⑤ データ・履歴一覧モーダル（一画面で距離・角度1・角度2・風向・方位を網羅、東西判定対応） -->
 <div id="data-list-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
-    <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:440px; box-sizing:border-box; text-align:center;">
-        <h3 style="margin:0 0 12px 0; color:#2c3e50; font-size:1.4rem;">📋 保存されたコースデータ一覧</h3>
-        <div id="data-list-container" class="modal-body-scroll" style="min-height:140px; max-height:50vh; text-align:left;"></div>
-        <button onclick="document.getElementById('data-list-modal').style.display='none'" style="width:100%; margin-top:16px; background:#7f8c8d; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
-    </div>
-</div>
-
-<!-- 詳細閲覧用モーダル -->
-<div id="data-detail-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7500; justify-content:center; align-items:center;">
-    <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:400px; box-sizing:border-box; text-align:center;">
-        <h3 style="margin:0 0 12px 0; color:#2c3e50; font-size:1.3rem;">🔍 データ詳細 (履歴)</h3>
-        <div id="data-detail-content" class="modal-body-scroll" style="min-height:80px; max-height:40vh; text-align:left; background:#f8f9fa; padding:10px; border-radius:6px;"></div>
-        <button onclick="document.getElementById('data-detail-modal').style.display='none'" style="width:100%; margin-top:16px; background:#7f8c8d; color:white; border:none; padding:10px; border-radius:8px; font-size:1rem; font-weight:bold; cursor:pointer;">閉じる</button>
+    <div style="background:white; padding:20px; border-radius:12px; width:94%; max-width:460px; box-sizing:border-box; text-align:center;">
+        <h3 style="margin:0 0 10px 0; color:#2c3e50; font-size:1.3rem;">📋 保存されたコースデータ一覧</h3>
+        <div id="data-list-container" class="modal-body-scroll" style="min-height:160px; max-height:55vh; text-align:left;"></div>
+        <button onclick="document.getElementById('data-list-modal').style.display='none'" style="width:100%; margin-top:14px; background:#7f8c8d; color:white; border:none; padding:10px; border-radius:8px; font-size:1rem; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
 </div>
 
@@ -242,7 +233,7 @@
 <div id="header">
     <div style="font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;">
         <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
-        <span>虎キング v3.2.4 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
+        <span>虎キング v3.2.5 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
     </div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
@@ -942,8 +933,6 @@
         document.getElementById('replay-minimized-btn').style.display = 'none';
         document.getElementById('header-replay-status').style.display = 'none';
         document.getElementById('header-replay-time').style.display = 'none';
-        document.getElementById('header-replay-status').style.display = 'none';
-        document.getElementById('header-replay-time').style.display = 'none';
         document.getElementById('replay-countdown-alert').style.display = 'none';
         showToast("⏹️ リプレイを終了しました");
         location.reload();
@@ -1089,7 +1078,6 @@
         });
     };
 
-    // ③ リアルタイムな削除反映に対応（設定パネルが開いていても非アクティブ項目を正しく同期）
     db.ref('objects').on('value', snap => {
         const listContainer = document.getElementById('pointListContainer');
         const panel = document.getElementById('pointSettingsPanel');
@@ -1102,7 +1090,6 @@
         for (let key in objectMarkers) map.removeLayer(objectMarkers[key]);
         Object.keys(objectMarkers).forEach(k => delete objectMarkers[k]);
 
-        // 存在しないカードのDOMを削除（リアルタイム同期）
         const existingCards = document.querySelectorAll('.point-card');
         existingCards.forEach(card => {
             const k = card.dataset.key;
@@ -1135,7 +1122,6 @@
 
             marker.bindTooltip(letter || '', { permanent: true, direction: 'top', className: 'object-label' });
 
-            // ④ 線の結びつけ処理が確実に動作するようイベント伝播を整理
             marker.on('click', (e) => {
                 if (isCourseBuilderActive) {
                     handleCourseBuilderClick(key, obj, letter);
@@ -1193,7 +1179,6 @@
         }
     };
 
-    // ④ 線が確実に引けるように改善したロジック
     function handleCourseBuilderClick(key, obj, letter) {
         if (cbMode === 'dashed' || cbMode === 'solid') {
             if (!cbSelectedFirstObj) {
@@ -1223,12 +1208,12 @@
             }
         } else if (cbMode === 'data') {
             if (!cbSelectedFirstObj) {
-                cbSelectedFirstObj = { key: key, letter: letter || '' };
+                cbSelectedFirstObj = { key: key, letter: letter || '', lng: obj.lng };
                 showToast(`データ起点 (${letter || '点'}) 設定完了。もう一方の点を選んでください。`);
             } else {
                 if (cbSelectedFirstObj.key === key) return;
                 const fromObj = cbSelectedFirstObj;
-                const toObj = { key: key, letter: letter || '' };
+                const toObj = { key: key, letter: letter || '', lng: obj.lng };
                 cbSelectedFirstObj = null;
                 calculateAndShowData(fromObj, toObj);
             }
@@ -1240,8 +1225,11 @@
             const objs = snap.val() || {};
             if (!objs[fromObj.key] || !objs[toObj.key]) return;
 
-            const p1 = L.latLng(objs[fromObj.key].lat, objs[fromObj.key].lng);
-            const p2 = L.latLng(objs[toObj.key].lat, objs[toObj.key].lng);
+            const objA = objs[fromObj.key];
+            const objB = objs[toObj.key];
+
+            const p1 = L.latLng(objA.lat, objA.lng);
+            const p2 = L.latLng(objB.lat, objB.lng);
             const dist = Math.round(p1.distanceTo(p2));
 
             const lat1 = p1.lat * Math.PI / 180;
@@ -1267,15 +1255,21 @@
                 val1: val1,
                 val2: val2,
                 wind: windInput,
+                lngA: objA.lng,
+                lngB: objB.lng,
                 ts: Date.now()
             };
             db.ref('saved_course_data').push(dataPayload);
 
+            const isAWest = objA.lng <= objB.lng;
+            const activeAngleText = isAWest ? `角度1: <b>${val1}°</b> (採用)` : `角度2: <b>${val2}°</b> (採用)`;
+
             const html = `
                 <div style="border-bottom:1px solid #ddd; padding:10px 0;">
                     <b>${titlePair} 距離:</b> ${dist}m<br>
-                    <b>角度1:</b> ${val1}°<br>
-                    <b>角度2:</b> ${val2}°<br>
+                    <b>角度1:</b> ${val1}° ${isAWest ? '⭐' : ''}<br>
+                    <b>角度2:</b> ${val2}° ${!isAWest ? '⭐' : ''}<br>
+                    <span style="font-size:0.9rem; color:#27ae60; font-weight:bold;">${activeAngleText}</span><br>
                     <span style="font-size:0.9rem; color:#666;">(風向: ${windInput}°, 方位: ${Math.round(brng)}°)</span>
                 </div>
             `;
@@ -1285,7 +1279,7 @@
         });
     }
 
-    // ⑤ v3.1.1ベースの堅牢なデータ一覧と「見る」・「削除」ボタン
+    // ⑤ データ一覧画面：距離、角度1、角度2、風向、方位を一画面に表示（東西判定による自動選択表示対応）
     window.openDataListModal = () => {
         const container = document.getElementById('data-list-container');
         container.innerHTML = "読み込み中...";
@@ -1300,15 +1294,26 @@
             let html = "";
             for (let dataId in dataObj) {
                 const d = dataObj[dataId];
+                
+                // 東西判定 (lngA と lngB が保存されている場合はそれを利用、なければデフォルトでAが西とみなす)
+                const lngA = d.lngA !== undefined ? d.lngA : 0;
+                const lngB = d.lngB !== undefined ? d.lngB : 1;
+                const isAWest = lngA <= lngB;
+                
+                const activeAngleVal = isAWest ? d.val1 : d.val2;
+                const activeAngleLabel = isAWest ? "角度1" : "角度2";
+
                 html += `
-                    <div id="data_item_${dataId}" style="border-bottom:1px solid #ddd; padding:10px 0; display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <b>🏷️ ${d.title || 'データ'}</b><br>
-                            <span style="font-size:0.9rem; color:#333;">距離: ${d.dist}m</span>
+                    <div id="data_item_${dataId}" style="border-bottom:1px solid #ddd; padding:12px 0; display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div style="font-size:0.95rem; line-height:1.4; flex-grow:1;">
+                            <b>🏷️ 区間: ${d.title || 'データ'}</b><br>
+                            📏 距離: <b>${d.dist}m</b> | 💨 風向: ${d.wind || 0}°<br>
+                            🧭 角度1: ${d.val1}° / 角度2: ${d.val2}°<br>
+                            ⭐ <b>${activeAngleLabel} (${activeAngleVal}°)</b> <span style="font-size:0.8rem; color:#27ae60;">[${isAWest ? 'Aが西・Bが東' : 'Aが東・Bが西'}]</span><br>
+                            <span style="font-size:0.75rem; color:#888;">保存: ${new Date(d.ts || Date.now()).toLocaleString()}</span>
                         </div>
-                        <div style="display:flex; gap:6px;">
-                            <button onclick="showDataDetail('${dataId}')" style="background:#2980b9; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:0.9rem; cursor:pointer;">見る</button>
-                            <button onclick="deleteCourseData('${dataId}')" style="background:#e74c3c; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:0.9rem; cursor:pointer;">削除</button>
+                        <div>
+                            <button onclick="deleteCourseData('${dataId}')" style="background:#e74c3c; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:0.9rem; cursor:pointer; font-weight:bold;">削除</button>
                         </div>
                     </div>
                 `;
@@ -1316,23 +1321,6 @@
             container.innerHTML = html;
         }).catch(err => {
             container.innerHTML = `<p style='color:#e74c3c;'>取得エラー: ${err.message || ''}</p>`;
-        });
-    };
-
-    window.showDataDetail = (dataId) => {
-        db.ref('saved_course_data/' + dataId).once('value', snap => {
-            const d = snap.val();
-            if (!d) return;
-            const detailHtml = `
-                <b>区間・名称:</b> ${d.title || '不明'}<br>
-                <b>距離:</b> ${d.dist}m<br>
-                <b>角度1:</b> ${d.val1}°<br>
-                <b>角度2:</b> ${d.val2}°<br>
-                <b>風向設定:</b> ${d.wind || 0}°<br>
-                <span style="font-size:0.8rem; color:#888;">保存日時: ${new Date(d.ts || Date.now()).toLocaleString()}</span>
-            `;
-            document.getElementById('data-detail-content').innerHTML = detailHtml;
-            document.getElementById('data-detail-modal').style.display = 'flex';
         });
     };
 
