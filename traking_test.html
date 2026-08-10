@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.4.0 by Popolo App.com</title>
+    <title>虎キング v3.4.1 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -63,34 +63,34 @@
         }
 
         .action-btn { 
-            position: fixed; z-index: 3000; 
+            position: fixed; right: 10px; z-index: 3000; 
             background: rgba(44, 62, 80, 0.45); color: white; 
             border: 1.5px solid rgba(255, 255, 255, 0.3); border-radius: 50%; 
-            width: 46px; height: 46px; cursor: pointer; 
+            width: 50px; height: 50px; cursor: pointer; 
             display: flex; align-items: center; justify-content: center; 
             box-shadow: 0 2px 6px rgba(0,0,0,0.15); 
             backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-            font-size: 20px; user-select: none;
+            font-size: 22px; user-select: none;
         }
         .action-btn:active { background: rgba(52, 152, 219, 0.6); }
         
-        #recenter-btn        { right: 10px; bottom: 20px; font-size: 22px; background: rgba(41, 128, 185, 0.45); width: 50px; height: 50px; }
-        #menu-toggle-btn     { right: 10px; bottom: 80px; background: rgba(44, 62, 80, 0.45); font-weight: bold; width: 50px; height: 50px; font-size: 22px; }
+        #recenter-btn { bottom: 20px; font-size: 22px; background: rgba(41, 128, 185, 0.45); }
+        #menu-toggle-btn { bottom: 80px; background: rgba(44, 62, 80, 0.45); font-weight: bold; }
         
         .menu-child { opacity: 0; transform: translateY(20px) scale(0.8); pointer-events: none; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
         .menu-active .menu-child { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
         
-        #logout-btn          { right: 66px; bottom: 140px; background: rgba(231, 76, 60, 0.45); }
-        #name-btn            { right: 10px; bottom: 140px; }
-        #manual-btn          { right: 66px; bottom: 200px; background: rgba(39, 174, 96, 0.45); }
-        #replay-btn          { right: 10px; bottom: 200px; background: rgba(155, 89, 182, 0.45); }
+        #logout-btn         { bottom: 140px; background: rgba(231, 76, 60, 0.45); }
+        #name-btn           { bottom: 200px; }
+        #manual-btn         { bottom: 260px; background: rgba(39, 174, 96, 0.45); }
+        #replay-btn         { bottom: 320px; background: rgba(155, 89, 182, 0.45); }
         
-        #record-start-btn    { right: 66px; bottom: 260px; background: rgba(39, 174, 96, 0.6); }
-        #admin-user-del-btn  { right: 10px; bottom: 260px; background: rgba(192, 57, 43, 0.6); }
+        #record-start-btn   { bottom: 380px; background: rgba(39, 174, 96, 0.6); }
+        #admin-user-del-btn { bottom: 440px; background: rgba(192, 57, 43, 0.6); }
 
-        #hosei-btn           { right: 66px; bottom: 320px; background: rgba(241, 196, 15, 0.45); }
-        #gps-retry-btn       { right: 10px; bottom: 320px; }
-        #add-point-btn       { right: 66px; bottom: 380px; background: rgba(52, 152, 219, 0.45); }
+        #hosei-btn          { bottom: 500px; background: rgba(241, 196, 15, 0.45); }
+        #gps-retry-btn      { bottom: 560px; }
+        #add-point-btn      { bottom: 620px; background: rgba(52, 152, 219, 0.45); }
         
         .popup-form { color: #333; min-width: 140px; font-size: 12px; }
         .popup-form select, .popup-form input { width: 100%; margin: 4px 0; padding: 4px; box-sizing: border-box; }
@@ -103,8 +103,8 @@
         #toast-notice { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 6000; border: 1px solid #ff9900; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: center; pointer-events: none; }
         
         .modal-body-scroll { max-height: 55vh; overflow-y: auto; margin-top: 10px; font-size: 1.05rem; line-height: 1.5; color: #333; text-align: left; }
-        .modal-body-scroll h4 { color: #2c3e50; margin: 12px 0 4px 0; border-bottom: 2px solid #3498db; padding-bottom: 2px; font-size: 1.15rem; }
-        .modal-body-scroll p { margin: 4px 0 8px 0; font-size: 0.95rem; }
+        .modal-body-scroll h4 { color: #2c3e50; margin: 10px 0 4px 0; border-bottom: 2px solid #3498db; padding-bottom: 2px; font-size: 1.2rem; }
+        .modal-body-scroll p { margin: 6px 0 10px 0; font-size: 1rem; }
 
         #course-builder-bar {
             position: fixed; top: 62px; left: 50%; transform: translateX(-50%); z-index: 3500;
@@ -206,28 +206,16 @@
     </div>
 </div>
 
-<!-- ガイド説明モーダル（詳細マニュアル） -->
+<!-- ガイド説明モーダル -->
 <div id="manual-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
     <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:440px; box-sizing:border-box;">
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #3498db; padding-bottom:8px;">
-            <h3 style="margin:0; color:#2c3e50; font-size:1.3rem;">📖 虎キング 使い方マニュアル</h3>
+            <h3 style="margin:0; color:#2c3e50; font-size:1.3rem;">📖 アイコン・操作ガイド</h3>
             <button onclick="closeManualModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">✖</button>
         </div>
         <div class="modal-body-scroll">
-            <h4>1. 🚩 基本機能とアイコン</h4>
-            <p>・<b>画面右下のメニュー（☰）</b>から各種機能を呼び出せます。<br>・<b>現在地追従（🎯）</b>：タップすると自分の位置が常に画面中央に追従します。<br>・<b>速度単位切替（ktボタン）</b>：ノット(kt)、km/h、m/sを切り替え可能です。</p>
-
-            <h4>2. 🚩 マーク・ブイの追加と削除</h4>
-            <p>・メニューの<b>マーク追加（🚩）</b>を押した後、地図上をタップすると新しいブイやフネを設置できます。<br>・画面上の<b>「設定」ボタン</b>から一覧を開き、チェックボックスを入れて一括削除できます。</p>
-
-            <h4>3. 🛠️ コース作成・データ計測</h4>
-            <p>・ヘッダーの<b>「コース作成」ボタン</b>（パスワード: 1234）から、フネやブイの配置、直線（点線・実線）の結びつけ、2点間の距離・角度データの自動計算が行えます。</p>
-
-            <h4>4. 🔴 レース記録とリプレイ再生</h4>
-            <p>・メニューの<b>赤丸ボタン（🔴）</b>からパスワードを入力してレースの航跡記録をスタートできます。<br>・記録ストップ後、ヒート名をつけて保存でき、メニューの<b>再生ボタン（▶️）</b>からいつでも過去のレースをリプレイ再生できます。</p>
-
-            <h4>5. 🛡️ 管理者用・参加者強制削除</h4>
-            <p>・メニューの<b>盾アイコン（🛡️）</b>からパスワード認証を行うことで、現在接続中の参加者メンバーをチェックして強制退出（削除）させることができます。</p>
+            <h4>🛡️ 管理者参加者削除機能</h4>
+            <p>・メニューの「🛡️」ボタンから管理者パスワードを入力することで、現在参加しているメンバーをチェックボックスで選択して強制削除できるようになりました。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:16px; background:#3498db; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -256,7 +244,7 @@
 <div id="header">
     <div style="font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;">
         <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
-        <span>虎キング v3.4.0 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
+        <span>虎キング v3.4.1 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
     </div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
@@ -351,6 +339,7 @@
     let isMenuOpen = false;
 
     let isRecordingActive = false;
+
     let isCourseBuilderActive = false;
     let cbMode = 'ship';
     let cbSelectedFirstObj = null;
@@ -506,7 +495,7 @@
             return;
         }
 
-        if (confirm("パスワード認証成功。レースの記録を開始しますか？")) {
+        if (confirm("パスワード認証成功。レースの記録を開始しますか？（前回の未保存一時履歴はリセットされます）")) {
             db.ref('temp_history').remove().then(() => {
                 isRecordingActive = true;
                 document.getElementById('recording-banner').style.display = 'block';
@@ -517,12 +506,23 @@
                 setTimeout(() => { flashOverlay.style.display = 'none'; }, 3000);
 
                 showToast("🔴 レース記録をスタートしました！");
+            }).catch(() => {
+                isRecordingActive = true;
+                document.getElementById('recording-banner').style.display = 'block';
+                document.getElementById('floating-stop-btn').style.display = 'block';
+                
+                const flashOverlay = document.getElementById('start-flash-overlay');
+                flashOverlay.style.display = 'flex';
+                setTimeout(() => { flashOverlay.style.display = 'none'; }, 3000);
+
+                showToast("🔴 レース記録をスタートしました！(ローカル)");
             });
         }
     };
 
     window.stopRaceRecording = () => {
         if (!isRecordingActive) {
+            alert("現在、記録はスタートしていません");
             document.getElementById('floating-stop-btn').style.display = 'none';
             document.getElementById('recording-banner').style.display = 'none';
             return;
@@ -543,8 +543,10 @@
 
         db.ref('temp_history').once('value', tempSnap => {
             const historyData = tempSnap.val() || {};
+
             db.ref('objects').once('value', objSnap => {
                 const currentObjects = objSnap.val() || {};
+
                 db.ref('saved_courses').push({
                     title: heatName,
                     startTime: startTimeInput || '時刻不明',
@@ -553,8 +555,10 @@
                     createdAt: Date.now()
                 }, err => {
                     if (!err) {
-                        showToast(`💾 「${heatName}」を保存しました！`);
+                        showToast(`💾 「${heatName} (スタート: ${startTimeInput || '不明'})」を保存しました！`);
                         db.ref('temp_history').remove();
+                    } else {
+                        alert("サーバーへの保存に失敗しました");
                     }
                 });
             });
@@ -582,22 +586,103 @@
                     <div style="text-align:left; max-width:160px; overflow:hidden;"><b>🏁 ${c.title || '無題'}</b><br><span style="font-size:0.9rem; color:#555;">${startInfo}</span><br><span style="font-size:0.8rem; color:#888;">${dateStr}</span></div>
                     <div style="display:flex; gap:6px; flex-direction:column;">
                         <button onclick="startReplay('${id}')" style="background:#8e44ad; color:white; border:none; padding:6px 12px; border-radius:4px; font-size:1rem; font-weight:bold; cursor:pointer;">再生</button>
+                        <button onclick="trimAndSaveCourse('${id}')" style="background:#27ae60; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:0.9rem; cursor:pointer;" title="このデータから一部分を切り出し">✂️ 切り出し</button>
                     </div>
                     <div style="display:flex; gap:4px; flex-direction:column;">
+                        <button onclick="renameCourse('${id}', '${c.title}')" style="background:#2980b9; color:white; border:none; padding:5px 8px; border-radius:4px; font-size:0.9rem; cursor:pointer;" title="名前変更">✏️</button>
                         <button onclick="deleteCourse('${id}')" style="background:#c0392b; color:white; border:none; padding:5px 8px; border-radius:4px; font-size:0.9rem; cursor:pointer;" title="削除">🗑️</button>
                     </div>
                 </div>`;
             }
             listDiv.innerHTML = html;
+        }, (error) => {
+            listDiv.innerHTML = `<p style='color:#e74c3c;'>取得失敗: ${error.message}</p>`;
+        });
+    };
+
+    window.trimAndSaveCourse = (id) => {
+        db.ref('saved_courses/' + id).once('value', snap => {
+            const data = snap.val();
+            if (!data || !data.history) {
+                alert("切り出しできる履歴データがありません");
+                return;
+            }
+
+            let allTs = [];
+            for (let uid in data.history) {
+                for (let pushId in data.history[uid]) {
+                    allTs.push(data.history[uid][pushId].ts);
+                }
+            }
+            if (allTs.length === 0) {
+                alert("有効なログがありません");
+                return;
+            }
+            allTs.sort((a,b) => a - b);
+            const minTs = allTs[0];
+
+            const startMinutesFromMin = prompt(`全記録の開始から「何分後」を新しいスタート地点にしますか？\n（例: 5 と入力すると、記録開始から5分後以降を切り出します）`, "0");
+            if (startMinutesFromMin === null) return;
+            const durationMinutes = prompt(`そこから「何分間」を切り出しますか？\n（例: 3 と入力すると、3分間のレース分を切り出します）`, "3");
+            if (durationMinutes === null) return;
+
+            const targetStartTs = minTs + (parseFloat(startMinutesFromMin) || 0) * 60000;
+            const targetEndTs = targetStartTs + (parseFloat(durationMinutes) || 3) * 60000;
+
+            const newHeatName = prompt("切り出した新しいヒート名を入力してください", (data.title || "ヒート") + " (切出)");
+            if (!newHeatName) return;
+            
+            const newStartTimeStr = prompt("新しいスタート時刻（文字表示用）を入力してください\n（例: 10:35）", data.startTime || "10:30");
+
+            let newHistory = {};
+            for (let uid in data.history) {
+                newHistory[uid] = {};
+                for (let pushId in data.history[uid]) {
+                    const log = data.history[uid][pushId];
+                    if (log.ts >= targetStartTs && log.ts <= targetEndTs) {
+                        newHistory[uid][pushId] = log;
+                    }
+                }
+            }
+
+            db.ref('saved_courses').push({
+                title: newHeatName,
+                startTime: newStartTimeStr || '10:30',
+                objects: data.objects || {},
+                history: newHistory,
+                createdAt: Date.now()
+            }, err => {
+                if (!err) {
+                    showToast(`✂️ 「${newHeatName}」として切り出し保存しました！`);
+                    openReplayMenu();
+                } else {
+                    alert("切り出し保存に失敗しました");
+                }
+            });
+        });
+    };
+
+    window.renameCourse = (id, currentTitle) => {
+        const newTitle = prompt("新しいヒート名を入力してください", currentTitle);
+        if (!newTitle) return;
+        db.ref('saved_courses/' + id).update({ title: newTitle }, err => {
+            if (!err) {
+                showToast("✏️ ヒート名を変更しました");
+                openReplayMenu();
+            } else {
+                alert("変更に失敗しました");
+            }
         });
     };
 
     window.deleteCourse = (id) => {
-        if (confirm("このレース記録を削除しますか？")) {
+        if (confirm("このレース記録を削除しますか？（元に戻せません）")) {
             db.ref('saved_courses/' + id).remove(err => {
                 if (!err) {
                     showToast("🗑️ 記録を削除しました");
                     openReplayMenu();
+                } else {
+                    alert("削除に失敗しました");
                 }
             });
         }
@@ -609,23 +694,61 @@
             const data = snap.val();
             if (!data) return;
 
-            if (data.objects) db.ref('objects').set(data.objects);
+            if (data.objects) {
+                db.ref('objects').set(data.objects);
+            }
 
             const heatTitle = data.title || '再生中';
-            document.getElementById('replay-title-label').innerText = heatTitle;
+            const startStr = data.startTime ? ` (${data.startTime} スタート)` : '';
+            document.getElementById('replay-title-label').innerText = heatTitle + startStr;
             document.getElementById('minimized-title').innerText = heatTitle;
             
             document.getElementById('header-replay-status').style.display = 'block';
             document.getElementById('header-replay-time').style.display = 'block';
 
+            let baseDate = new Date();
+            if (data.history) {
+                let firstTs = null;
+                for (let uid in data.history) {
+                    for (let pushId in data.history[uid]) {
+                        const ts = data.history[uid][pushId].ts;
+                        if (!firstTs || ts < firstTs) firstTs = ts;
+                    }
+                }
+                if (firstTs) baseDate = new Date(firstTs);
+            }
+
+            if (data.startTime && data.startTime.includes(':')) {
+                const parts = data.startTime.split(':');
+                baseDate.setHours(parseInt(parts[0]), parseInt(parts[1]), 0, 0);
+                replayStartTimeMs = baseDate.getTime();
+            } else {
+                replayStartTimeMs = null;
+            }
+            hasAlertedStart = false;
+
             document.getElementById('replay-control-bar').style.display = 'flex';
             document.getElementById('replay-minimized-btn').style.display = 'none';
+            resetMinimizeTimer();
 
             isReplaying = true;
             replayPaused = false;
             document.getElementById('btn-pause').innerText = "一時停止";
 
-            if (data.history) prepareHistoryTimeline(data.history);
+            for (let name in userPolylineLines) {
+                if(userPolylineLines[name]) {
+                    userPolylineLines[name].forEach(seg => map.removeLayer(seg));
+                }
+            }
+            Object.keys(userPolylineLines).forEach(k => delete userPolylineLines[k]);
+            Object.keys(userTrails).forEach(k => delete userTrails[k]);
+            Object.keys(userMarkers).forEach(k => { map.removeLayer(userMarkers[k]); delete userMarkers[k]; });
+
+            showToast(`▶️ 「${heatTitle}」のリプレイを開始します`);
+            
+            if (data.history) {
+                prepareHistoryTimeline(data.history);
+            }
         });
     };
 
@@ -638,12 +761,45 @@
             }
         }
         replayLogsAll.sort((a, b) => a.ts - b.ts);
+
         if (replayLogsAll.length === 0) return;
+
+        if (!replayStartTimeMs && replayLogsAll.length > 0) {
+            replayStartTimeMs = replayLogsAll[0].ts;
+        }
 
         replayCurrentIndex = 0;
         document.getElementById('replay-seekbar').max = replayLogsAll.length - 1;
         document.getElementById('replay-seekbar').value = 0;
+
         playHistoryStep();
+    }
+
+    function formatJapanDateTime(ms) {
+        const date = new Date(ms);
+        const h = String(date.getHours()).padStart(2, '0');
+        const min = String(date.getMinutes()).padStart(2, '0');
+        const s = String(date.getSeconds()).padStart(2, '0');
+        const ms100 = isReplaying && !replayPaused ? String(Math.floor(Date.now() / 10) % 100).padStart(2, '0') : String(Math.floor(date.getMilliseconds() / 10)).padStart(2, '0');
+        return `${h}:${min}:${s}.${ms100}`;
+    }
+
+    function formatElapsedTime(ms) {
+        const totalSec = Math.floor(ms / 1000);
+        const m = Math.floor(totalSec / 60);
+        const s = totalSec % 60;
+        const ms100 = isReplaying && !replayPaused ? String(Math.floor(Date.now() / 10) % 100).padStart(2, '0') : String(Math.floor((ms % 1000) / 10)).padStart(2, '0');
+        return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${ms100}`;
+    }
+
+    function formatClockStyle(ms) {
+        const absMs = Math.abs(ms);
+        const totalSec = Math.floor(absMs / 1000);
+        const h = Math.floor(totalSec / 3600);
+        const m = Math.floor((totalSec % 3600) / 60);
+        const s = totalSec % 60;
+        const ms100 = isReplaying && !replayPaused ? String(Math.floor(Date.now() / 10) % 100).padStart(2, '0') : String(Math.floor((absMs % 1000) / 10)).padStart(2, '0');
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${ms100}`;
     }
 
     function playHistoryStep() {
@@ -660,38 +816,172 @@
             const seekbar = document.getElementById('replay-seekbar');
             if (!isSeeking) seekbar.value = replayCurrentIndex;
 
-            replayCurrentIndex += 1;
-            replayTimer = setTimeout(playHistoryStep, Math.max(15, Math.floor(30 / replaySpeed)));
+            const startTime = replayLogsAll[0].ts;
+            const curTime = u.ts - startTime;
+            const totalTime = replayLogsAll[replayLogsAll.length - 1].ts - startTime;
+            
+            const timeStr = `${formatElapsedTime(curTime)} / ${formatElapsedTime(totalTime)}`;
+            document.getElementById('replay-time-label').innerText = timeStr;
+
+            if (replayStartTimeMs) {
+                const diffMs = replayStartTimeMs - u.ts;
+                const diffSec = diffMs / 1000;
+
+                let statusText = "";
+                if (diffSec > 10) {
+                    statusText = `⏳ スタートまであと ${formatClockStyle(diffMs)}`;
+                    document.getElementById('replay-countdown-alert').style.display = 'none';
+                } else if (diffSec > 0 && diffSec <= 10) {
+                    statusText = `⏳ スタートまであと ${formatClockStyle(diffMs)}`;
+                    const secInt = Math.ceil(diffSec);
+                    const alertBox = document.getElementById('replay-countdown-alert');
+                    alertBox.innerText = secInt;
+                    alertBox.style.display = 'block';
+                } else if (diffSec <= 0 && diffSec > -1.5) {
+                    statusText = `🚨 スタート！`;
+                    document.getElementById('replay-countdown-alert').style.display = 'none';
+                    if (!hasAlertedStart) {
+                        hasAlertedStart = true;
+                        triggerStartAlertOverlay();
+                    }
+                } else {
+                    const elapsedAfterStartMs = u.ts - replayStartTimeMs;
+                    statusText = `⏱️ スタートから ${formatClockStyle(elapsedAfterStartMs)} 経過`;
+                    document.getElementById('replay-countdown-alert').style.display = 'none';
+                    if (diffSec < -1.5) hasAlertedStart = false;
+                }
+
+                document.getElementById('header-replay-status').innerText = statusText;
+            }
+
+            document.getElementById('header-replay-time').innerText = `🕒 日本時間: ${formatJapanDateTime(u.ts)}`;
+
+            let nextDelay = 30;
+            if (replaySpeed === 1) {
+                if (replayCurrentIndex < replayLogsAll.length - 1) {
+                    const nextU = replayLogsAll[replayCurrentIndex + 1];
+                    const realDiff = nextU.ts - u.ts;
+                    nextDelay = Math.max(10, realDiff);
+                }
+                replayCurrentIndex += 1;
+            } else {
+                if (replayCurrentIndex < replayLogsAll.length - 1) {
+                    const nextU = replayLogsAll[replayCurrentIndex + 1];
+                    const realDiff = nextU.ts - u.ts;
+                    nextDelay = Math.max(15, Math.floor(realDiff / replaySpeed));
+                }
+                replayCurrentIndex += 1;
+            }
+
+            replayTimer = setTimeout(playHistoryStep, nextDelay);
         } else {
             showToast("🏁 リプレイが終了しました");
         }
     }
 
+    function triggerStartAlertOverlay() {
+        const alertBox = document.getElementById('replay-start-alert');
+        alertBox.style.display = 'block';
+        setTimeout(() => { alertBox.style.display = 'none'; }, 1200);
+    }
+
     window.onSeekbarInput = (val) => {
         isSeeking = true;
         replayCurrentIndex = parseInt(val);
+        
         const u = replayLogsAll[replayCurrentIndex];
-        if (u) updateUserTrailAndMarker(u.name, u.lat, u.lng, u.color, u.heading, u.ts);
+        if (u) {
+            updateUserTrailAndMarker(u.name, u.lat, u.lng, u.color, u.heading, u.ts);
+            const startTime = replayLogsAll[0].ts;
+            const curTime = u.ts - startTime;
+            const totalTime = replayLogsAll[replayLogsAll.length - 1].ts - startTime;
+            
+            const timeStr = `${formatElapsedTime(curTime)} / ${formatElapsedTime(totalTime)}`;
+            document.getElementById('replay-time-label').innerText = timeStr;
+            document.getElementById('header-replay-time').innerText = `🕒 日本時間: ${formatJapanDateTime(u.ts)}`;
+        }
         setTimeout(() => { isSeeking = false; }, 200);
+    };
+
+    function resetMinimizeTimer() {
+        if (replayMinimizeTimer) clearTimeout(replayMinimizeTimer);
+        replayMinimizeTimer = setTimeout(() => {
+            if (isReplaying) {
+                document.getElementById('replay-control-bar').style.display = 'none';
+                document.getElementById('replay-minimized-btn').style.display = 'block';
+            }
+        }, 10000);
+    }
+
+    window.expandReplayBar = () => {
+        document.getElementById('replay-control-bar').style.display = 'flex';
+        document.getElementById('replay-minimized-btn').style.display = 'none';
+        resetMinimizeTimer();
     };
 
     window.toggleReplayPause = () => {
         replayPaused = !replayPaused;
         document.getElementById('btn-pause').innerText = replayPaused ? "再生再開" : "一時停止";
+        showToast(replayPaused ? "⏸️ リプレイ一時停止" : "▶️ 再生再開");
+        resetMinimizeTimer();
     };
 
     window.setReplaySpeed = (speed) => {
         replaySpeed = speed;
+        document.querySelectorAll('.replay-ctrl-btn').forEach(btn => {
+            if(btn.innerText.includes('x')) {
+                btn.classList.toggle('active', btn.innerText.includes(speed + 'x'));
+            }
+        });
+        showToast(`⚡ 再生速度: ${speed === 1 ? '等倍 (1x)' : speed + '倍速'}`);
+        resetMinimizeTimer();
     };
 
     window.exitReplay = () => {
         isReplaying = false;
         if(replayTimer) clearTimeout(replayTimer);
+        if(replayMinimizeTimer) clearTimeout(replayMinimizeTimer);
         document.getElementById('replay-control-bar').style.display = 'none';
+        document.getElementById('replay-minimized-btn').style.display = 'none';
+        document.getElementById('header-replay-status').style.display = 'none';
+        document.getElementById('header-replay-time').style.display = 'none';
+        document.getElementById('replay-countdown-alert').style.display = 'none';
+        showToast("⏹️ リプレイを終了しました");
         location.reload();
     };
 
     function updateUserTrailAndMarker(name, lat, lng, color, heading, timestamp) {
+        if (!userTrails[name]) userTrails[name] = [];
+        userTrails[name].push({ lat: lat, lng: lng, ts: timestamp });
+        userTrails[name] = userTrails[name].filter(p => timestamp - p.ts <= 10000);
+
+        if (userPolylineLines[name]) {
+            userPolylineLines[name].forEach(seg => map.removeLayer(seg));
+        }
+        userPolylineLines[name] = [];
+
+        const points = userTrails[name];
+        if (points.length > 1) {
+            for (let i = 0; i < points.length - 1; i++) {
+                const p1 = points[i];
+                const p2 = points[i+1];
+                const age = timestamp - p2.ts;
+                let opacity = 0.8;
+                if (age > 8000) {
+                    opacity = 0.8 * (1.0 - (age - 8000) / 2000);
+                    if (opacity < 0) opacity = 0;
+                }
+                if (opacity > 0) {
+                    const segLine = L.polyline([[p1.lat, p1.lng], [p2.lat, p2.lng]], {
+                        color: color || '#ff9900',
+                        weight: 2,
+                        opacity: opacity
+                    }).addTo(map);
+                    userPolylineLines[name].push(segLine);
+                }
+            }
+        }
+
         if (userMarkers[name]) {
             userMarkers[name].setLatLng([lat, lng]).setIcon(createArrowIcon(color, heading, 20));
         } else {
@@ -756,7 +1046,9 @@
                 updates['objects/' + chk.value] = null;
             });
             db.ref().update(updates).then(() => {
-                showToast("🗑️ 選択したポイントを削除しました");
+                showToast("🗑️ 選択したポイントを完全に削除しました");
+            }).catch(err => {
+                alert("削除に失敗しました: " + err.message);
             });
         }
     };
@@ -764,20 +1056,81 @@
     window.onLabelInputChanged = (key, inputEl) => {
         const card = document.querySelector(`.point-card[data-key="${key}"]`);
         if (!card) return;
-        db.ref('objects/' + key).update({ assignedLabel: inputEl.value });
+        const color = card.querySelector('.color-select').value;
+        inputEl.style.color = color;
+        
+        db.ref('objects/' + key).update({
+            assignedLabel: inputEl.value
+        });
     };
 
     window.updateMarkerAppearance = (key) => {
         const card = document.querySelector(`.point-card[data-key="${key}"]`);
         if (!card) return;
         const type = card.querySelector('.type-select').value;
-        const shape = card.querySelector('.shape-select').value;
+        const shapeSelect = card.querySelector('.shape-select');
+        shapeSelect.style.display = (type === 'ship') ? 'none' : 'block';
+        
+        const shape = shapeSelect.value;
         const color = card.querySelector('.color-select').value;
         const comment = card.querySelector('.comment-input').value;
         const assignedLabel = card.querySelector('.label-input').value;
 
-        db.ref('objects/' + key).update({ type: type, shape: shape, color: color, comment: comment, assignedLabel: assignedLabel });
+        const labelInput = card.querySelector('.label-input');
+        if (labelInput) labelInput.style.color = color;
+
+        db.ref('objects/' + key).update({
+            type: type,
+            shape: shape,
+            color: color,
+            comment: comment,
+            assignedLabel: assignedLabel
+        });
     };
+
+    function checkIncomingCourse() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const mode = urlParams.get('mode');
+        const course = urlParams.get('course');
+        
+        if (mode === 'committee' && course) {
+            const targetKeys = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'K', 'S'];
+            let newObjects = {};
+            let firstPos = null;
+
+            targetKeys.forEach(key => {
+                const latStr = urlParams.get(`lat${key}`);
+                const lngStr = urlParams.get(`lng${key}`);
+                if (latStr && lngStr) {
+                    const lat = parseFloat(latStr);
+                    const lng = parseFloat(lngStr);
+                    
+                    newObjects[key] = {
+                        type: 'buoy',
+                        color: '#ff3b30',
+                        lat: lat,
+                        lng: lng,
+                        comment: `${key}点 (${course.toUpperCase()})`,
+                        assignedLabel: key,
+                        ts: Date.now()
+                    };
+                    if (!firstPos) firstPos = [lat, lng];
+                }
+            });
+
+            if (Object.keys(newObjects).length > 0) {
+                db.ref('objects').update(newObjects, (error) => {
+                    if (!error) {
+                        showToast(`コースデータ【${course.toUpperCase()}】を受信・読込しました`);
+                        if (firstPos && typeof map !== 'undefined') {
+                            isFollowing = false; 
+                            map.setView(firstPos, 15);
+                        }
+                    }
+                });
+            }
+        }
+    }
 
     db.ref('objects').on('value', snap => {
         const listContainer = document.getElementById('pointListContainer');
@@ -790,6 +1143,16 @@
         
         for (let key in objectMarkers) map.removeLayer(objectMarkers[key]);
         Object.keys(objectMarkers).forEach(k => delete objectMarkers[k]);
+
+        const existingCards = document.querySelectorAll('.point-card');
+        existingCards.forEach(card => {
+            const k = card.dataset.key;
+            if (!snap.hasChild(k)) {
+                card.remove();
+            }
+        });
+
+        if (coursePolyline) { map.removeLayer(coursePolyline); coursePolyline = null; }
 
         const objects = snap.val();
         if (!objects) {
@@ -804,97 +1167,375 @@
         sortedKeys.forEach((key) => {
             let obj = objects[key];
             let letter = obj.assignedLabel;
+            if (letter === undefined) {
+                letter = (obj.type === 'ship') ? 'フネ' : 'ブイ';
+                db.ref('objects/' + key).update({ assignedLabel: letter });
+            }
 
             const marker = L.marker([obj.lat, obj.lng], { 
                 icon: createObjectIcon(obj.type, obj.shape, obj.color) 
             }).addTo(map);
 
             marker.bindTooltip(letter || '', { permanent: true, direction: 'top', className: 'object-label' });
-            objectMarkers[key] = marker;
 
+            marker.on('click', (e) => {
+                if (isCourseBuilderActive) {
+                    handleCourseBuilderClick(key, obj, letter);
+                    L.DomEvent.stopPropagation(e);
+                    L.DomEvent.preventDefault(e);
+                }
+            });
+
+            objectMarkers[key] = marker;
             if (!isPanelOpen) {
                 createPointCard(key, obj, letter);
             }
         });
+
+        triggerCustomLinesRedraw();
     });
 
-    function createArrowIcon(color, heading, size = 30) {
-        const html = `<div class="arrow-icon-wrapper" style="transform: rotate(${heading||0}deg);"><svg viewBox="0 0 100 100" width="${size}" height="${size}"><path d="M50 5 L90 90 L50 75 L10 90 Z" fill="${color}" stroke="white" stroke-width="5" /></svg></div>`;
-        return L.divIcon({ html: html, className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
+    function triggerCustomLinesRedraw() {
+        db.ref('custom_lines').once('value', lineSnap => {
+            customLinesGroup.clearLayers();
+            const lines = lineSnap.val();
+            if (!lines) return;
+
+            db.ref('objects').once('value', objSnap => {
+                const objs = objSnap.val() || {};
+                for (let lineId in lines) {
+                    const l = lines[lineId];
+                    if (objs[l.from] && objs[l.to]) {
+                        const p1 = [objs[l.from].lat, objs[l.from].lng];
+                        const p2 = [objs[l.to].lat, objs[l.to].lng];
+                        const fromLet = objs[l.from].assignedLabel !== undefined ? objs[l.from].assignedLabel : 'A';
+                        const toLet = objs[l.to].assignedLabel !== undefined ? objs[l.to].assignedLabel : 'B';
+                        
+                        const poly = L.polyline([p1, p2], {
+                            color: '#ffffff',
+                            weight: 3,
+                            dashArray: l.type === 'dashed' ? '5, 10' : null
+                        });
+                        poly.bindPopup(`<b>${l.type === 'dashed' ? '点線' : '実線'} (${fromLet} - ${toLet})</b><br><button class="btn-del" onclick="deleteCustomLine('${lineId}')">削除</button>`);
+                        customLinesGroup.addLayer(poly);
+                    } else {
+                        db.ref('custom_lines/' + lineId).remove();
+                    }
+                }
+            });
+        }).catch(() => {});
     }
 
-    function createObjectIcon(type, shape, color) {
-        let iconHtml = '';
-        if (type === 'ship') {
-            iconHtml = `<div style="font-size:26px; filter: drop-shadow(0 0 3px rgba(0,0,0,0.8)); text-align:center; line-height:26px;" title="フネ">🚤</div>`;
-        } else {
-            const hexColor = color || '#ff3b30';
-            if (shape === 'rect') {
-                iconHtml = `<svg width="18" height="24" viewBox="0 0 100 133"><rect x="15" y="5" width="70" height="123" rx="6" fill="${hexColor}" stroke="white" stroke-width="8" /></svg>`;
+    db.ref('custom_lines').on('value', () => {
+        triggerCustomLinesRedraw();
+    });
+
+    window.deleteCustomLine = (lineId) => {
+        if (confirm("この線を削除しますか？")) {
+            db.ref('custom_lines/' + lineId).remove();
+            map.closePopup();
+        }
+    };
+
+    function handleCourseBuilderClick(key, obj, letter) {
+        if (cbMode === 'dashed' || cbMode === 'solid') {
+            if (!cbSelectedFirstObj) {
+                cbSelectedFirstObj = key;
+                showToast(`1つ目の点 (${letter || '点'}) を選択しました。2つ目の点を選んでください。`);
             } else {
-                iconHtml = `<svg width="18" height="24" viewBox="0 0 100 133"><path d="M50 5 L95 125 Q95 128 50 128 Q5 128 5 125 Z" fill="${hexColor}" stroke="white" stroke-width="8" /></svg>`;
+                if (cbSelectedFirstObj === key) {
+                    showToast("同じ点は選べません。別の点を選んでください。");
+                    return;
+                }
+                const fromKey = cbSelectedFirstObj;
+                const toKey = key;
+                db.ref('custom_lines').push({
+                    from: fromKey,
+                    to: toKey,
+                    type: cbMode,
+                    ts: Date.now()
+                }, err => {
+                    if (!err) {
+                        showToast(`直線（${cbMode === 'dashed' ? '点線' : '実線'}）を結びました！`);
+                        triggerCustomLinesRedraw();
+                    } else {
+                        alert("線の結びつけに失敗しました: " + (err.message || ''));
+                    }
+                });
+                cbSelectedFirstObj = null;
+            }
+        } else if (cbMode === 'data') {
+            if (!cbSelectedFirstObj) {
+                cbSelectedFirstObj = { key: key, letter: letter || '', lng: obj.lng };
+                showToast(`データ起点 (${letter || '点'}) 設定完了。もう一方の点を選んでください。`);
+            } else {
+                if (cbSelectedFirstObj.key === key) return;
+                const fromObj = cbSelectedFirstObj;
+                const toObj = { key: key, letter: letter || '', lng: obj.lng };
+                cbSelectedFirstObj = null;
+                calculateAndShowData(fromObj, toObj);
             }
         }
-        return L.divIcon({ html: iconHtml, className: '', iconSize: [24, 26], iconAnchor: [12, 13] });
     }
 
-    function updateLocation(pos) {
-        if (isReplaying) return;
-        const latitude = pos.coords.latitude + offsetLat;
-        const longitude = pos.coords.longitude + offsetLng;
-        const speed = pos.coords.speed || 0;
-        const heading = pos.coords.heading || 0;
-        const now = Date.now();
-        
-        if (!isViewerMode && myName) {
-            const userData = {lat: latitude, lng: longitude, name: myName, color: myColor, speed: speed, heading: heading, ts: now};
-            db.ref('users/'+myId).set(userData);
-            if (isRecordingActive) db.ref('temp_history/' + myId).push(userData);
-        }
-        
-        const latlng = [latitude, longitude];
-        if (!myMarker) {
-            myMarker = L.marker(latlng, { icon: createArrowIcon(myColor || '#7f8c8d', heading, 30) }).addTo(map);
-            myMarker.bindTooltip(myName || '観戦者', { permanent: true, direction: 'top', className: 'user-label' });
-            map.setView(latlng, 16);
-        } else {
-            myMarker.setLatLng(latlng).setIcon(createArrowIcon(myColor || '#7f8c8d', heading, 30));
-        }
-        if (isFollowing) map.panTo(latlng);
+    function calculateAndShowData(fromObj, toObj) {
+        db.ref('objects').once('value', snap => {
+            const objs = snap.val() || {};
+            if (!objs[fromObj.key] || !objs[toObj.key]) return;
+
+            const objA = objs[fromObj.key];
+            const objB = objs[toObj.key];
+
+            const p1 = L.latLng(objA.lat, objA.lng);
+            const p2 = L.latLng(objB.lat, objB.lng);
+            const dist = Math.round(p1.distanceTo(p2));
+
+            const lat1 = p1.lat * Math.PI / 180;
+            const lon1 = p1.lng * Math.PI / 180;
+            const lat2 = p2.lat * Math.PI / 180;
+            const lon2 = p2.lng * Math.PI / 180;
+            const dLon = lon2 - lon1;
+            const y = Math.sin(dLon) * Math.cos(lat2);
+            const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+            let brng = Math.atan2(y, x) * 180 / Math.PI;
+            brng = (brng + 360) % 360;
+
+            const windInput = parseFloat(document.getElementById('cb-wind-deg').value) || 0;
+            const angleFromWind = (brng - windInput + 360) % 360;
+            const val1 = Math.round(angleFromWind - 90);
+            const val2 = Math.round(270 - angleFromWind);
+
+            const titlePair = `${fromObj.letter || 'A'}-${toObj.letter || 'B'}`;
+            
+            const dataPayload = {
+                title: titlePair,
+                dist: dist,
+                val1: val1,
+                val2: val2,
+                wind: windInput,
+                lngA: objA.lng,
+                lngB: objB.lng,
+                ts: Date.now()
+            };
+            db.ref('saved_course_data').push(dataPayload);
+
+            const isAWest = objA.lng <= objB.lng;
+            const activeAngleVal = isAWest ? val1 : val2;
+
+            const html = `
+                <div style="border-bottom:1px solid #ddd; padding:10px 0;">
+                    <b>${titlePair} ${dist}m 風向:${windInput}° 角度:${activeAngleVal}°</b>
+                </div>
+            `;
+            const listDiv = document.getElementById('course-data-list');
+            listDiv.innerHTML = html;
+            document.getElementById('course-data-modal').style.display = 'flex';
+        });
     }
 
-    function startTracking() {
-        if (!navigator.geolocation) return;
-        navigator.geolocation.watchPosition(updateLocation, () => {}, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
-    }
+    window.openDataListModal = () => {
+        const container = document.getElementById('data-list-container');
+        container.innerHTML = "読み込み中...";
+        document.getElementById('data-list-modal').style.display = 'flex';
 
-    window.toggleMenu = () => {
-        isMenuOpen = !isMenuOpen;
-        const container = document.getElementById('button-container');
-        const toggleBtn = document.getElementById('menu-toggle-btn');
-        if (isMenuOpen) {
-            container.classList.add('menu-active');
-            toggleBtn.innerText = "✕";
-        } else {
-            container.classList.remove('menu-active');
-            toggleBtn.innerText = "☰";
-        }
+        db.ref('saved_course_data').once('value', snap => {
+            const dataObj = snap.val();
+            if (!dataObj) {
+                container.innerHTML = "<p style='color:#666; padding:10px;'>保存されたコースデータはありません</p>";
+                return;
+            }
+            let html = "";
+            for (let dataId in dataObj) {
+                const d = dataObj[dataId];
+                
+                const lngA = d.lngA !== undefined ? d.lngA : 0;
+                const lngB = d.lngB !== undefined ? d.lngB : 1;
+                const isAWest = lngA <= lngB;
+                const activeAngleVal = isAWest ? d.val1 : d.val2;
+
+                html += `
+                    <div style="border-bottom:1px solid #ddd; padding:10px 0; display:flex; align-items:center; gap:8px;">
+                        <input type="checkbox" class="data-del-chk" value="${dataId}" style="transform:scale(1.3); cursor:pointer;">
+                        <div style="font-size:1rem; font-weight:bold; color:#333; flex-grow:1;">
+                            ${d.title || 'データ'} ${d.dist}m 風向:${d.wind || 0}° 角度:${activeAngleVal}°
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }).catch(err => {
+            container.innerHTML = `<p style='color:#e74c3c;'>取得エラー: ${err.message || ''}</p>`;
+        });
     };
 
-    window.triggerRecenter = () => {
-        isFollowing = true; 
-        if(myMarker) map.panTo(myMarker.getLatLng());
-    };
-
-    window.triggerSetup = () => { toggleMenu(); setTimeout(openSetup, 400); };
-    window.triggerLogout = () => {
-        toggleMenu();
-        if(confirm("ログアウトしますか？")) { 
-            db.ref('users/'+myId).remove().then(() => {
-                localStorage.clear();
-                location.reload();
+    window.deleteSelectedCourseData = () => {
+        const checkboxes = document.querySelectorAll('.data-del-chk:checked');
+        if (checkboxes.length === 0) {
+            alert("削除するデータが選択されていません");
+            return;
+        }
+        if (confirm(`選択した ${checkboxes.length} 件のデータを削除しますか？`)) {
+            let updates = {};
+            checkboxes.forEach(chk => {
+                updates['saved_course_data/' + chk.value] = null;
+            });
+            db.ref().update(updates, err => {
+                if (!err) {
+                    showToast("🗑️ 選択したデータを削除しました");
+                    openDataListModal();
+                } else {
+                    alert("削除に失敗しました");
+                }
             });
         }
+    };
+
+    window.openCoordListModal = () => {
+        const container = document.getElementById('coord-list-container');
+        container.innerHTML = "読み込み中...";
+        document.getElementById('coord-list-modal').style.display = 'flex';
+
+        db.ref('objects').once('value', snap => {
+            const objs = snap.val();
+            if (!objs) {
+                container.innerHTML = "<p style='color:#666; padding:10px;'>登録されているフネ・ブイはありません</p>";
+                return;
+            }
+            let html = "";
+            window.coordShareTexts = {};
+
+            for (let key in objs) {
+                const o = objs[key];
+                const label = o.assignedLabel || (o.type === 'ship' ? 'フネ' : 'ブイ');
+                const text = `【${label}】\n緯度: ${o.lat.toFixed(6)}\n経度: ${o.lng.toFixed(6)}\nメモ: ${o.comment || 'なし'}`;
+                window.coordShareTexts[key] = text;
+
+                html += `
+                    <div style="border-bottom:1px solid #ddd; padding:10px 0; display:flex; justify-content:space-between; align-items:center;">
+                        <div style="font-size:0.95rem;">
+                            <b>📍 ${label}</b><br>
+                            <span style="font-size:0.85rem; color:#555;">緯度:${o.lat.toFixed(5)}, 経度:${o.lng.toFixed(5)}</span>
+                        </div>
+                        <button onclick="shareSingleCoord('${key}')" style="background:#2980b9; color:white; border:none; padding:6px 12px; border-radius:6px; font-size:0.9rem; cursor:pointer; font-weight:bold;">送信</button>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        });
+    };
+
+    window.shareSingleCoord = (key) => {
+        const text = window.coordShareTexts[key];
+        if (!text) return;
+        if (navigator.share) {
+            navigator.share({ title: '座標データ', text: text }).catch(() => {});
+        } else {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast("📋 座標をクリップボードにコピーしました！");
+            });
+        }
+    };
+
+    window.shareAllCoordinates = () => {
+        if (!window.coordShareTexts) return;
+        let allText = "📍 【フネ・ブイ座標一覧】\n\n" + Object.values(window.coordShareTexts).join("\n\n");
+        if (navigator.share) {
+            navigator.share({ title: '座標一覧データ', text: allText }).catch(() => {});
+        } else {
+            navigator.clipboard.writeText(allText).then(() => {
+                showToast("📋 全ての座標をクリップボードにコピーしました！");
+            });
+        }
+    };
+
+    map.on('click', e => {
+        const { lat, lng } = e.latlng;
+        
+        if (isCourseBuilderActive) {
+            if (cbMode === 'ship' || cbMode === 'buoy') {
+                const commentText = cbMode === 'ship' ? 'フネ' : 'マーク';
+                const initialLabel = cbMode === 'ship' ? 'フネ' : 'ブイ';
+                const randomKey = "C" + Math.floor(Math.random() * 10000);
+                db.ref('objects/' + randomKey).set({ 
+                    type: cbMode, 
+                    shape: 'triangle',
+                    color: '#ff3b30', 
+                    lat: lat, 
+                    lng: lng, 
+                    comment: commentText,
+                    assignedLabel: initialLabel,
+                    ts: Date.now() 
+                }, err => {
+                    if (!err) showToast(`📍 ${commentText}を設置しました`);
+                });
+            }
+            return;
+        }
+
+        if (isHoseiMode) {
+            if (confirm("現在地をこの場所に補正しますか？")) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    offsetLat = lat - pos.coords.latitude;
+                    offsetLng = lng - pos.coords.longitude;
+                    localStorage.setItem('tora_king_offset_lat', offsetLat);
+                    localStorage.setItem('tora_king_offset_lng', offsetLng);
+                    alert("位置補正完了");
+                    triggerHoseiMode(); 
+                    startTracking();   
+                }, () => { alert("位置の取得に失敗しました。"); }, {enableHighAccuracy: false, timeout: 5000});
+            }
+            return;
+        }
+        
+        if (isAddPointMode) {
+            let colorOpts = '';
+            COLOR_OPTIONS.forEach(c => { colorOpts += `<option value="${c.hex}">${c.name}</option>`; });
+
+            const popupContent = `
+                <div class="popup-form">
+                    <b>新規設置</b>
+                    <select id="new_type" onchange="document.getElementById('new_shape_row').style.display = this.value==='ship'?'none':'block';">
+                        <option value="buoy">🚩 マーク</option>
+                        <option value="ship">🚤 フネ</option>
+                    </select>
+                    <div id="new_shape_row" style="margin:4px 0;">
+                        <select id="new_shape">
+                            <option value="triangle">縦長三角形</option>
+                            <option value="rect">縦長長方形</option>
+                        </select>
+                    </div>
+                    <select id="new_color">${colorOpts}</select>
+                    <input type="text" id="new_comment" placeholder="コメント">
+                    <button class="btn-save" onclick="manualSave(${lat}, ${lng})">設置</button>
+                </div>`;
+            L.popup().setLatLng(e.latlng).setContent(popupContent).openOn(map);
+            
+            setAddPointMode(false);
+            toggleMenu();
+            return;
+        }
+    });
+
+    window.manualSave = (lat, lng) => {
+        const type = document.getElementById('new_type').value;
+        const shape = type === 'ship' ? 'triangle' : document.getElementById('new_shape').value;
+        const color = document.getElementById('new_color').value;
+        const comment = document.getElementById('new_comment').value;
+        const initialLabel = type === 'ship' ? 'フネ' : 'ブイ';
+        const randomKey = "M" + Math.floor(Math.random() * 10000);
+        
+        db.ref('objects/' + randomKey).set({ 
+            type: type, 
+            shape: shape,
+            color: color, 
+            lat: lat, 
+            lng: lng, 
+            comment: comment, 
+            assignedLabel: initialLabel,
+            ts: Date.now() 
+        });
+        map.closePopup();
+        document.getElementById('pointSettingsPanel').style.display = 'block';
     };
 
     function initSetupUI() {
@@ -917,7 +1558,7 @@
 
     function closeSetup() {
         const nameInp = document.getElementById('setup-name').value;
-        if (!nameInp) return alert("名前を入力してください");
+        if (!nameInp) return alert("名前を入力するか、「登録せず見る専」を選んでください");
         saveProfile(myColor || "#ff9900");
     }
 
@@ -927,6 +1568,7 @@
         myName = nameInp; myColor = color; isViewerMode = false;
         localStorage.setItem('tora_king_name', myName); 
         localStorage.setItem('tora_king_color', myColor);
+        localStorage.removeItem('tora_king_viewer');
         document.getElementById('setup-overlay').style.display = 'none'; 
         startTracking();
     }
@@ -936,15 +1578,243 @@
         myName = "👀 観戦者";
         myColor = "#7f8c8d";
         localStorage.setItem('tora_king_viewer', 'true');
+        localStorage.removeItem('tora_king_name');
         document.getElementById('setup-overlay').style.display = 'none';
+        showToast("👀 観戦モード（見る専）で開始しました");
         startTracking();
+    };
+
+    function createArrowIcon(color, heading, size = 30) {
+        const html = `<div class="arrow-icon-wrapper" style="transform: rotate(${heading||0}deg);"><svg viewBox="0 0 100 100" width="${size}" height="${size}"><path d="M50 5 L90 90 L50 75 L10 90 Z" fill="${color}" stroke="white" stroke-width="5" /></svg></div>`;
+        return L.divIcon({ html: html, className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
+    }
+
+    function createObjectIcon(type, shape, color) {
+        let iconHtml = '';
+        if (type === 'ship') {
+            iconHtml = `<div style="font-size:26px; filter: drop-shadow(0 0 3px rgba(0,0,0,0.8)); text-align:center; line-height:26px;" title="フネ">🚤</div>`;
+        } else {
+            const hexColor = color || '#ff3b30';
+            if (shape === 'rect') {
+                iconHtml = `<svg width="18" height="24" viewBox="0 0 100 133"><rect x="15" y="5" width="70" height="123" rx="6" fill="${hexColor}" stroke="white" stroke-width="8" /></svg>`;
+            } else {
+                iconHtml = `<svg width="18" height="24" viewBox="0 0 100 133"><path d="M50 5 L95 125 Q95 128 50 128 Q5 128 5 125 Z" fill="${hexColor}" stroke="white" stroke-width="8" /></svg>`;
+            }
+        }
+        return L.divIcon({ html: iconHtml, className: '', iconSize: [24, 26], iconAnchor: [12, 13] });
+    }
+
+    function handleGPSError(error) {
+        let msg = "Status: ";
+        switch(error.code) {
+            case error.PERMISSION_DENIED: msg += "位置情報が拒否されています"; break;
+            case error.POSITION_UNAVAILABLE: msg += "GPS判定待ち/電波微弱"; break;
+            case error.TIMEOUT: msg += "タイムアウト(再探索中)"; break;
+            default: msg += "検索中(" + error.code + ")"; break;
+        }
+        document.getElementById('status').style.background = "rgba(180,100,0,0.8)";
+        document.getElementById('status').innerText = msg;
+    }
+
+    function updateLocation(pos) {
+        if (isReplaying) return;
+
+        const latitude = pos.coords.latitude + offsetLat;
+        const longitude = pos.coords.longitude + offsetLng;
+        const speed = pos.coords.speed || 0;
+        const heading = pos.coords.heading || 0;
+        const now = Date.now();
+        
+        if (!isViewerMode && myName) {
+            const userData = {lat: latitude, lng: longitude, name: myName, color: myColor, speed: speed, heading: heading, ts: now};
+            db.ref('users/'+myId).set(userData);
+            
+            if (isRecordingActive) {
+                db.ref('temp_history/' + myId).push(userData);
+            }
+        }
+        
+        const latlng = [latitude, longitude];
+        if (!myMarker) {
+            myMarker = L.marker(latlng, { icon: createArrowIcon(myColor || '#7f8c8d', heading, 30) }).addTo(map);
+            myMarker.bindTooltip(myName || '観戦者', { permanent: true, direction: 'top', className: 'user-label' });
+            map.setView(latlng, 16);
+        } else {
+            myMarker.setLatLng(latlng).setIcon(createArrowIcon(myColor || '#7f8c8d', heading, 30));
+        }
+        
+        if (isFollowing) map.panTo(latlng);
+        
+        let statusText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)} (GPS良好)`;
+        if (isRecordingActive) {
+            statusText = `🔴 [記録中] ${statusText}`;
+            document.getElementById('status').style.background = "rgba(192, 57, 43, 0.9)";
+        } else {
+            document.getElementById('status').style.background = "rgba(0,128,0,0.8)";
+        }
+        document.getElementById('status').innerText = statusText;
+    }
+
+    function stopTracking() {
+        if (watchIdHigh) { navigator.geolocation.clearWatch(watchIdHigh); watchIdHigh = null; }
+        if (watchIdLow) { navigator.geolocation.clearWatch(watchIdLow); watchIdLow = null; }
+    }
+
+    function startTracking() {
+        if (!navigator.geolocation) {
+            document.getElementById('status').innerText = "Error: GPS非対応環境";
+            return;
+        }
+        stopTracking();
+        document.getElementById('status').style.background = "rgba(0,0,0,0.8)";
+        document.getElementById('status').innerText = "GPS接続を開始中...";
+
+        watchIdHigh = navigator.geolocation.watchPosition(updateLocation, () => {}, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+        watchIdLow = navigator.geolocation.watchPosition(updateLocation, handleGPSError, { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 });
+    }
+
+    window.toggleMenu = () => {
+        isMenuOpen = !isMenuOpen;
+        const container = document.getElementById('button-container');
+        const toggleBtn = document.getElementById('menu-toggle-btn');
+        
+        if (isMenuOpen) {
+            container.classList.add('menu-active');
+            toggleBtn.innerText = "✕";
+            toggleBtn.style.background = "rgba(52, 152, 219, 0.7)";
+        } else {
+            container.classList.remove('menu-active');
+            toggleBtn.innerText = "☰";
+            toggleBtn.style.background = "rgba(44, 62, 80, 0.45)";
+            
+            if (isAddPointMode) setAddPointMode(false);
+            if (isHoseiMode) { isHoseiMode = false; document.getElementById('hosei-btn').style.background = "rgba(241, 196, 15, 0.45)"; }
+        }
+    };
+
+    window.triggerAddPointMode = () => {
+        if (isHoseiMode) { isHoseiMode = false; document.getElementById('hosei-btn').style.background = "rgba(241, 196, 15, 0.45)"; }
+        setAddPointMode(!isAddPointMode);
+    };
+
+    function setAddPointMode(active) {
+        isAddPointMode = active;
+        const btn = document.getElementById('add-point-btn');
+        if (isAddPointMode) {
+            btn.style.background = "rgba(230, 126, 34, 0.7)";
+            showToast("🚩 マーク追加モード：ON (設置したい地図上を1回タップ)");
+        } else {
+            btn.style.background = "rgba(52, 152, 219, 0.45)";
+            showToast("🚩 マーク追加モード：OFF");
+        }
+    }
+
+    window.triggerRecenter = () => {
+        showToast("🎯 現在地を画面の中心に追従します");
+        isFollowing = true; 
+        if(myMarker) map.panTo(myMarker.getLatLng());
+    };
+
+    window.triggerGPSRetry = () => {
+        showToast("🔄 GPSを強制リセット・再接続します");
+        document.getElementById('status').style.background = "#ff9900";
+        document.getElementById('status').innerText = "GPSシグナルを強制再起動中...";
+        navigator.geolocation.getCurrentPosition(
+            (pos) => { updateLocation(pos); startTracking(); },
+            () => { alert("強制取得も応答なし。スマホ本体の設定を確認してください。"); startTracking(); },
+            { enableHighAccuracy: false, timeout: 5000 }
+        );
+        toggleMenu();
+    };
+
+    window.triggerHoseiMode = () => {
+        if (isAddPointMode) setAddPointMode(false);
+        isHoseiMode = !isHoseiMode;
+        document.getElementById('hosei-btn').style.background = isHoseiMode ? "rgba(231, 76, 60, 0.7)" : "rgba(241, 196, 15, 0.45)";
+        if(isHoseiMode) {
+            showToast("🔧 位置補正モード：ON (地図上をタップして現在地をズラせます)");
+        } else {
+            showToast("🔧 位置補正モード：OFF");
+        }
+    };
+
+    window.triggerSetup = () => {
+        showToast("👤 プロフィール（名前・色）の再設定を開きます");
+        toggleMenu();
+        setTimeout(openSetup, 400);
+    };
+
+    window.triggerLogout = () => {
+        showToast("🏃 ログアウトしています...");
+        toggleMenu();
+        setTimeout(() => {
+            if(confirm("ログアウトしますか？（登録情報がリセットされます）")) { 
+                db.ref('users/'+myId).remove().then(() => {
+                    localStorage.removeItem('tora_king_name');
+                    localStorage.removeItem('tora_king_color');
+                    localStorage.removeItem('tora_king_viewer');
+                    location.reload();
+                }).catch(() => {
+                    localStorage.removeItem('tora_king_name');
+                    localStorage.removeItem('tora_king_color');
+                    localStorage.removeItem('tora_king_viewer');
+                    location.reload();
+                });
+            }
+        }, 300);
     };
 
     initSetupUI();
     if (!myName && !isViewerMode) openSetup(); else startTracking();
 
+    db.ref('users').on('value', snap => {
+        if (isReplaying) return;
+
+        const users = snap.val();
+        let listHtml = "";
+        const now = Date.now();
+        const activeUserNames = {};
+
+        for (let id in users) {
+            const u = users[id];
+            if (!u.name || now - u.ts > 600000) {
+                if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
+                continue;
+            }
+
+            if (u.name === myName && id !== myId && !isViewerMode) {
+                if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
+                continue;
+            }
+
+            activeUserNames[u.name] = true;
+            const isMe = (id === myId);
+            const s = (u.speed * (speedUnitMode === 0 ? 1.94384 : (speedUnitMode === 1 ? 3.6 : 1))).toFixed(1);
+            listHtml += `<div class="user-item ${isMe ? 'me' : ''}"><span style="color:${u.color}">●</span> ${u.name} ${s}${units[speedUnitMode]}</div>`;
+            
+            updateUserTrailAndMarker(u.name, u.lat, u.lng, u.color, u.heading, now);
+        }
+
+        for (let name in userTrails) {
+            if (!activeUserNames[name]) {
+                if (userPolylineLines[name]) {
+                    userPolylineLines[name].forEach(seg => map.removeLayer(seg));
+                    delete userPolylineLines[name];
+                }
+                delete userTrails[name];
+                if (userMarkers[name]) {
+                    map.removeLayer(userMarkers[name]);
+                    delete userMarkers[name];
+                }
+            }
+        }
+
+        document.getElementById('list-content').innerHTML = listHtml;
+    });
+
     window.toggleSpeedUnit = () => {
         speedUnitMode = (speedUnitMode + 1) % 3;
+        localStorage.setItem('tora_king_unit', speedUnitMode);
         document.getElementById('unit-toggle').innerText = units[speedUnitMode];
     };
 
@@ -953,11 +1823,16 @@
             db.ref('objects/' + key).remove().then(() => {
                 const c = document.querySelector(`.point-card[data-key="${key}"]`); 
                 if (c) c.remove();
+                showToast("🗑️ 削除しました");
             }); 
         }
     };
     
     map.on('movestart', () => isFollowing = false);
+
+    window.addEventListener('load', () => {
+        setTimeout(checkIncomingCourse, 1000);
+    });
 </script>
 </body>
 </html>
