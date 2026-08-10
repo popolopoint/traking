@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.3.7 by Popolo App.com</title>
+    <title>虎キング v3.3.8 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -74,14 +74,12 @@
         }
         .action-btn:active { background: rgba(52, 152, 219, 0.6); }
         
-        /* 2列メニューの配置制御 */
         #recenter-btn        { right: 10px; bottom: 20px; font-size: 22px; background: rgba(41, 128, 185, 0.45); width: 50px; height: 50px; }
         #menu-toggle-btn     { right: 10px; bottom: 80px; background: rgba(44, 62, 80, 0.45); font-weight: bold; width: 50px; height: 50px; font-size: 22px; }
         
         .menu-child { opacity: 0; transform: translateY(20px) scale(0.8); pointer-events: none; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
         .menu-active .menu-child { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
         
-        /* 右列 (right: 10px) と 左列 (right: 66px) に分散配置 */
         #logout-btn          { right: 66px; bottom: 140px; background: rgba(231, 76, 60, 0.45); }
         #name-btn            { right: 10px; bottom: 140px; }
         #manual-btn          { right: 66px; bottom: 200px; background: rgba(39, 174, 96, 0.45); }
@@ -220,7 +218,7 @@
             <p>・<b>画面右下のメニュー（☰）</b>から各種機能を呼び出せます。<br>・<b>現在地追従（🎯）</b>：タップすると自分の位置が常に画面中央に追従します。<br>・<b>速度単位切替（ktボタン）</b>：ノット(kt)、km/h、m/sを切り替え可能です。</p>
 
             <h4>2. 🚩 マーク・ブイの追加と削除</h4>
-            <p>・メニューの<b>マーク追加（🚩）</b>を押した後、地図上をタップすると新しいブイやフネを設置できます。<br>・画面上の<b>「設定」ボタン</b>から一覧を開き、チェックボックスを入れて一括削除できます。<br>※水深測ったろうから送られたデータは、ここで削除することでゾンビ化を防ぎます。</p>
+            <p>・メニューの<b>マーク追加（🚩）</b>を押した後、地図上をタップすると新しいブイやフネを設置できます。<br>・画面上の<b>「設定」ボタン</b>から一覧を開き、チェックボックスを入れて一括削除できます。</p>
 
             <h4>3. 🛠️ コース作成・データ計測</h4>
             <p>・ヘッダーの<b>「コース作成」ボタン</b>（パスワード: 1234）から、フネやブイの配置、直線（点線・実線）の結びつけ、2点間の距離・角度データの自動計算が行えます。</p>
@@ -258,7 +256,7 @@
 <div id="header">
     <div style="font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;">
         <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
-        <span>虎キング v3.3.7 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
+        <span>虎キング v3.3.8 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
     </div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
@@ -1056,18 +1054,12 @@
         }
         if (confirm(`選択した ${checkedBoxes.length} 件のポイントを削除しますか？`)) {
             let updates = {};
-            let deletedKeys = JSON.parse(localStorage.getItem('tora_king_deleted_keys') || "[]");
-            
             checkedBoxes.forEach(chk => {
-                const k = chk.value;
-                updates['objects/' + k] = null;
-                if (!deletedKeys.includes(k)) deletedKeys.push(k);
+                updates['objects/' + chk.value] = null;
             });
             
-            localStorage.setItem('tora_king_deleted_keys', JSON.stringify(deletedKeys));
-
             db.ref().update(updates).then(() => {
-                showToast("🗑️ 選択したポイントを完全に削除しました（ゾンビ化防止）");
+                showToast("🗑️ 選択したポイントを削除しました");
             }).catch(err => {
                 alert("削除に失敗しました: " + err.message);
             });
@@ -1115,45 +1107,48 @@
         const course = urlParams.get('course');
         
         if (mode === 'committee' && course) {
-            const targetKeys = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'K', 'S'];
-            let newObjects = {};
-            let firstPos = null;
-            let deletedKeys = JSON.parse(localStorage.getItem('tora_king_deleted_keys') || "[]");
+            const incomingKey = `imported_${course.toUpperCase()}_${urlParams.get('latA') || '1'}`;
+            
+            db.ref('imported_flags/' + incomingKey).once('value', snap => {
+                if (snap.exists()) return;
 
-            targetKeys.forEach(key => {
-                // 過去にユーザー自身が手動削除したキーであれば復元させない（ゾンビ化ブロック）
-                if (deletedKeys.includes(key)) return;
+                const targetKeys = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'K', 'S'];
+                let newObjects = {};
+                let firstPos = null;
 
-                const latStr = urlParams.get(`lat${key}`);
-                const lngStr = urlParams.get(`lng${key}`);
-                if (latStr && lngStr) {
-                    const lat = parseFloat(latStr);
-                    const lng = parseFloat(lngStr);
-                    
-                    newObjects[key] = {
-                        type: 'buoy',
-                        color: '#ff3b30',
-                        lat: lat,
-                        lng: lng,
-                        comment: `${key}点 (${course.toUpperCase()})`,
-                        assignedLabel: key,
-                        ts: Date.now()
-                    };
-                    if (!firstPos) firstPos = [lat, lng];
-                }
-            });
-
-            if (Object.keys(newObjects).length > 0) {
-                db.ref('objects').update(newObjects, (error) => {
-                    if (!error) {
-                        showToast(`コースデータ【${course.toUpperCase()}】を受信・読込しました`);
-                        if (firstPos && typeof map !== 'undefined') {
-                            isFollowing = false; 
-                            map.setView(firstPos, 15);
-                        }
+                targetKeys.forEach(key => {
+                    const latStr = urlParams.get(`lat${key}`);
+                    const lngStr = urlParams.get(`lng${key}`);
+                    if (latStr && lngStr) {
+                        const lat = parseFloat(latStr);
+                        const lng = parseFloat(lngStr);
+                        
+                        newObjects[key] = {
+                            type: 'buoy',
+                            color: '#ff3b30',
+                            lat: lat,
+                            lng: lng,
+                            comment: `${key}点 (${course.toUpperCase()})`,
+                            assignedLabel: key,
+                            ts: Date.now()
+                        };
+                        if (!firstPos) firstPos = [lat, lng];
                     }
                 });
-            }
+
+                if (Object.keys(newObjects).length > 0) {
+                    db.ref('objects').update(newObjects, (error) => {
+                        if (!error) {
+                            db.ref('imported_flags/' + incomingKey).set(true);
+                            showToast(`コースデータ【${course.toUpperCase()}】を受信・読込しました`);
+                            if (firstPos && typeof map !== 'undefined') {
+                                isFollowing = false; 
+                                map.setView(firstPos, 15);
+                            }
+                        }
+                    });
+                }
+            });
         }
     }
 
@@ -1845,14 +1840,10 @@
 
     window.deleteObject = (key) => { 
         if (confirm("消去しますか？")) { 
-            let deletedKeys = JSON.parse(localStorage.getItem('tora_king_deleted_keys') || "[]");
-            if (!deletedKeys.includes(key)) deletedKeys.push(key);
-            localStorage.setItem('tora_king_deleted_keys', JSON.stringify(deletedKeys));
-
             db.ref('objects/' + key).remove().then(() => {
                 const c = document.querySelector(`.point-card[data-key="${key}"]`); 
                 if (c) c.remove();
-                showToast("🗑️ 削除しました（ゾンビ化防止）");
+                showToast("🗑️ 削除しました");
             }); 
         }
     };
