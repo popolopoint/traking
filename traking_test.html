@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.2.6 by Popolo App.com</title>
+    <title>虎キング v3.2.7 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -244,7 +244,7 @@
 <div id="header">
     <div style="font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;">
         <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
-        <span>虎キング v3.2.6 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
+        <span>虎キング v3.2.7 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
     </div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
@@ -1090,6 +1090,60 @@
         });
     };
 
+
+function checkIncomingCourse() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const mode = urlParams.get('mode');
+        const course = urlParams.get('course');
+        
+        if (mode === 'committee' && course) {
+            const targetKeys = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'K', 'S'];
+            let newObjects = {};
+            let firstPos = null;
+
+            targetKeys.forEach(key => {
+                const latStr = urlParams.get(`lat${key}`);
+                const lngStr = urlParams.get(`lng${key}`);
+                if (latStr && lngStr) {
+                    const lat = parseFloat(latStr);
+                    const lng = parseFloat(lngStr);
+                    
+                    newObjects[key] = {
+                        type: 'buoy',
+                        color: (typeof MARK_COLORS !== 'undefined' ? MARK_COLORS[key] : '#ff3b30') || '#ff3b30',
+                        lat: lat,
+                        lng: lng,
+                        comment: `${key}点 (${course.toUpperCase()})`,
+                        ts: Date.now()
+                    };
+                    if (!firstPos) firstPos = [lat, lng];
+                }
+            });
+
+            if (Object.keys(newObjects).length > 0) {
+                db.ref('objects').set(newObjects, (error) => {
+                    if (!error) {
+                        if (typeof showToast === 'function') {
+                            showToast(`コースデータ【${course.toUpperCase()}】を読込＆全体配信しました`);
+                        }
+                        if (firstPos && typeof map !== 'undefined') {
+                            if (typeof isFollowing !== 'undefined') isFollowing = false; 
+                            map.setView(firstPos, 15);
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+    
     // ② オブジェクト削除時に紐づく線もリアルタイムで消えるよう修正
     db.ref('objects').on('value', snap => {
         const listContainer = document.getElementById('pointListContainer');
@@ -1782,6 +1836,14 @@
     window.deleteObject = (key) => { if(confirm("消去しますか？")) { db.ref('objects/' + key).remove(); const c = document.querySelector(`.point-card[data-key="${key}"]`); if(c) c.remove(); }};
     
     map.on('movestart', () => isFollowing = false);
+
+
+// ページ読み込み完了時にURLパラメータからのデータ受信をチェック
+    window.addEventListener('load', () => {
+        setTimeout(checkIncomingCourse, 1000);
+    });
+
+    
 </script>
 </body>
 </html>
