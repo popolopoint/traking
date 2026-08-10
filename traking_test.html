@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.3.2 by Popolo App.com</title>
+    <title>虎キング v3.3.3 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -244,7 +244,7 @@
 <div id="header">
     <div style="font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;">
         <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
-        <span>虎キング v3.3.2 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
+        <span>虎キング v3.3.3 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
     </div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
@@ -1041,17 +1041,12 @@
             return;
         }
         if (confirm(`選択した ${checkedBoxes.length} 件のポイントを削除しますか？`)) {
-            let promises = [];
+            let updates = {};
             checkedBoxes.forEach(chk => {
-                promises.push(db.ref('objects/' + chk.value).remove());
+                updates['objects/' + chk.value] = null;
             });
-            Promise.all(promises).then(() => {
+            db.ref().update(updates).then(() => {
                 showToast("🗑️ 選択したポイントを完全に削除しました");
-                db.ref('objects').once('value', snap => {
-                    if (!snap.exists() || Object.keys(snap.val() || {}).length === 0) {
-                        db.ref('objects').remove();
-                    }
-                });
             }).catch(err => {
                 alert("削除に失敗しました: " + err.message);
             });
@@ -1099,42 +1094,48 @@
         const course = urlParams.get('course');
         
         if (mode === 'committee' && course) {
-            const targetKeys = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'K', 'S'];
-            let newObjects = {};
-            let firstPos = null;
+            const incomingKey = `imported_${course.toUpperCase()}_${urlParams.get('latA') || '1'}`;
+            
+            db.ref('imported_flags/' + incomingKey).once('value', snap => {
+                if (snap.exists()) return; 
 
-            targetKeys.forEach(key => {
-                const latStr = urlParams.get(`lat${key}`);
-                const lngStr = urlParams.get(`lng${key}`);
-                if (latStr && lngStr) {
-                    const lat = parseFloat(latStr);
-                    const lng = parseFloat(lngStr);
-                    
-                    newObjects[key] = {
-                        type: 'buoy',
-                        color: (typeof MARK_COLORS !== 'undefined' ? MARK_COLORS[key] : '#ff3b30') || '#ff3b30',
-                        lat: lat,
-                        lng: lng,
-                        comment: `${key}点 (${course.toUpperCase()})`,
-                        ts: Date.now()
-                    };
-                    if (!firstPos) firstPos = [lat, lng];
-                }
-            });
+                const targetKeys = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'K', 'S'];
+                let newObjects = {};
+                let firstPos = null;
 
-            if (Object.keys(newObjects).length > 0) {
-                db.ref('objects').set(newObjects, (error) => {
-                    if (!error) {
-                        if (typeof showToast === 'function') {
-                            showToast(`コースデータ【${course.toUpperCase()}】を読込＆全体配信しました`);
-                        }
-                        if (firstPos && typeof map !== 'undefined') {
-                            if (typeof isFollowing !== 'undefined') isFollowing = false; 
-                            map.setView(firstPos, 15);
-                        }
+                targetKeys.forEach(key => {
+                    const latStr = urlParams.get(`lat${key}`);
+                    const lngStr = urlParams.get(`lng${key}`);
+                    if (latStr && lngStr) {
+                        const lat = parseFloat(latStr);
+                        const lng = parseFloat(lngStr);
+                        
+                        newObjects[key] = {
+                            type: 'buoy',
+                            color: '#ff3b30',
+                            lat: lat,
+                            lng: lng,
+                            comment: `${key}点 (${course.toUpperCase()})`,
+                            assignedLabel: key,
+                            ts: Date.now()
+                        };
+                        if (!firstPos) firstPos = [lat, lng];
                     }
                 });
-            }
+
+                if (Object.keys(newObjects).length > 0) {
+                    db.ref('objects').update(newObjects, (error) => {
+                        if (!error) {
+                            db.ref('imported_flags/' + incomingKey).set(true);
+                            showToast(`コースデータ【${course.toUpperCase()}】を読込しました`);
+                            if (firstPos && typeof map !== 'undefined') {
+                                isFollowing = false; 
+                                map.setView(firstPos, 15);
+                            }
+                        }
+                    });
+                }
+            });
         }
     }
 
