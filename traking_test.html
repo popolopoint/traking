@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.2.7 by Popolo App.com</title>
+    <title>虎キング v3.3.0 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -81,16 +81,16 @@
         .menu-active .menu-child { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
         
         #logout-btn    { bottom: 140px; background: rgba(231, 76, 60, 0.45); }
-        #name-btn       { bottom: 200px; }
-        #manual-btn     { bottom: 260px; background: rgba(39, 174, 96, 0.45); }
-        #replay-btn     { bottom: 320px; background: rgba(155, 89, 182, 0.45); }
+        #name-btn        { bottom: 200px; }
+        #manual-btn      { bottom: 260px; background: rgba(39, 174, 96, 0.45); }
+        #replay-btn      { bottom: 320px; background: rgba(155, 89, 182, 0.45); }
         
         #record-start-btn { bottom: 380px; background: rgba(39, 174, 96, 0.6); }
         #admin-user-del-btn { bottom: 440px; background: rgba(192, 57, 43, 0.6); }
 
-        #hosei-btn      { bottom: 500px; background: rgba(241, 196, 15, 0.45); }
-        #gps-retry-btn  { bottom: 560px; }
-        #add-point-btn  { bottom: 620px; background: rgba(52, 152, 219, 0.45); }
+        #hosei-btn       { bottom: 500px; background: rgba(241, 196, 15, 0.45); }
+        #gps-retry-btn   { bottom: 560px; }
+        #add-point-btn   { bottom: 620px; background: rgba(52, 152, 219, 0.45); }
         
         .popup-form { color: #333; min-width: 140px; font-size: 12px; }
         .popup-form select, .popup-form input { width: 100%; margin: 4px 0; padding: 4px; box-sizing: border-box; }
@@ -154,7 +154,7 @@
     </div>
 </div>
 
-<!-- ⑤ データ一覧モーダル（一括削除ボタン・整理されたシンプル表示） -->
+<!-- データ一覧モーダル -->
 <div id="data-list-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
     <div style="background:white; padding:20px; border-radius:12px; width:94%; max-width:460px; box-sizing:border-box; text-align:center;">
         <h3 style="margin:0 0 10px 0; color:#2c3e50; font-size:1.3rem;">📋 保存されたコースデータ一覧</h3>
@@ -164,7 +164,7 @@
     </div>
 </div>
 
-<!-- ⑥ 座標一覧・LINE送信モーダル -->
+<!-- 座標一覧・LINE送信モーダル -->
 <div id="coord-list-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
     <div style="background:white; padding:20px; border-radius:12px; width:94%; max-width:460px; box-sizing:border-box; text-align:center;">
         <h3 style="margin:0 0 10px 0; color:#2c3e50; font-size:1.3rem;">📍 フネ・ブイ座標一覧</h3>
@@ -244,7 +244,7 @@
 <div id="header">
     <div style="font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;">
         <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
-        <span>虎キング v3.2.7 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
+        <span>虎キング v3.3.0 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
     </div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
@@ -258,7 +258,7 @@
 
 <div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
 
-<!-- 設定パネル（④下部にデータ一覧と同じ大きくて配置の良い閉じるボタン） -->
+<!-- 設定パネル -->
 <div id="pointSettingsPanel" style="position: fixed; top: 135px; left: 10px; z-index: 5000; width: 300px; max-height: 60vh; overflow-y: auto; background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 12px; border: 2px solid #007AFF; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: #333; display:none;">
     <h3 style="margin: 0 0 10px 0; padding-bottom: 5px; font-size: 15px; color: #007AFF; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
         <span>🚩 コース地点設定</span>
@@ -1041,16 +1041,19 @@
             return;
         }
         if (confirm(`選択した ${checkedBoxes.length} 件のポイントを削除しますか？`)) {
-            let updates = {};
+            let promises = [];
             checkedBoxes.forEach(chk => {
-                updates['objects/' + chk.value] = null;
+                promises.push(db.ref('objects/' + chk.value).remove());
             });
-            db.ref().update(updates, err => {
-                if (!err) {
-                    showToast("🗑️ 選択したポイントを削除しました");
-                } else {
-                    alert("削除に失敗しました");
-                }
+            Promise.all(promises).then(() => {
+                showToast("🗑️ 選択したポイントを完全に削除しました");
+                db.ref('objects').once('value', snap => {
+                    if (!snap.exists() || Object.keys(snap.val() || {}).length === 0) {
+                        db.ref('objects').remove();
+                    }
+                });
+            }).catch(err => {
+                alert("削除に失敗しました: " + err.message);
             });
         }
     };
@@ -1090,8 +1093,7 @@
         });
     };
 
-
-function checkIncomingCourse() {
+    function checkIncomingCourse() {
         const urlParams = new URLSearchParams(window.location.search);
         const mode = urlParams.get('mode');
         const course = urlParams.get('course');
@@ -1136,15 +1138,6 @@ function checkIncomingCourse() {
         }
     }
 
-
-
-
-
-
-
-
-    
-    // ② オブジェクト削除時に紐づく線もリアルタイムで消えるよう修正
     db.ref('objects').on('value', snap => {
         const listContainer = document.getElementById('pointListContainer');
         const panel = document.getElementById('pointSettingsPanel');
@@ -1169,7 +1162,8 @@ function checkIncomingCourse() {
 
         const objects = snap.val();
         if (!objects) {
-            if (msg = document.getElementById('noPointMsg')) msg.style.display = 'block';
+            const msg = document.getElementById('noPointMsg');
+            if (msg) msg.style.display = 'block';
             customLinesGroup.clearLayers();
             return;
         }
@@ -1231,7 +1225,6 @@ function checkIncomingCourse() {
                         poly.bindPopup(`<b>${l.type === 'dashed' ? '点線' : '実線'} (${fromLet} - ${toLet})</b><br><button class="btn-del" onclick="deleteCustomLine('${lineId}')">削除</button>`);
                         customLinesGroup.addLayer(poly);
                     } else {
-                        // 参照先がない孤立した線は自動削除
                         db.ref('custom_lines/' + lineId).remove();
                     }
                 }
@@ -1346,7 +1339,6 @@ function checkIncomingCourse() {
         });
     }
 
-    // ① データ一覧：ご要望のシンプルでアイコン・日時なしの1行フォーマット
     window.openDataListModal = () => {
         const container = document.getElementById('data-list-container');
         container.innerHTML = "読み込み中...";
@@ -1382,7 +1374,6 @@ function checkIncomingCourse() {
         });
     };
 
-    // ③ データ一覧の一括削除機能
     window.deleteSelectedCourseData = () => {
         const checkboxes = document.querySelectorAll('.data-del-chk:checked');
         if (checkboxes.length === 0) {
@@ -1405,7 +1396,6 @@ function checkIncomingCourse() {
         }
     };
 
-    // ⑥ 座標一覧・LINE等送信機能
     window.openCoordListModal = () => {
         const container = document.getElementById('coord-list-container');
         container.innerHTML = "読み込み中...";
@@ -1833,25 +1823,22 @@ function checkIncomingCourse() {
         localStorage.setItem('tora_king_unit', speedUnitMode);
         document.getElementById('unit-toggle').innerText = units[speedUnitMode];
     };
+
     window.deleteObject = (key) => { 
-    if (confirm("消去しますか？")) { 
-        db.ref('objects/' + key).remove().then(() => {
-            const c = document.querySelector(`.point-card[data-key="${key}"]`); 
-            if (c) c.remove();
-            showToast("🗑️ 削除しました");
-        }); 
-    }
-};
+        if (confirm("消去しますか？")) { 
+            db.ref('objects/' + key).remove().then(() => {
+                const c = document.querySelector(`.point-card[data-key="${key}"]`); 
+                if (c) c.remove();
+                showToast("🗑️ 削除しました");
+            }); 
+        }
+    };
     
     map.on('movestart', () => isFollowing = false);
 
-
-// ページ読み込み完了時にURLパラメータからのデータ受信をチェック
     window.addEventListener('load', () => {
         setTimeout(checkIncomingCourse, 1000);
     });
-
-    
 </script>
 </body>
 </html>
