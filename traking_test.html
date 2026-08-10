@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.3.5 by Popolo App.com</title>
+    <title>虎キング v3.3.6 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -103,8 +103,8 @@
         #toast-notice { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 6000; border: 1px solid #ff9900; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: center; pointer-events: none; }
         
         .modal-body-scroll { max-height: 55vh; overflow-y: auto; margin-top: 10px; font-size: 1.05rem; line-height: 1.5; color: #333; text-align: left; }
-        .modal-body-scroll h4 { color: #2c3e50; margin: 10px 0 4px 0; border-bottom: 2px solid #3498db; padding-bottom: 2px; font-size: 1.2rem; }
-        .modal-body-scroll p { margin: 6px 0 10px 0; font-size: 1rem; }
+        .modal-body-scroll h4 { color: #2c3e50; margin: 12px 0 4px 0; border-bottom: 2px solid #3498db; padding-bottom: 2px; font-size: 1.15rem; }
+        .modal-body-scroll p { margin: 4px 0 8px 0; font-size: 0.95rem; }
 
         #course-builder-bar {
             position: fixed; top: 62px; left: 50%; transform: translateX(-50%); z-index: 3500;
@@ -206,16 +206,28 @@
     </div>
 </div>
 
-<!-- ガイド説明モーダル -->
+<!-- ガイド説明モーダル（詳細マニュアル） -->
 <div id="manual-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
     <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:440px; box-sizing:border-box;">
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #3498db; padding-bottom:8px;">
-            <h3 style="margin:0; color:#2c3e50; font-size:1.3rem;">📖 アイコン・操作ガイド</h3>
+            <h3 style="margin:0; color:#2c3e50; font-size:1.3rem;">📖 虎キング 使い方マニュアル</h3>
             <button onclick="closeManualModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">✖</button>
         </div>
         <div class="modal-body-scroll">
-            <h4>🛡️ 管理者参加者削除機能</h4>
-            <p>・メニューの「🛡️」ボタンから管理者パスワードを入力することで、現在参加しているメンバーをチェックボックスで選択して強制削除できるようになりました。</p>
+            <h4>1. 🚩 基本機能とアイコン</h4>
+            <p>・<b>画面右下のメニュー（☰）</b>から各種機能を呼び出せます。<br>・<b>現在地追従（🎯）</b>：タップすると自分の位置が常に画面中央に追従します。<br>・<b>速度単位切替（ktボタン）</b>：ノット(kt)、km/h、m/sを切り替え可能です。</p>
+
+            <h4>2. 🚩 マーク・ブイの追加と削除</h4>
+            <p>・メニューの<b>マーク追加（🚩）</b>を押した後、地図上をタップすると新しいブイやフネを設置できます。<br>・画面上の<b>「設定」ボタン</b>から一覧を開き、チェックボックスを入れて一括削除できます。</p>
+
+            <h4>3. 🛠️ コース作成・データ計測</h4>
+            <p>・ヘッダーの<b>「コース作成」ボタン</b>（パスワード: 1234）から、フネやブイの配置、直線（点線・実線）の結びつけ、2点間の距離・角度データの自動計算が行えます。</p>
+
+            <h4>4. 🔴 レース記録とリプレイ再生</h4>
+            <p>・メニューの<b>赤丸ボタン（🔴）</b>からパスワードを入力してレースの航跡記録をスタートできます。<br>・記録ストップ後、ヒート名をつけて保存でき、メニューの<b>再生ボタン（▶️）</b>からいつでも過去のレースをリプレイ再生できます。</p>
+
+            <h4>5. 🛡️ 管理者用・参加者強制削除</h4>
+            <p>・メニューの<b>盾アイコン（🛡️）</b>からパスワード認証を行うことで、現在接続中の参加者メンバーをチェックして強制退出（削除）させることができます。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:16px; background:#3498db; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -244,7 +256,7 @@
 <div id="header">
     <div style="font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;">
         <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
-        <span>虎キング v3.3.5 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
+        <span>虎キング v3.3.6 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
     </div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
