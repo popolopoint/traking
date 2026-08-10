@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.2.3 by Popolo App.com</title>
+    <title>虎キング v3.2.4 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -242,7 +242,7 @@
 <div id="header">
     <div style="font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;">
         <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
-        <span>虎キング v3.2.3 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
+        <span>虎キング v3.2.4 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
     </div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
@@ -589,7 +589,7 @@
                         <button onclick="renameCourse('${id}', '${c.title}')" style="background:#2980b9; color:white; border:none; padding:5px 8px; border-radius:4px; font-size:0.9rem; cursor:pointer;" title="名前変更">✏️</button>
                         <button onclick="deleteCourse('${id}')" style="background:#c0392b; color:white; border:none; padding:5px 8px; border-radius:4px; font-size:0.9rem; cursor:pointer;" title="削除">🗑️</button>
                     </div>
-                </div>`;
+                `;
             }
             listDiv.innerHTML = html;
         }, (error) => {
@@ -942,6 +942,8 @@
         document.getElementById('replay-minimized-btn').style.display = 'none';
         document.getElementById('header-replay-status').style.display = 'none';
         document.getElementById('header-replay-time').style.display = 'none';
+        document.getElementById('header-replay-status').style.display = 'none';
+        document.getElementById('header-replay-time').style.display = 'none';
         document.getElementById('replay-countdown-alert').style.display = 'none';
         showToast("⏹️ リプレイを終了しました");
         location.reload();
@@ -1087,20 +1089,35 @@
         });
     };
 
+    // ③ リアルタイムな削除反映に対応（設定パネルが開いていても非アクティブ項目を正しく同期）
     db.ref('objects').on('value', snap => {
+        const listContainer = document.getElementById('pointListContainer');
         const panel = document.getElementById('pointSettingsPanel');
         const isPanelOpen = (panel && panel.style.display === 'block');
-        if (isPanelOpen) return; 
 
-        const listContainer = document.getElementById('pointListContainer');
-        listContainer.innerHTML = '<p id="noPointMsg" style="color: #666; font-size: 13px; margin: 0;">座標データが読み込まれていません</p>';
+        if (!isPanelOpen) {
+            listContainer.innerHTML = '<p id="noPointMsg" style="color: #666; font-size: 13px; margin: 0;">座標データが読み込まれていません</p>';
+        }
         
         for (let key in objectMarkers) map.removeLayer(objectMarkers[key]);
         Object.keys(objectMarkers).forEach(k => delete objectMarkers[k]);
+
+        // 存在しないカードのDOMを削除（リアルタイム同期）
+        const existingCards = document.querySelectorAll('.point-card');
+        existingCards.forEach(card => {
+            const k = card.dataset.key;
+            if (!snap.hasChild(k)) {
+                card.remove();
+            }
+        });
+
         if (coursePolyline) { map.removeLayer(coursePolyline); coursePolyline = null; }
 
         const objects = snap.val();
-        if (!objects) return;
+        if (!objects) {
+            if (msg = document.getElementById('noPointMsg')) msg.style.display = 'block';
+            return;
+        }
 
         const sortedKeys = Object.keys(objects).sort((a, b) => (objects[a].ts || 0) - (objects[b].ts || 0));
 
@@ -1118,15 +1135,19 @@
 
             marker.bindTooltip(letter || '', { permanent: true, direction: 'top', className: 'object-label' });
 
+            // ④ 線の結びつけ処理が確実に動作するようイベント伝播を整理
             marker.on('click', (e) => {
                 if (isCourseBuilderActive) {
                     handleCourseBuilderClick(key, obj, letter);
                     L.DomEvent.stopPropagation(e);
+                    L.DomEvent.preventDefault(e);
                 }
             });
 
             objectMarkers[key] = marker;
-            createPointCard(key, obj, letter);
+            if (!isPanelOpen) {
+                createPointCard(key, obj, letter);
+            }
         });
 
         triggerCustomLinesRedraw();
@@ -1203,7 +1224,7 @@
         } else if (cbMode === 'data') {
             if (!cbSelectedFirstObj) {
                 cbSelectedFirstObj = { key: key, letter: letter || '' };
-                showToast(`データ起点 (${letter || '点'}) を設定。もう一方の点を選んでください。`);
+                showToast(`データ起点 (${letter || '点'}) 設定完了。もう一方の点を選んでください。`);
             } else {
                 if (cbSelectedFirstObj.key === key) return;
                 const fromObj = cbSelectedFirstObj;
