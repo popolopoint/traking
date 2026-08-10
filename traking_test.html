@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.2.0 by Popolo App.com</title>
+    <title>虎キング v3.2.1 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -100,7 +100,8 @@
 
         .point-card { display: flex; align-items: center; gap: 8px; padding: 10px; background: white; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 14px; }
         
-        #toast-notice { position: fixed; top: 65px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 6000; border: 1px solid #ff9900; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: center; pointer-events: none; }
+        /* トースト通知位置をメニューと被らないように調整（top: 130px） */
+        #toast-notice { position: fixed; top: 130px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 6000; border: 1px solid #ff9900; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: center; pointer-events: none; }
         
         .modal-body-scroll { max-height: 60vh; overflow-y: auto; margin-top: 10px; font-size: 1.1rem; line-height: 1.6; color: #333; text-align: left; }
         .modal-body-scroll h4 { color: #2c3e50; margin: 10px 0 4px 0; border-bottom: 2px solid #3498db; padding-bottom: 2px; font-size: 1.2rem; }
@@ -233,7 +234,7 @@
 <div id="header">
     <div style="font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;">
         <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
-        <span>虎キング v3.2.0 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
+        <span>虎キング v3.2.1 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
     </div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
@@ -246,7 +247,7 @@
 
 <div id="user-list"><div class="list-title">参加者</div><div id="list-content"></div></div>
 
-<!-- 設定パネル（マーク名自由編集対応・完全保持） -->
+<!-- 設定パネル -->
 <div id="pointSettingsPanel" style="position: fixed; top: 135px; left: 10px; z-index: 5000; width: 300px; max-height: 55vh; overflow-y: auto; background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 12px; border: 2px solid #007AFF; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: #333; display:none;">
     <h3 onclick="toggleSettingsPanel()" style="margin: 0 0 10px 0; padding-bottom: 5px; font-size: 15px; color: #007AFF; border-bottom: 1px solid #ddd; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
         <span>🚩 コース地点設定</span>
@@ -580,7 +581,7 @@
                         <button onclick="renameCourse('${id}', '${c.title}')" style="background:#2980b9; color:white; border:none; padding:5px 8px; border-radius:4px; font-size:0.9rem; cursor:pointer;" title="名前変更">✏️</button>
                         <button onclick="deleteCourse('${id}')" style="background:#c0392b; color:white; border:none; padding:5px 8px; border-radius:4px; font-size:0.9rem; cursor:pointer;" title="削除">🗑️</button>
                     </div>
-                `;
+                </div>`;
             }
             listDiv.innerHTML = html;
         }, (error) => {
@@ -1000,7 +1001,7 @@
         div.dataset.key = key; 
         div.innerHTML = `
             <input type="checkbox" class="point-del-chk" value="${key}" style="transform:scale(1.3); cursor:pointer;">
-            <input type="text" class="label-input" value="${labelChar !== undefined && labelChar !== null ? labelChar : ''}" oninput="onLabelInputChanged('${key}', this)" style="width:35px; text-align:center; font-weight:bold; font-size:13px; border:1px solid #ccc; border-radius:4px; padding:2px; color:${currentColor};">
+            <input type="text" class="label-input" value="${labelChar !== undefined && labelChar !== null ? labelChar : ''}" oninput="onLabelInputChanged('${key}', this)" style="width:40px; text-align:center; font-weight:bold; font-size:13px; border:1px solid #ccc; border-radius:4px; padding:2px; color:${currentColor};">
             <div style="display:flex; flex-direction:column; gap:3px; flex-grow:1;">
                 <div style="display:flex; gap:4px;">
                     <select class="type-select" onchange="updateMarkerAppearance('${key}')" style="padding:2px;border-radius:4px;font-size:10px; flex:1;">
@@ -1091,13 +1092,11 @@
 
         const sortedKeys = Object.keys(objects).sort((a, b) => (objects[a].ts || 0) - (objects[b].ts || 0));
 
-        let nextCharCode = 65;
         sortedKeys.forEach((key) => {
             let obj = objects[key];
             let letter = obj.assignedLabel;
             if (letter === undefined) {
-                letter = String.fromCharCode(nextCharCode <= 90 ? nextCharCode : 90);
-                nextCharCode++;
+                letter = (obj.type === 'ship') ? 'フネ' : 'ブイ';
                 db.ref('objects/' + key).update({ assignedLabel: letter });
             }
 
@@ -1147,7 +1146,7 @@
                     }
                 }
             });
-        });
+        }).catch(() => {});
     }
 
     db.ref('custom_lines').on('value', () => {
@@ -1225,7 +1224,7 @@
             const val1 = Math.round(angleFromWind - 90);
             const val2 = Math.round(270 - angleFromWind);
 
-            const titlePair = `${fromObj.letter || 'A'}${toObj.letter || 'B'}`;
+            const titlePair = `${fromObj.letter || 'A'}-${toObj.letter || 'B'}`;
             
             const dataPayload = {
                 title: titlePair,
@@ -1239,7 +1238,7 @@
 
             const html = `
                 <div style="border-bottom:1px solid #ddd; padding:10px 0;">
-                    <b>${titlePair}距離:</b> ${dist}m<br>
+                    <b>${titlePair} 距離:</b> ${dist}m<br>
                     <b>角度1:</b> ${val1}°<br>
                     <b>角度2:</b> ${val2}°<br>
                     <span style="font-size:0.9rem; color:#666;">(風向: ${windInput}°, 方位: ${Math.round(brng)}°)</span>
@@ -1268,7 +1267,7 @@
                 html += `
                     <div id="data_item_${dataId}" style="border-bottom:1px solid #ddd; padding:10px 0; display:flex; justify-content:space-between; align-items:center;">
                         <div>
-                            <b>${d.title || 'データ'}距離:</b> ${d.dist}m<br>
+                            <b>${d.title || 'データ'} 距離:</b> ${d.dist}m<br>
                             <b>角度1:</b> ${d.val1}° / <b>角度2:</b> ${d.val2}°<br>
                             <span style="font-size:0.85rem; color:#666;">風向設定: ${d.wind || 0}°</span>
                         </div>
@@ -1278,7 +1277,7 @@
             }
             container.innerHTML = html;
         }).catch(err => {
-            container.innerHTML = `<p style='color:#e74c3c;'>取得エラー: ${err.message}</p>`;
+            container.innerHTML = `<p style='color:#666; padding:10px;'>保存されたデータはありません (${err.message || ''})</p>`;
         });
     };
 
@@ -1297,6 +1296,7 @@
         if (isCourseBuilderActive) {
             if (cbMode === 'ship' || cbMode === 'buoy') {
                 const commentText = cbMode === 'ship' ? 'フネ' : 'マーク';
+                const initialLabel = cbMode === 'ship' ? 'フネ' : 'ブイ';
                 const randomKey = "C" + Math.floor(Math.random() * 10000);
                 db.ref('objects/' + randomKey).set({ 
                     type: cbMode, 
@@ -1304,7 +1304,8 @@
                     color: '#ff3b30', 
                     lat: lat, 
                     lng: lng, 
-                    comment: commentText, 
+                    comment: commentText,
+                    assignedLabel: initialLabel,
                     ts: Date.now() 
                 }, err => {
                     if (!err) showToast(`📍 ${commentText}を設置しました`);
@@ -1362,6 +1363,7 @@
         const shape = type === 'ship' ? 'triangle' : document.getElementById('new_shape').value;
         const color = document.getElementById('new_color').value;
         const comment = document.getElementById('new_comment').value;
+        const initialLabel = type === 'ship' ? 'フネ' : 'ブイ';
         const randomKey = "M" + Math.floor(Math.random() * 10000);
         
         db.ref('objects/' + randomKey).set({ 
@@ -1371,6 +1373,7 @@
             lat: lat, 
             lng: lng, 
             comment: comment, 
+            assignedLabel: initialLabel,
             ts: Date.now() 
         });
         map.closePopup();
