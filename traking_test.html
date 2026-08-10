@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.3.6 by Popolo App.com</title>
+    <title>虎キング v3.3.7 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -63,34 +63,36 @@
         }
 
         .action-btn { 
-            position: fixed; right: 10px; z-index: 3000; 
+            position: fixed; z-index: 3000; 
             background: rgba(44, 62, 80, 0.45); color: white; 
             border: 1.5px solid rgba(255, 255, 255, 0.3); border-radius: 50%; 
-            width: 50px; height: 50px; cursor: pointer; 
+            width: 46px; height: 46px; cursor: pointer; 
             display: flex; align-items: center; justify-content: center; 
             box-shadow: 0 2px 6px rgba(0,0,0,0.15); 
             backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-            font-size: 22px; user-select: none;
+            font-size: 20px; user-select: none;
         }
         .action-btn:active { background: rgba(52, 152, 219, 0.6); }
         
-        #recenter-btn { bottom: 20px; font-size: 22px; background: rgba(41, 128, 185, 0.45); }
-        #menu-toggle-btn { bottom: 80px; background: rgba(44, 62, 80, 0.45); font-weight: bold; }
+        /* 2列メニューの配置制御 */
+        #recenter-btn        { right: 10px; bottom: 20px; font-size: 22px; background: rgba(41, 128, 185, 0.45); width: 50px; height: 50px; }
+        #menu-toggle-btn     { right: 10px; bottom: 80px; background: rgba(44, 62, 80, 0.45); font-weight: bold; width: 50px; height: 50px; font-size: 22px; }
         
         .menu-child { opacity: 0; transform: translateY(20px) scale(0.8); pointer-events: none; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
         .menu-active .menu-child { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
         
-        #logout-btn    { bottom: 140px; background: rgba(231, 76, 60, 0.45); }
-        #name-btn        { bottom: 200px; }
-        #manual-btn      { bottom: 260px; background: rgba(39, 174, 96, 0.45); }
-        #replay-btn      { bottom: 320px; background: rgba(155, 89, 182, 0.45); }
+        /* 右列 (right: 10px) と 左列 (right: 66px) に分散配置 */
+        #logout-btn          { right: 66px; bottom: 140px; background: rgba(231, 76, 60, 0.45); }
+        #name-btn            { right: 10px; bottom: 140px; }
+        #manual-btn          { right: 66px; bottom: 200px; background: rgba(39, 174, 96, 0.45); }
+        #replay-btn          { right: 10px; bottom: 200px; background: rgba(155, 89, 182, 0.45); }
         
-        #record-start-btn { bottom: 380px; background: rgba(39, 174, 96, 0.6); }
-        #admin-user-del-btn { bottom: 440px; background: rgba(192, 57, 43, 0.6); }
+        #record-start-btn    { right: 66px; bottom: 260px; background: rgba(39, 174, 96, 0.6); }
+        #admin-user-del-btn  { right: 10px; bottom: 260px; background: rgba(192, 57, 43, 0.6); }
 
-        #hosei-btn       { bottom: 500px; background: rgba(241, 196, 15, 0.45); }
-        #gps-retry-btn   { bottom: 560px; }
-        #add-point-btn   { bottom: 620px; background: rgba(52, 152, 219, 0.45); }
+        #hosei-btn           { right: 66px; bottom: 320px; background: rgba(241, 196, 15, 0.45); }
+        #gps-retry-btn       { right: 10px; bottom: 320px; }
+        #add-point-btn       { right: 66px; bottom: 380px; background: rgba(52, 152, 219, 0.45); }
         
         .popup-form { color: #333; min-width: 140px; font-size: 12px; }
         .popup-form select, .popup-form input { width: 100%; margin: 4px 0; padding: 4px; box-sizing: border-box; }
@@ -218,7 +220,7 @@
             <p>・<b>画面右下のメニュー（☰）</b>から各種機能を呼び出せます。<br>・<b>現在地追従（🎯）</b>：タップすると自分の位置が常に画面中央に追従します。<br>・<b>速度単位切替（ktボタン）</b>：ノット(kt)、km/h、m/sを切り替え可能です。</p>
 
             <h4>2. 🚩 マーク・ブイの追加と削除</h4>
-            <p>・メニューの<b>マーク追加（🚩）</b>を押した後、地図上をタップすると新しいブイやフネを設置できます。<br>・画面上の<b>「設定」ボタン</b>から一覧を開き、チェックボックスを入れて一括削除できます。</p>
+            <p>・メニューの<b>マーク追加（🚩）</b>を押した後、地図上をタップすると新しいブイやフネを設置できます。<br>・画面上の<b>「設定」ボタン</b>から一覧を開き、チェックボックスを入れて一括削除できます。<br>※水深測ったろうから送られたデータは、ここで削除することでゾンビ化を防ぎます。</p>
 
             <h4>3. 🛠️ コース作成・データ計測</h4>
             <p>・ヘッダーの<b>「コース作成」ボタン</b>（パスワード: 1234）から、フネやブイの配置、直線（点線・実線）の結びつけ、2点間の距離・角度データの自動計算が行えます。</p>
@@ -256,7 +258,7 @@
 <div id="header">
     <div style="font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;">
         <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
-        <span>虎キング v3.3.6 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
+        <span>虎キング v3.3.7 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
     </div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
@@ -286,7 +288,7 @@
 
 <div class="status-panel" id="status">GPSシグナル待機中...</div>
 
-<!-- メニューボタン群 -->
+<!-- メニューボタン群（2列レイアウト） -->
 <div id="button-container">
     <button id="logout-btn" class="action-btn menu-child" onclick="triggerLogout()" title="ログアウト">🏃</button>
     <button id="name-btn" class="action-btn menu-child" onclick="triggerSetup()" title="再設定">👤</button>
@@ -1054,11 +1056,18 @@
         }
         if (confirm(`選択した ${checkedBoxes.length} 件のポイントを削除しますか？`)) {
             let updates = {};
+            let deletedKeys = JSON.parse(localStorage.getItem('tora_king_deleted_keys') || "[]");
+            
             checkedBoxes.forEach(chk => {
-                updates['objects/' + chk.value] = null;
+                const k = chk.value;
+                updates['objects/' + k] = null;
+                if (!deletedKeys.includes(k)) deletedKeys.push(k);
             });
+            
+            localStorage.setItem('tora_king_deleted_keys', JSON.stringify(deletedKeys));
+
             db.ref().update(updates).then(() => {
-                showToast("🗑️ 選択したポイントを完全に削除しました");
+                showToast("🗑️ 選択したポイントを完全に削除しました（ゾンビ化防止）");
             }).catch(err => {
                 alert("削除に失敗しました: " + err.message);
             });
@@ -1109,8 +1118,12 @@
             const targetKeys = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'K', 'S'];
             let newObjects = {};
             let firstPos = null;
+            let deletedKeys = JSON.parse(localStorage.getItem('tora_king_deleted_keys') || "[]");
 
             targetKeys.forEach(key => {
+                // 過去にユーザー自身が手動削除したキーであれば復元させない（ゾンビ化ブロック）
+                if (deletedKeys.includes(key)) return;
+
                 const latStr = urlParams.get(`lat${key}`);
                 const lngStr = urlParams.get(`lng${key}`);
                 if (latStr && lngStr) {
@@ -1832,10 +1845,14 @@
 
     window.deleteObject = (key) => { 
         if (confirm("消去しますか？")) { 
+            let deletedKeys = JSON.parse(localStorage.getItem('tora_king_deleted_keys') || "[]");
+            if (!deletedKeys.includes(key)) deletedKeys.push(key);
+            localStorage.setItem('tora_king_deleted_keys', JSON.stringify(deletedKeys));
+
             db.ref('objects/' + key).remove().then(() => {
                 const c = document.querySelector(`.point-card[data-key="${key}"]`); 
                 if (c) c.remove();
-                showToast("🗑️ 削除しました");
+                showToast("🗑️ 削除しました（ゾンビ化防止）");
             }); 
         }
     };
