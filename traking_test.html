@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.4.3 by Popolo App.com</title>
+    <title>虎キング v3.4.4 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -236,7 +236,7 @@
 <div id="header">
     <div style="font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;">
         <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
-        <span>虎キング v3.4.3 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
+        <span>虎キング v3.4.4 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
     </div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
@@ -742,15 +742,25 @@
 
     function prepareHistoryTimeline(historyObj) {
         replayLogsAll = [];
+        // historyObjは { userId: { pushId: { lat, lng, name, color, speed, heading, ts } } } の構造
         for (let userId in historyObj) {
             const userTracks = historyObj[userId];
-            for (let pushId in userTracks) {
-                replayLogsAll.push(userTracks[pushId]);
+            if (userTracks && typeof userTracks === 'object') {
+                for (let pushId in userTracks) {
+                    const log = userTracks[pushId];
+                    if (log && log.ts) {
+                        replayLogsAll.push(log);
+                    }
+                }
             }
         }
+        // タイムスタンプ順に時系列ソート
         replayLogsAll.sort((a, b) => a.ts - b.ts);
 
-        if (replayLogsAll.length === 0) return;
+        if (replayLogsAll.length === 0) {
+            showToast("⚠️ 再生する軌跡データが見つかりませんでした");
+            return;
+        }
 
         if (!replayStartTimeMs && replayLogsAll.length > 0) {
             replayStartTimeMs = replayLogsAll[0].ts;
@@ -798,21 +808,26 @@
         }
 
         if (replayCurrentIndex < replayLogsAll.length) {
-            const u = replayLogsAll[replayCurrentIndex];
-            updateUserTrailAndMarker(u.name, u.lat, u.lng, u.color, u.heading, u.ts);
+            // 同一タイムスタンプ付近（または直近の各ユーザーの最新状態）をまとめてマップに反映するため、
+            // 現在インデックスのログ時刻から過去10秒以内の全ユーザーの最新位置を描画するように処理します
+            const currentLog = replayLogsAll[replayCurrentIndex];
+            const currentTs = currentLog.ts;
+
+            // 過去10秒間に行動があったすべてのユーザーのマーカーと軌跡を同時に更新
+            updateAllActiveUsersAtTimestamp(currentTs);
 
             const seekbar = document.getElementById('replay-seekbar');
             if (!isSeeking) seekbar.value = replayCurrentIndex;
 
             const startTime = replayLogsAll[0].ts;
-            const curTime = u.ts - startTime;
+            const curTime = currentTs - startTime;
             const totalTime = replayLogsAll[replayLogsAll.length - 1].ts - startTime;
             
             const timeStr = `${formatElapsedTime(curTime)} / ${formatElapsedTime(totalTime)}`;
             document.getElementById('replay-time-label').innerText = timeStr;
 
             if (replayStartTimeMs) {
-                const diffMs = replayStartTimeMs - u.ts;
+                const diffMs = replayStartTimeMs - currentTs;
                 const diffSec = diffMs / 1000;
 
                 let statusText = "";
@@ -829,7 +844,7 @@
                     statusText = `🚨 スタート！`;
                     document.getElementById('replay-countdown-alert').style.display = 'none';
                 } else {
-                    const elapsedAfterStartMs = u.ts - replayStartTimeMs;
+                    const elapsedAfterStartMs = currentTs - replayStartTimeMs;
                     statusText = `⏱️ スタートから ${formatClockStyle(elapsedAfterStartMs)} 経過`;
                     document.getElementById('replay-countdown-alert').style.display = 'none';
                 }
@@ -837,22 +852,22 @@
                 document.getElementById('header-replay-status').innerText = statusText;
             }
 
-            document.getElementById('header-replay-time').innerText = `🕒 日本時間: ${formatJapanDateTime(u.ts)}`;
+            document.getElementById('header-replay-time').innerText = `🕒 日本時間: ${formatJapanDateTime(currentTs)}`;
 
-            updateReplayUserList(u.ts);
+            updateReplayUserList(currentTs);
 
             let nextDelay = 30;
             if (replaySpeed === 1) {
                 if (replayCurrentIndex < replayLogsAll.length - 1) {
                     const nextU = replayLogsAll[replayCurrentIndex + 1];
-                    const realDiff = nextU.ts - u.ts;
+                    const realDiff = nextU.ts - currentTs;
                     nextDelay = Math.max(10, realDiff);
                 }
                 replayCurrentIndex += 1;
             } else {
                 if (replayCurrentIndex < replayLogsAll.length - 1) {
                     const nextU = replayLogsAll[replayCurrentIndex + 1];
-                    const realDiff = nextU.ts - u.ts;
+                    const realDiff = nextU.ts - currentTs;
                     nextDelay = Math.max(15, Math.floor(realDiff / replaySpeed));
                 }
                 replayCurrentIndex += 1;
@@ -861,6 +876,25 @@
             replayTimer = setTimeout(playHistoryStep, nextDelay);
         } else {
             showToast("🏁 リプレイが終了しました");
+        }
+    }
+
+    function updateAllActiveUsersAtTimestamp(currentTs) {
+        // 現在の再生時刻(currentTs)から過去10秒以内にログが存在するユーザーごとに、最新のデータを抽出して描画
+        let userLatestLogs = {};
+        replayLogsAll.forEach(log => {
+            if (log.ts <= currentTs && currentTs - log.ts <= 10000) {
+                // 同じユーザーならより新しいものを保持
+                if (!userLatestLogs[log.name] || log.ts > userLatestLogs[log.name].ts) {
+                    userLatestLogs[log.name] = log;
+                }
+            }
+        });
+
+        // 抽出した全ユーザーの位置と軌跡をマップに反映
+        for (let name in userLatestLogs) {
+            const u = userLatestLogs[name];
+            updateUserTrailAndMarker(u.name, u.lat, u.lng, u.color, u.heading, currentTs);
         }
     }
 
@@ -887,7 +921,7 @@
         
         const u = replayLogsAll[replayCurrentIndex];
         if (u) {
-            updateUserTrailAndMarker(u.name, u.lat, u.lng, u.color, u.heading, u.ts);
+            updateAllActiveUsersAtTimestamp(u.ts);
             const startTime = replayLogsAll[0].ts;
             const curTime = u.ts - startTime;
             const totalTime = replayLogsAll[replayLogsAll.length - 1].ts - startTime;
@@ -941,6 +975,7 @@
 
     function updateUserTrailAndMarker(name, lat, lng, color, heading, timestamp) {
         if (!userTrails[name]) userTrails[name] = [];
+        // 重複や古いものをフィルタリングしつつ追加
         userTrails[name].push({ lat: lat, lng: lng, ts: timestamp });
         userTrails[name] = userTrails[name].filter(p => timestamp - p.ts <= 10000);
 
