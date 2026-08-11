@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.5.1 by Popolo App.com</title>
+    <title>虎キング v3.5.2 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -150,8 +150,8 @@
         <button class="cb-btn" id="cb-mode-dashed" onclick="setCourseBuilderMode('dashed')">┈ 点線</button>
         <button class="cb-btn" id="cb-mode-solid" onclick="setCourseBuilderMode('solid')">━ 実線</button>
         <button class="cb-btn" id="cb-mode-data" onclick="setCourseBuilderMode('data')">📊 データ</button>
-        <!-- 削除したものを復活させる（戻す）ボタン -->
-        <button class="cb-btn" onclick="restoreLastDeletedObject()" style="background:#e67e22; border-color:#f39c12;" title="直近で削除したブイを復活させる">↩️ 削除を戻す</button>
+        <!-- コース作成用：直近に置いたフネ・ブイや線を消去（アンドゥ）するボタン -->
+        <button class="cb-btn" onclick="undoLastCreatedObjectOrLine()" style="background:#e67e22; border-color:#f39c12;" title="直近で置いたブイや線を消去">↩️ 元に戻す</button>
         <button class="cb-btn" onclick="openDataListModal()" style="background:#2980b9;">📋 一覧</button>
     </div>
     <div style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-top:8px; border-top:2px solid #555; padding-top:10px;">
@@ -241,7 +241,7 @@
             <h4>🛡️ 管理者・編集機能</h4>
             <p>・リプレイメニューでの切り出し、編集、ゴミ箱削除、設定パネル表示にはパスワード認証が必要です。</p>
             <p>・プロフィールで「フネ」「ブイ」として参加するには専用パスワードが必要です。</p>
-            <p>・設定パネル内の「削除を戻す」ボタンで直近に削除したブイやフネを復活させることができます。</p>
+            <p>・設定パネル内の「削除を戻す」ボタンで直近に削除した複数のブイやフネをまとめて復活させることができます。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:16px; background:#3498db; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -268,7 +268,7 @@
 <div id="header">
     <div style="font-size:13px; font-weight:bold; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:10px; width:100%; padding:2px 0;">
         <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
-        <span>虎キング v3.5.1 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
+        <span>虎キング v3.5.2 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
     </div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
@@ -291,8 +291,8 @@
     <div id="pointListContainer">
         <p id="noPointMsg" style="color: #666; font-size: 13px; margin: 0;">座標データが読み込まれていません</p>
     </div>
-    <!-- 削除したものを復活させる（戻す）ボタン -->
-    <button onclick="restoreLastDeletedObject()" style="width:100%; margin-top:10px; background:#e67e22; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">↩️ 削除を戻す（最後に消した地点を復活）</button>
+    <!-- 設定用：直近で削除した複数のオブジェクトをまとめて復活させるボタン -->
+    <button onclick="restoreLastBatchDeletedObjects()" style="width:100%; margin-top:10px; background:#e67e22; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">↩️ 削除を戻す（直近の削除をまとめて復活）</button>
     <button onclick="deleteSelectedObjects()" style="width:100%; margin-top:8px; background:#e74c3c; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">🗑️ 選択した項目を一括削除</button>
     <button onclick="toggleSettingsPanel()" style="width:100%; margin-top:10px; background:#7f8c8d; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
 </div>
@@ -375,8 +375,8 @@
     let cbMode = 'ship';
     let cbSelectedFirstObj = null;
 
-    // 直近で削除されたオブジェクトを一時保持する変数
-    let lastDeletedObject = null;
+    // 直近でまとめて削除されたオブジェクト群を一時保持する変数
+    let lastBatchDeletedObjects = null;
 
     const userMarkers = {}, objectMarkers = {}, userTrails = {}, userPolylineLines = {};
     let coursePolyline = null;
@@ -490,16 +490,87 @@
         showToast("コース作成モードを終了しました");
     };
 
-    // 削除したオブジェクト（地点）を復活させる（戻す）機能
-    window.restoreLastDeletedObject = () => {
-        if (!lastDeletedObject) {
+    // コース作成時：直近で置いたオブジェクトまたは線を消去する（アンドゥ）
+    window.undoLastCreatedObjectOrLine = () => {
+        db.ref('custom_lines').once('value', lineSnap => {
+            const lines = lineSnap.val() || {};
+            const lineKeys = Object.keys(lines);
+
+            if (lineKeys.length > 0) {
+                let latestLineKey = lineKeys[0];
+                let latestLineTs = lines[latestLineKey].ts || 0;
+                lineKeys.forEach(k => {
+                    if ((lines[k].ts || 0) > latestLineTs) {
+                        latestLineTs = lines[k].ts || 0;
+                        latestLineKey = k;
+                    }
+                });
+
+                db.ref('objects').once('value', objSnap => {
+                    const objs = objSnap.val() || {};
+                    const objKeys = Object.keys(objs);
+
+                    if (objKeys.length > 0) {
+                        let latestObjKey = objKeys[0];
+                        let latestObjTs = objs[latestObjKey].ts || 0;
+                        objKeys.forEach(k => {
+                            if ((objs[k].ts || 0) > latestObjTs) {
+                                latestObjTs = objs[k].ts || 0;
+                                latestObjKey = k;
+                            }
+                        });
+
+                        if (latestLineTs > latestObjTs) {
+                            db.ref('custom_lines/' + latestLineKey).remove().then(() => {
+                                showToast("↩️ 直近の線を消去しました");
+                                triggerCustomLinesRedraw();
+                            });
+                        } else {
+                            db.ref('objects/' + latestObjKey).remove().then(() => {
+                                showToast("↩️ 直近の配置（フネ・ブイ）を消去しました");
+                            });
+                        }
+                    } else {
+                        db.ref('custom_lines/' + latestLineKey).remove().then(() => {
+                            showToast("↩️ 直近の線を消去しました");
+                            triggerCustomLinesRedraw();
+                        });
+                    }
+                });
+            } else {
+                db.ref('objects').once('value', objSnap => {
+                    const objs = objSnap.val() || {};
+                    const objKeys = Object.keys(objs);
+                    if (objKeys.length === 0) {
+                        showToast("⚠️ 消去できるオブジェクトや線がありません");
+                        return;
+                    }
+                    let latestKey = objKeys[0];
+                    let latestTs = objs[latestKey].ts || 0;
+                    objKeys.forEach(k => {
+                        if ((objs[k].ts || 0) > latestTs) {
+                            latestTs = objs[k].ts || 0;
+                            latestKey = k;
+                        }
+                    });
+                    db.ref('objects/' + latestKey).remove().then(() => {
+                        showToast("↩️ 直近の配置（フネ・ブイ）を消去しました");
+                    });
+                });
+            }
+        });
+    };
+
+    // 設定パネル用：直近でまとめて削除されたオブジェクト群を丸ごと復活させる
+    window.restoreLastBatchDeletedObjects = () => {
+        if (!lastBatchDeletedObjects || Object.keys(lastBatchDeletedObjects).length === 0) {
             showToast("⚠️ 復活させる削除データがありません");
             return;
         }
-        db.ref('objects/' + lastDeletedObject.key).set(lastDeletedObject.data, err => {
+        db.ref('objects').update(lastBatchDeletedObjects, err => {
             if (!err) {
-                showToast(`↩️ 削除した「${lastDeletedObject.data.assignedLabel || '地点'}」を復活させました！`);
-                lastDeletedObject = null; // 復活させたらクリア
+                showToast("↩️ 削除したポイントをまとめて復活させました！");
+                lastBatchDeletedObjects = null;
             } else {
                 alert("復活に失敗しました: " + (err.message || ''));
             }
@@ -1265,19 +1336,22 @@
         if (confirm(`選択した ${checkedBoxes.length} 件のポイントを削除しますか？`)) {
             db.ref('objects').once('value', snap => {
                 const objs = snap.val() || {};
+                let batchDeleted = {};
                 checkedBoxes.forEach(chk => {
                     const k = chk.value;
                     if (objs[k]) {
-                        lastDeletedObject = { key: k, data: objs[k] };
+                        batchDeleted[k] = objs[k];
                     }
                 });
+
+                lastBatchDeletedObjects = batchDeleted;
 
                 let updates = {};
                 checkedBoxes.forEach(chk => {
                     updates['objects/' + chk.value] = null;
                 });
                 db.ref().update(updates).then(() => {
-                    showToast("🗑️ 選択したポイントを削除しました（設定の「削除を戻す」で復活可能）");
+                    showToast("🗑️ 選択したポイントを削除しました（設定の「削除を戻す」でまとめて復活可能）");
                 }).catch(err => {
                     alert("削除に失敗しました: " + err.message);
                 });
@@ -2080,7 +2154,9 @@
             db.ref('objects/' + key).once('value', snap => {
                 const objData = snap.val();
                 if (objData) {
-                    lastDeletedObject = { key: key, data: objData };
+                    let batch = {};
+                    batch[key] = objData;
+                    lastBatchDeletedObjects = batch;
                 }
                 db.ref('objects/' + key).remove().then(() => {
                     const c = document.querySelector(`.point-card[data-key="${key}"]`); 
