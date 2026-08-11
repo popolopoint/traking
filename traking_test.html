@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.4.9 by Popolo App.com</title>
+    <title>虎キング v3.5.0 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
         
-        #header { background: #1a1a1a; color: #ff9900; padding: 6px 10px; text-align: center; font-weight: bold; position: fixed; top: 0; left: 0; width: 100%; min-height: 55px; height: auto; z-index: 3000; border-bottom: 2px solid #ff9900; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; }
+        /* ヘッダー：ボタンとタイトルが重ならないよう左右に余白を確保 */
+        #header { background: #1a1a1a; color: #ff9900; padding: 6px 90px 6px 10px; text-align: center; font-weight: bold; position: fixed; top: 0; left: 0; width: 100%; min-height: 55px; height: auto; z-index: 3000; border-bottom: 2px solid #ff9900; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; }
         
         #recording-banner { position: fixed; top: 75px; left: 0; width: 100%; background: #c0392b; color: white; text-align: center; font-size: 12px; font-weight: bold; padding: 4px 0; z-index: 2900; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.5); letter-spacing: 1px; animation: flashBanner 1.5s infinite; }
         @keyframes flashBanner { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
@@ -22,7 +23,6 @@
         #floating-stop-btn { position: fixed; top: 110px; right: 10px; z-index: 3500; background: #e74c3c; color: white; border: 2px solid #fff; padding: 10px 16px; border-radius: 25px; font-size: 14px; font-weight: bold; cursor: pointer; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.4); animation: flashBanner 1.5s infinite; }
 
         #map { height: 100vh; width: 100vw; z-index: 1; background: #222; }
-        #unit-toggle { background: #333; color: #ff9900; border: 1px solid #ff9900; padding: 4px 8px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: bold; }
         
         #course-create-btn { background: #27ae60; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
         
@@ -32,7 +32,7 @@
         .color-btn { width: 100%; aspect-ratio: 1/1; border-radius: 50%; border: 2px solid #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; text-shadow: 1px 1px 2px #000; color: #fff; }
         
         #user-list { position: fixed; top: 135px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 8px; border-radius: 8px; width: 100px; max-height: 200px; overflow-y: auto; border: 1px solid #ff9900; font-size: 10px; }
-        .list-title { color: #ff9900; font-weight: bold; border-bottom: 1px solid #ff9900; margin-bottom: 5px; }
+        .list-title { color: #ff9900; font-weight: bold; border-bottom: 1px solid #ff9900; margin-bottom: 5px; cursor: pointer; user-select: none; }
         .user-item { border-bottom: 1px solid #444; padding: 4px 0; }
         .user-item.me { color: #00ff00; font-weight: bold; }
         .user-label { background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #ff9900; font-size: 10px; font-weight: bold; padding: 2px 4px; border-radius: 3px; white-space: nowrap; }
@@ -101,7 +101,8 @@
 
         .point-card { display: flex; align-items: center; gap: 8px; padding: 10px; background: white; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 14px; }
         
-        #toast-notice { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 6000; border: 1px solid #ff9900; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: center; pointer-events: none; }
+        /* トースト通知：タップで即座に消えるようpointer-eventsを有効化 */
+        #toast-notice { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 6000; border: 1px solid #ff9900; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: center; cursor: pointer; }
         
         .modal-body-scroll { max-height: 55vh; overflow-y: auto; margin-top: 10px; font-size: 1.05rem; line-height: 1.5; color: #333; text-align: left; }
         .modal-body-scroll h4 { color: #2c3e50; margin: 10px 0 4px 0; border-bottom: 2px solid #3498db; padding-bottom: 2px; font-size: 1.2rem; }
@@ -129,7 +130,7 @@
 </head>
 <body>
 
-<div id="toast-notice"></div>
+<div id="toast-notice" onclick="hideToastImmediate()"></div>
 <div id="replay-countdown-alert">10</div>
 
 <div id="start-flash-overlay">
@@ -140,7 +141,6 @@
 <div id="recording-banner">🔴 【録画中・記録中】全参加者の航跡を蓄積しています</div>
 <button id="floating-stop-btn" onclick="stopRaceRecording()">⏹️ 記録ストップ＆保存</button>
 
-<!-- コース作成バー (元に戻すボタンを追加) -->
 <div id="course-builder-bar">
     <div style="display:flex; justify-content:space-between; width:100%; align-items:center; border-bottom:2px solid #555; padding-bottom:10px; margin-bottom:4px;">
         <span style="font-weight:bold; color:#ff9900; font-size:18px;">🛠️ コース作成コントロールパネル</span>
@@ -152,7 +152,6 @@
         <button class="cb-btn" id="cb-mode-dashed" onclick="setCourseBuilderMode('dashed')">┈ 点線</button>
         <button class="cb-btn" id="cb-mode-solid" onclick="setCourseBuilderMode('solid')">━ 実線</button>
         <button class="cb-btn" id="cb-mode-data" onclick="setCourseBuilderMode('data')">📊 データ</button>
-        <!-- 元に戻す（アンドゥ）ボタン -->
         <button class="cb-btn" onclick="undoLastObject()" style="background:#e67e22; border-color:#f39c12;" title="直近で置いたブイや線を消去">↩️ 元に戻す</button>
         <button class="cb-btn" onclick="openDataListModal()" style="background:#2980b9;">📋 一覧</button>
     </div>
@@ -241,9 +240,9 @@
         </div>
         <div class="modal-body-scroll">
             <h4>🛡️ 管理者・編集機能</h4>
-            <p>・リプレイメニューでの切り出し、編集、ゴミ箱削除にはパスワード認証が必要です。</p>
+            <p>・リプレイメニューでの切り出し、編集、ゴミ箱削除、設定パネル表示にはパスワード認証が必要です。</p>
             <p>・プロフィールで「フネ」「ブイ」として参加するには専用パスワードが必要です。</p>
-            <p>・コース作成パネルの「元に戻す」ボタンで直近に置いた点や線を消去できます。</p>
+            <p>・コース作成パネルや設定パネルの「元に戻す」ボタンで直近に置いた点や線を消去できます。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:16px; background:#3498db; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -270,19 +269,22 @@
 <div id="header">
     <div style="font-size:13px; font-weight:bold; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:10px; width:100%; padding:2px 0;">
         <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
-        <span>虎キング v3.4.9 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
+        <span>虎キング v3.5.0 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
     </div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
     
     <div style="position: absolute; right: 10px; top: 8px; display: flex; gap: 4px; align-items: center;">
         <button onclick="openCoordListModal()" style="background: #27ae60; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">座標</button>
-        <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定</button>
-        <button id="unit-toggle" onclick="toggleSpeedUnit()">km/h</button>
+        <button id="panel-toggle" onclick="authAndToggleSettings()" style="background: #007AFF; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定</button>
     </div>
 </div>
 
-<div id="user-list"><div class="list-title" id="user-list-title">参加者</div><div id="list-content"></div></div>
+<!-- 参加者リストのタイトルをタップすると速度単位が切り替わる (デフォルトはkm/h) -->
+<div id="user-list">
+    <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
+    <div id="list-content"></div>
+</div>
 
 <div id="pointSettingsPanel" style="position: fixed; top: 135px; left: 10px; z-index: 5000; width: 300px; max-height: 60vh; overflow-y: auto; background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 12px; border: 2px solid #007AFF; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: #333; display:none;">
     <h3 style="margin: 0 0 10px 0; padding-bottom: 5px; font-size: 15px; color: #007AFF; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
@@ -291,7 +293,8 @@
     <div id="pointListContainer">
         <p id="noPointMsg" style="color: #666; font-size: 13px; margin: 0;">座標データが読み込まれていません</p>
     </div>
-    <button onclick="deleteSelectedObjects()" style="width:100%; margin-top:10px; background:#e74c3c; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">🗑️ 選択した項目を一括削除</button>
+    <button onclick="undoLastObject()" style="width:100%; margin-top:10px; background:#e67e22; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">↩️ 元に戻す（直近の追加を消去）</button>
+    <button onclick="deleteSelectedObjects()" style="width:100%; margin-top:8px; background:#e74c3c; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">🗑️ 選択した項目を一括削除</button>
     <button onclick="toggleSettingsPanel()" style="width:100%; margin-top:10px; background:#7f8c8d; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
 </div>
 
@@ -347,6 +350,7 @@
     let isViewerMode = localStorage.getItem('tora_king_viewer') === 'true';
     let myParticipantType = localStorage.getItem('tora_king_part_type') || 'normal';
 
+    // デフォルトの単位モードをkm/h (index=1) に設定
     let speedUnitMode = parseInt(localStorage.getItem('tora_king_unit') !== null ? localStorage.getItem('tora_king_unit') : "1");
     const units = ["kt", "km/h", "m/s"];
     const colorPresets = {"赤":"#ff0000","青":"#0000ff","ピンク":"#ff66cc","紫":"#800080","橙":"#ff9900","黄":"#ffff00","緑":"#32cd32","黒":"#222222","白":"#ffffff"};
@@ -407,6 +411,22 @@
         window.toastTimeout = setTimeout(() => { toast.style.display = 'none'; }, 2500);
     }
 
+    window.hideToastImmediate = () => {
+        const toast = document.getElementById('toast-notice');
+        toast.style.display = 'none';
+        if (window.toastTimeout) clearTimeout(window.toastTimeout);
+    };
+
+    window.authAndToggleSettings = () => {
+        const inputPass = prompt("設定を開くためのパスワードを入力してください:");
+        if (inputPass === null) return;
+        if (inputPass !== RECORD_PASSWORD) {
+            alert("❌ パスワードが違います！");
+            return;
+        }
+        toggleSettingsPanel();
+    };
+
     window.toggleSettingsPanel = () => {
         const panel = document.getElementById('pointSettingsPanel');
         panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
@@ -453,11 +473,11 @@
         if (mode === 'buoy') document.getElementById('cb-mode-buoy').classList.add('active');
         if (mode === 'dashed') {
             document.getElementById('cb-mode-dashed').classList.add('active');
-            showToast("┈ 点線モード：1つ目の点を選択してください");
+            showToast("┈ 点線モード：1つ目の点を選択してください（タップで消去）");
         }
         if (mode === 'solid') {
             document.getElementById('cb-mode-solid').classList.add('active');
-            showToast("━ 実線モード：1つ目の点を選択してください");
+            showToast("━ 実線モード：1つ目の点を選択してください（タップで消去）");
         }
         if (mode === 'data') document.getElementById('cb-mode-data').classList.add('active');
     };
@@ -469,14 +489,12 @@
         showToast("コース作成モードを終了しました");
     };
 
-    // 【新機能】直近で配置したオブジェクト（ブイ・フネ）または線を元に戻す（削除する）
     window.undoLastObject = () => {
         db.ref('custom_lines').once('value', lineSnap => {
             const lines = lineSnap.val() || {};
             const lineKeys = Object.keys(lines);
 
             if (lineKeys.length > 0) {
-                // 最も新しく追加された線を探す
                 let latestLineKey = lineKeys[0];
                 let latestLineTs = lines[latestLineKey].ts || 0;
                 lineKeys.forEach(k => {
@@ -500,15 +518,14 @@
                             }
                         });
 
-                        // 線とオブジェクトのうち、タイムスタンプが新しい方を消去
                         if (latestLineTs > latestObjTs) {
                             db.ref('custom_lines/' + latestLineKey).remove().then(() => {
-                                showToast("↩️ 直近の線（結線）を元に戻しました");
+                                showToast("↩️ 直近の線を元に戻しました");
                                 triggerCustomLinesRedraw();
                             });
                         } else {
                             db.ref('objects/' + latestObjKey).remove().then(() => {
-                                showToast("↩️ 直近の配置（フネ・ブイ）を元に戻しました");
+                                showToast("↩️ 直近のフネ・ブイ配置を元に戻しました");
                             });
                         }
                     } else {
@@ -1178,7 +1195,6 @@
         document.getElementById('header-replay-status').style.display = 'none';
         document.getElementById('header-replay-time').style.display = 'none';
         document.getElementById('replay-countdown-alert').style.display = 'none';
-        document.getElementById('user-list-title').innerText = "参加者";
         showToast("⏹️ リプレイを終了しました");
         location.reload();
     };
@@ -1500,7 +1516,7 @@
         if (cbMode === 'dashed' || cbMode === 'solid') {
             if (!cbSelectedFirstObj) {
                 cbSelectedFirstObj = key;
-                showToast(`1つ目の点 (${letter || '点'}) を選択しました。2つ目の点を選んでください。`);
+                showToast(`1つ目の点 (${letter || '点'}) を選択しました。2つ目の点を選んでください。（タップで消去）`);
             } else {
                 if (cbSelectedFirstObj === key) {
                     showToast("同じ点は選べません。別の点を選んでください。");
@@ -1526,7 +1542,7 @@
         } else if (cbMode === 'data') {
             if (!cbSelectedFirstObj) {
                 cbSelectedFirstObj = { key: key, letter: letter || '', lng: obj.lng };
-                showToast(`データ起点 (${letter || '点'}) 設定完了。もう一方の点を選んでください。`);
+                showToast(`データ起点 (${letter || '点'}) 設定完了。もう一方の点を選んでください。（タップで消去）`);
             } else {
                 if (cbSelectedFirstObj.key === key) return;
                 const fromObj = cbSelectedFirstObj;
@@ -2098,7 +2114,8 @@
     window.toggleSpeedUnit = () => {
         speedUnitMode = (speedUnitMode + 1) % 3;
         localStorage.setItem('tora_king_unit', speedUnitMode);
-        document.getElementById('unit-toggle').innerText = units[speedUnitMode];
+        document.getElementById('user-list-title').innerText = `参加者 (${units[speedUnitMode]})`;
+        showToast(`速度単位を [${units[speedUnitMode]}] に切り替えました`);
     };
 
     window.deleteObject = (key) => { 
@@ -2114,7 +2131,7 @@
     map.on('movestart', () => isFollowing = false);
 
     window.addEventListener('load', () => {
-        document.getElementById('unit-toggle').innerText = units[speedUnitMode];
+        document.getElementById('user-list-title').innerText = `参加者 (${units[speedUnitMode]})`;
         setTimeout(checkIncomingCourse, 1000);
     });
 </script>
