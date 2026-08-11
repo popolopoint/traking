@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.4.4 by Popolo App.com</title>
+    <title>虎キング v3.4.5 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -124,7 +124,7 @@
     <div style="font-size: 18px; margin-top: 10px; font-weight: bold;">レースの記録を開始しました</div>
 </div>
 
-<div id="recording-banner">🔴 【録画中・記録中】レース航跡を蓄積しています</div>
+<div id="recording-banner">🔴 【録画中・記録中】全参加者の航跡を蓄積しています</div>
 <button id="floating-stop-btn" onclick="stopRaceRecording()">⏹️ 記録ストップ＆保存</button>
 
 <div id="course-builder-bar">
@@ -209,7 +209,7 @@
         </div>
         <div class="modal-body-scroll">
             <h4>🛡️ 管理者参加者削除機能</h4>
-            <p>・メニューの「🛡️」ボタンから管理者パスワードを入力することで、現在参加しているメンバーをチェックボックスで選択して強制削除できるようになりました。</p>
+            <p>・メニューの上の「🛡️」ボタンから管理者パスワードを入力することで、現在参加しているメンバーをチェックボックスで選択して強制削除できるようになりました。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:16px; background:#3498db; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -236,7 +236,7 @@
 <div id="header">
     <div style="font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;">
         <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
-        <span>虎キング v3.4.4 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
+        <span>虎キング v3.4.5 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
     </div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
@@ -329,6 +329,7 @@
     let isMenuOpen = false;
 
     let isRecordingActive = false;
+    let recordingInterval = null;
 
     let isCourseBuilderActive = false;
     let cbMode = 'ship';
@@ -484,9 +485,10 @@
             return;
         }
 
-        if (confirm("パスワード認証成功。レースの記録を開始しますか？（前回の未保存一時履歴はリセットされます）")) {
+        if (confirm("パスワード認証成功。全参加者のレース記録を開始しますか？（前回の未保存一時履歴はリセットされます）")) {
             db.ref('temp_history').remove().then(() => {
                 isRecordingActive = true;
+                startGlobalRecordingLoop();
                 document.getElementById('recording-banner').style.display = 'block';
                 document.getElementById('floating-stop-btn').style.display = 'block';
                 
@@ -494,9 +496,10 @@
                 flashOverlay.style.display = 'flex';
                 setTimeout(() => { flashOverlay.style.display = 'none'; }, 3000);
 
-                showToast("🔴 レース記録をスタートしました！");
+                showToast("🔴 レース記録をスタートしました（全参加者対象）！");
             }).catch(() => {
                 isRecordingActive = true;
+                startGlobalRecordingLoop();
                 document.getElementById('recording-banner').style.display = 'block';
                 document.getElementById('floating-stop-btn').style.display = 'block';
                 
@@ -509,6 +512,34 @@
         }
     };
 
+    function startGlobalRecordingLoop() {
+        if (recordingInterval) clearInterval(recordingInterval);
+        // 1秒ごとに現在の全ユーザーの最新位置情報を temp_history に一斉保存する
+        recordingInterval = setInterval(() => {
+            if (!isRecordingActive) return;
+            db.ref('users').once('value', snap => {
+                const users = snap.val();
+                if (!users) return;
+                const now = Date.now();
+                for (let uid in users) {
+                    const u = users[uid];
+                    // 10分以上古いデータは除外
+                    if (u && u.name && (now - (u.ts || 0) <= 600000)) {
+                        db.ref('temp_history/' + uid).push({
+                            lat: u.lat,
+                            lng: u.lng,
+                            name: u.name,
+                            color: u.color || '#ff9900',
+                            speed: u.speed || 0,
+                            heading: u.heading || 0,
+                            ts: now
+                        });
+                    }
+                }
+            });
+        }, 1000);
+    }
+
     window.stopRaceRecording = () => {
         if (!isRecordingActive) {
             alert("現在、記録はスタートしていません");
@@ -518,6 +549,7 @@
         }
 
         isRecordingActive = false;
+        if (recordingInterval) { clearInterval(recordingInterval); recordingInterval = null; }
         document.getElementById('recording-banner').style.display = 'none';
         document.getElementById('floating-stop-btn').style.display = 'none';
 
@@ -742,7 +774,6 @@
 
     function prepareHistoryTimeline(historyObj) {
         replayLogsAll = [];
-        // historyObjは { userId: { pushId: { lat, lng, name, color, speed, heading, ts } } } の構造
         for (let userId in historyObj) {
             const userTracks = historyObj[userId];
             if (userTracks && typeof userTracks === 'object') {
@@ -754,7 +785,6 @@
                 }
             }
         }
-        // タイムスタンプ順に時系列ソート
         replayLogsAll.sort((a, b) => a.ts - b.ts);
 
         if (replayLogsAll.length === 0) {
@@ -808,12 +838,9 @@
         }
 
         if (replayCurrentIndex < replayLogsAll.length) {
-            // 同一タイムスタンプ付近（または直近の各ユーザーの最新状態）をまとめてマップに反映するため、
-            // 現在インデックスのログ時刻から過去10秒以内の全ユーザーの最新位置を描画するように処理します
             const currentLog = replayLogsAll[replayCurrentIndex];
             const currentTs = currentLog.ts;
 
-            // 過去10秒間に行動があったすべてのユーザーのマーカーと軌跡を同時に更新
             updateAllActiveUsersAtTimestamp(currentTs);
 
             const seekbar = document.getElementById('replay-seekbar');
@@ -880,18 +907,15 @@
     }
 
     function updateAllActiveUsersAtTimestamp(currentTs) {
-        // 現在の再生時刻(currentTs)から過去10秒以内にログが存在するユーザーごとに、最新のデータを抽出して描画
         let userLatestLogs = {};
         replayLogsAll.forEach(log => {
             if (log.ts <= currentTs && currentTs - log.ts <= 10000) {
-                // 同じユーザーならより新しいものを保持
                 if (!userLatestLogs[log.name] || log.ts > userLatestLogs[log.name].ts) {
                     userLatestLogs[log.name] = log;
                 }
             }
         });
 
-        // 抽出した全ユーザーの位置と軌跡をマップに反映
         for (let name in userLatestLogs) {
             const u = userLatestLogs[name];
             updateUserTrailAndMarker(u.name, u.lat, u.lng, u.color, u.heading, currentTs);
@@ -975,7 +999,6 @@
 
     function updateUserTrailAndMarker(name, lat, lng, color, heading, timestamp) {
         if (!userTrails[name]) userTrails[name] = [];
-        // 重複や古いものをフィルタリングしつつ追加
         userTrails[name].push({ lat: lat, lng: lng, ts: timestamp });
         userTrails[name] = userTrails[name].filter(p => timestamp - p.ts <= 10000);
 
