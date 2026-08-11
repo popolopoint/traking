@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.4.5 by Popolo App.com</title>
+    <title>虎キング v3.4.6 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -209,7 +209,7 @@
         </div>
         <div class="modal-body-scroll">
             <h4>🛡️ 管理者参加者削除機能</h4>
-            <p>・メニューの上の「🛡️」ボタンから管理者パスワードを入力することで、現在参加しているメンバーをチェックボックスで選択して強制削除できるようになりました。</p>
+            <p>・メニューの「🛡️」ボタンから管理者パスワードを入力することで、現在参加しているメンバーをチェックボックスで選択して強制削除できるようになりました。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:16px; background:#3498db; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -236,7 +236,7 @@
 <div id="header">
     <div style="font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;">
         <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
-        <span>虎キング v3.4.5 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
+        <span>虎キング v3.4.6 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
     </div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
@@ -244,7 +244,7 @@
     <div style="position: absolute; right: 10px; top: 10px; display: flex; gap: 4px;">
         <button onclick="openCoordListModal()" style="background: #27ae60; color: white; border: none; padding: 2px 5px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;">座標</button>
         <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 5px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;">設定</button>
-        <button id="unit-toggle" onclick="toggleSpeedUnit()">kt</button>
+        <button id="unit-toggle" onclick="toggleSpeedUnit()">km/h</button>
     </div>
 </div>
 
@@ -310,7 +310,8 @@
     let myColor = localStorage.getItem('tora_king_color');
     let isViewerMode = localStorage.getItem('tora_king_viewer') === 'true';
 
-    let speedUnitMode = parseInt(localStorage.getItem('tora_king_unit') || "0");
+    // デフォルトを km/h (1) に設定
+    let speedUnitMode = parseInt(localStorage.getItem('tora_king_unit') !== null ? localStorage.getItem('tora_king_unit') : "1");
     const units = ["kt", "km/h", "m/s"];
     const colorPresets = {"赤":"#ff0000","青":"#0000ff","ピンク":"#ff66cc","紫":"#800080","橙":"#ff9900","黄":"#ffff00","緑":"#32cd32","黒":"#222222","白":"#ffffff"};
     const savedPos = JSON.parse(localStorage.getItem('tora_king_pos')) || { lat: 26.3, lng: 127.8, zoom: 12 };
@@ -514,7 +515,6 @@
 
     function startGlobalRecordingLoop() {
         if (recordingInterval) clearInterval(recordingInterval);
-        // 1秒ごとに現在の全ユーザーの最新位置情報を temp_history に一斉保存する
         recordingInterval = setInterval(() => {
             if (!isRecordingActive) return;
             db.ref('users').once('value', snap => {
@@ -523,7 +523,6 @@
                 const now = Date.now();
                 for (let uid in users) {
                     const u = users[uid];
-                    // 10分以上古いデータは除外
                     if (u && u.name && (now - (u.ts || 0) <= 600000)) {
                         db.ref('temp_history/' + uid).push({
                             lat: u.lat,
@@ -764,7 +763,7 @@
             Object.keys(userTrails).forEach(k => delete userTrails[k]);
             Object.keys(userMarkers).forEach(k => { map.removeLayer(userMarkers[k]); delete userMarkers[k]; });
 
-            showToast(`▶️ 「${heatTitle}」のリプレイを開始します`);
+            // 「リプレイを開始します」のポップアップ等は完全廃止
             
             if (data.history) {
                 prepareHistoryTimeline(data.history);
@@ -930,12 +929,19 @@
             }
         });
 
+        // 参加者の並び順をアルファベット・名前順で固定してガタつきを防ぐ
+        const sortedNames = Object.keys(activeUsers).sort();
         let listHtml = "";
-        for (let name in activeUsers) {
+        sortedNames.forEach(name => {
             const u = activeUsers[name];
-            const s = (u.speed * (speedUnitMode === 0 ? 1.94384 : (speedUnitMode === 1 ? 3.6 : 1))).toFixed(1);
-            listHtml += `<div class="user-item"><span style="color:${u.color}">●</span> ${u.name} ${s}${units[speedUnitMode]}</div>`;
-        }
+            const rawSpeed = u.speed || 0; // m/s
+            let s = 0;
+            if (speedUnitMode === 0) s = rawSpeed * 1.94384;      // kt
+            else if (speedUnitMode === 1) s = rawSpeed * 3.6;    // km/h
+            else s = rawSpeed;                                   // m/s
+
+            listHtml += `<div class="user-item"><span style="color:${u.color}">●</span> ${u.name} ${s.toFixed(1)}${units[speedUnitMode]}</div>`;
+        });
         document.getElementById('list-content').innerHTML = listHtml || "<div style='color:#777; font-size:9px;'>参加者なし</div>";
     }
 
@@ -1821,6 +1827,7 @@
         let listHtml = "";
         const now = Date.now();
         const activeUserNames = {};
+        let activeUsersObj = {};
 
         for (let id in users) {
             const u = users[id];
@@ -1835,12 +1842,25 @@
             }
 
             activeUserNames[u.name] = true;
-            const isMe = (id === myId);
-            const s = (u.speed * (speedUnitMode === 0 ? 1.94384 : (speedUnitMode === 1 ? 3.6 : 1))).toFixed(1);
-            listHtml += `<div class="user-item ${isMe ? 'me' : ''}"><span style="color:${u.color}">●</span> ${u.name} ${s}${units[speedUnitMode]}</div>`;
+            activeUsersObj[u.name] = { id: id, u: u };
             
             updateUserTrailAndMarker(u.name, u.lat, u.lng, u.color, u.heading, now);
         }
+
+        // ライブ中も参加者リストの並び順をアルファベット・名前順で固定
+        const sortedNames = Object.keys(activeUsersObj).sort();
+        sortedNames.forEach(name => {
+            const item = activeUsersObj[name];
+            const u = item.u;
+            const isMe = (item.id === myId);
+            const rawSpeed = u.speed || 0;
+            let s = 0;
+            if (speedUnitMode === 0) s = rawSpeed * 1.94384;      // kt
+            else if (speedUnitMode === 1) s = rawSpeed * 3.6;    // km/h
+            else s = rawSpeed;                                   // m/s
+
+            listHtml += `<div class="user-item ${isMe ? 'me' : ''}"><span style="color:${u.color}">●</span> ${u.name} ${s.toFixed(1)}${units[speedUnitMode]}</div>`;
+        });
 
         for (let name in userTrails) {
             if (!activeUserNames[name]) {
@@ -1878,6 +1898,7 @@
     map.on('movestart', () => isFollowing = false);
 
     window.addEventListener('load', () => {
+        document.getElementById('unit-toggle').innerText = units[speedUnitMode];
         setTimeout(checkIncomingCourse, 1000);
     });
 </script>
