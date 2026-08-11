@@ -3,13 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.5.3 by Popolo App.com</title>
+    <title>虎キング v3.5.4 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
         
-        #header { background: #1a1a1a; color: #ff9900; padding: 6px 10px; text-align: center; font-weight: bold; position: fixed; top: 0; left: 0; width: 100%; height: 50px; z-index: 3000; border-bottom: 2px solid #ff9900; display: flex; align-items: center; justify-content: space-between; box-sizing: border-box; }
+        #header { background: #1a1a1a; color: #ff9900; padding: 6px 10px; text-align: center; font-weight: bold; position: fixed; top: 0; left: 0; width: 100%; height: 50px; z-index: 3000; border-bottom: 2px solid #ff9900; display: flex; align-items: center; justify-content: space-between; box-sizing: border-box; transition: transform 0.3s ease; }
+        #header.minimized { transform: translateY(-44px); border-bottom: none; }
         
+        #header-expand-btn { position: fixed; top: 2px; left: 50%; transform: translateX(-50%); z-index: 3001; background: rgba(26,26,26,0.9); color: #ff9900; border: 1px solid #ff9900; border-radius: 0 0 8px 8px; padding: 2px 12px; font-size: 10px; font-weight: bold; cursor: pointer; display: none; }
+        #header.minimized ~ #header-expand-btn { display: block; }
+
         .header-btn { border: none; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; height: 34px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3); color: white; }
         
         #recording-banner { position: fixed; top: 60px; left: 0; width: 100%; background: #c0392b; color: white; text-align: center; font-size: 12px; font-weight: bold; padding: 4px 0; z-index: 2900; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.5); letter-spacing: 1px; animation: flashBanner 1.5s infinite; }
@@ -30,16 +34,13 @@
         .color-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
         .color-btn { width: 100%; aspect-ratio: 1/1; border-radius: 50%; border: 2px solid #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; text-shadow: 1px 1px 2px #000; color: #fff; }
         
-        #user-list { position: fixed; top: 120px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 8px; border-radius: 8px; width: 110px; max-height: 200px; overflow-y: auto; border: 1px solid #ff9900; font-size: 10px; }
-        .list-title { color: #ff9900; font-weight: bold; border-bottom: 1px solid #ff9900; margin-bottom: 5px; cursor: pointer; user-select: none; padding-bottom: 2px; }
-        .user-item { border-bottom: 1px solid #444; padding: 4px 0; }
-        .user-item.me { color: #00ff00; font-weight: bold; }
-        .user-label { background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #ff9900; font-size: 10px; font-weight: bold; padding: 2px 4px; border-radius: 3px; white-space: nowrap; }
-        .object-label { background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #ff9900; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
-        .status-panel { position: fixed; bottom: 32px; left: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 11px; max-width: 80%; border: 1px solid #ff9900; }
+        #user-list { position: fixed; top: 65px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 8px; border-radius: 8px; width: 110px; max-height: 200px; overflow-y: auto; border: 1px solid #ff9900; font-size: 10px; transition: top 0.3s ease; }
         
-        /* マップ下部右側のバージョン表示ウォーターマーク */
-        #map-watermark { position: fixed; bottom: 25px; right: 10px; z-index: 1500; background: rgba(0, 0, 0, 0.65); color: #ffcc00; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; pointer-events: none; border: 1px solid rgba(255,153,0,0.5); backdrop-filter: blur(2px); }
+        /* 緯度経度表示パネルをiPhone等で右下ボタンと重ならないよう上部に配置・コンパクト化 */
+        .status-panel { position: fixed; bottom: 80px; left: 10px; z-index: 2000; background: rgba(0,0,0,0.85); color: #fff; padding: 5px 8px; border-radius: 4px; font-size: 10px; max-width: 70%; border: 1px solid #ff9900; pointer-events: none; }
+        
+        /* マップ下部右側のバージョン表示（右下ボタン・スケールバーと重ならない位置） */
+        #map-watermark { position: fixed; bottom: 10px; right: 70px; z-index: 1500; background: rgba(0, 0, 0, 0.7); color: #ffcc00; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; pointer-events: none; border: 1px solid rgba(255,153,0,0.5); backdrop-filter: blur(2px); }
 
         #replay-control-bar { 
             position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%); z-index: 3500; 
@@ -68,32 +69,32 @@
             position: fixed; right: 10px; z-index: 3000; 
             background: rgba(44, 62, 80, 0.45); color: white; 
             border: 1.5px solid rgba(255, 255, 255, 0.3); border-radius: 50%; 
-            width: 50px; height: 50px; cursor: pointer; 
+            width: 45px; height: 45px; cursor: pointer; 
             display: flex; align-items: center; justify-content: center; 
             box-shadow: 0 2px 6px rgba(0,0,0,0.15); 
             backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-            font-size: 22px; user-select: none;
+            font-size: 20px; user-select: none;
         }
         .action-btn:active { background: rgba(52, 152, 219, 0.6); }
         
-        #recenter-btn { bottom: 20px; font-size: 22px; background: rgba(41, 128, 185, 0.45); }
-        #menu-toggle-btn { bottom: 80px; background: rgba(44, 62, 80, 0.45); font-weight: bold; }
+        #recenter-btn { bottom: 15px; font-size: 20px; background: rgba(41, 128, 185, 0.6); }
+        #menu-toggle-btn { bottom: 68px; background: rgba(44, 62, 80, 0.6); font-weight: bold; }
         
         .menu-child { opacity: 0; transform: translateY(20px) scale(0.8); pointer-events: none; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
         .menu-active .menu-child { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
         
-        #logout-btn         { bottom: 140px; background: rgba(231, 76, 60, 0.45); }
-        #name-btn           { bottom: 200px; }
-        #manual-btn         { bottom: 260px; background: rgba(39, 174, 96, 0.45); }
-        #replay-btn         { bottom: 320px; background: rgba(155, 89, 182, 0.45); }
+        #logout-btn         { bottom: 125px; background: rgba(231, 76, 60, 0.45); }
+        #name-btn           { bottom: 175px; }
+        #manual-btn         { bottom: 225px; background: rgba(39, 174, 96, 0.45); }
+        #replay-btn         { bottom: 275px; background: rgba(155, 89, 182, 0.45); }
         
-        #record-start-btn   { bottom: 380px; background: rgba(39, 174, 96, 0.6); }
-        #admin-user-del-btn { bottom: 440px; background: rgba(192, 57, 43, 0.6); }
+        #record-start-btn   { bottom: 325px; background: rgba(39, 174, 96, 0.6); }
+        #admin-user-del-btn { bottom: 375px; background: rgba(192, 57, 43, 0.6); }
 
-        #course-menu-btn    { bottom: 500px; background: rgba(39, 174, 96, 0.7); }
-        #hosei-btn          { bottom: 560px; background: rgba(241, 196, 15, 0.45); }
-        #gps-retry-btn      { bottom: 620px; }
-        #add-point-btn      { bottom: 680px; background: rgba(52, 152, 219, 0.45); }
+        #course-menu-btn    { bottom: 425px; background: rgba(39, 174, 96, 0.7); }
+        #hosei-btn          { bottom: 475px; background: rgba(241, 196, 15, 0.45); }
+        #gps-retry-btn      { bottom: 525px; }
+        #add-point-btn      { bottom: 575px; background: rgba(52, 152, 219, 0.45); }
         
         .popup-form { color: #333; min-width: 140px; font-size: 12px; }
         .popup-form select, .popup-form input { width: 100%; margin: 4px 0; padding: 4px; box-sizing: border-box; }
@@ -215,6 +216,8 @@
 
 <button id="replay-minimized-btn" onclick="expandReplayBar()">📊 <span id="minimized-title">再生中</span> (表示)</button>
 
+<button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
+
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
         <h3 style="margin-top:0; color:#ff9900; font-size:18px;">虎キング 設定</h3>
@@ -268,26 +271,29 @@
 </div>
 
 <div id="header">
-    <div style="display:flex; align-items:center; gap:6px;">
+    <div style="display:flex; align-items:center;">
         <button class="header-btn" style="background:#27ae60;" onclick="promptCourseCreate()">コース作成</button>
-        <button class="header-btn" style="background:#f1c40f; color:#000;" onclick="openCoordListModal()">座標</button>
     </div>
     
     <div id="header-replay-status" style="font-size:11px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none;"></div>
     <div id="header-replay-time" style="font-size:10px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
 
-    <button class="header-btn" style="background:#007AFF;" onclick="authAndToggleSettings()">設定</button>
+    <div style="display:flex; align-items:center; gap:6px;">
+        <button class="header-btn" style="background:#f1c40f; color:#000;" onclick="openCoordListModal()">座標</button>
+        <button class="header-btn" style="background:#007AFF;" onclick="authAndToggleSettings()">設定</button>
+        <button class="header-btn" style="background:#555; padding:6px 8px; font-size:11px;" onclick="toggleHeaderMinimize()">収納</button>
+    </div>
 </div>
 
 <!-- マップ下部のバージョン・制作者表示 -->
-<div id="map-watermark">虎キング v3.5.3 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.5.4 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
     <div id="list-content"></div>
 </div>
 
-<div id="pointSettingsPanel" style="position: fixed; top: 120px; left: 10px; z-index: 5000; width: 300px; max-height: 60vh; overflow-y: auto; background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 12px; border: 2px solid #007AFF; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: #333; display:none;">
+<div id="pointSettingsPanel" style="position: fixed; top: 65px; left: 10px; z-index: 5000; width: 300px; max-height: 60vh; overflow-y: auto; background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 12px; border: 2px solid #007AFF; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: #333; display:none;">
     <h3 style="margin: 0 0 10px 0; padding-bottom: 5px; font-size: 15px; color: #007AFF; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
         <span>🚩 コース地点設定</span>
     </h3>
@@ -404,6 +410,14 @@
         { name: '白', hex: '#ffffff' },
         { name: '黒', hex: '#2c2c2e' }
     ];
+
+    window.toggleHeaderMinimize = () => {
+        const header = document.getElementById('header');
+        header.classList.toggle('minimized');
+        const isMin = header.classList.contains('minimized');
+        document.getElementById('user-list').style.top = isMin ? '10px' : '65px';
+        document.getElementById('pointSettingsPanel').style.top = isMin ? '10px' : '65px';
+    };
 
     function showToast(message) {
         const toast = document.getElementById('toast-notice');
@@ -2147,7 +2161,6 @@
         document.getElementById('user-list-title').innerText = `参加者 (${units[speedUnitMode]})`;
         showToast(`速度単位を [${units[speedUnitMode]}] に切り替えました`);
         
-        // 即座にリアルタイムの速度表示を更新するため、usersを強制トリガー
         db.ref('users').once('value', snap => {
             const users = snap.val();
             if (!users) return;
