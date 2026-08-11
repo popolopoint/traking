@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.4.2 by Popolo App.com</title>
+    <title>虎キング v3.4.3 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -127,7 +127,6 @@
 <div id="recording-banner">🔴 【録画中・記録中】レース航跡を蓄積しています</div>
 <button id="floating-stop-btn" onclick="stopRaceRecording()">⏹️ 記録ストップ＆保存</button>
 
-<!-- コース作成モード操作バー -->
 <div id="course-builder-bar">
     <button class="cb-btn" id="cb-mode-ship" onclick="setCourseBuilderMode('ship')">🚤 フネ</button>
     <button class="cb-btn" id="cb-mode-buoy" onclick="setCourseBuilderMode('buoy')">🚩 ブイ</button>
@@ -142,7 +141,6 @@
     <button class="cb-btn" onclick="exitCourseBuilder()" style="background:#c0392b; margin-left:4px;">終了</button>
 </div>
 
-<!-- データ距離・角度リストモーダル -->
 <div id="course-data-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
     <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:440px; box-sizing:border-box; text-align:center;">
         <h3 style="margin:0 0 12px 0; color:#2c3e50; font-size:1.4rem;">📊 選択点間の距離・角度データ</h3>
@@ -151,7 +149,6 @@
     </div>
 </div>
 
-<!-- データ一覧モーダル -->
 <div id="data-list-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
     <div style="background:white; padding:20px; border-radius:12px; width:94%; max-width:460px; box-sizing:border-box; text-align:center;">
         <h3 style="margin:0 0 10px 0; color:#2c3e50; font-size:1.3rem;">📋 保存されたコースデータ一覧</h3>
@@ -161,7 +158,6 @@
     </div>
 </div>
 
-<!-- 座標一覧・LINE送信モーダル -->
 <div id="coord-list-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
     <div style="background:white; padding:20px; border-radius:12px; width:94%; max-width:460px; box-sizing:border-box; text-align:center;">
         <h3 style="margin:0 0 10px 0; color:#2c3e50; font-size:1.3rem;">📍 フネ・ブイ座標一覧</h3>
@@ -192,7 +188,6 @@
 
 <button id="replay-minimized-btn" onclick="expandReplayBar()">📊 <span id="minimized-title">再生中</span> (表示)</button>
 
-<!-- セットアップ画面 -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
         <h3 style="margin-top:0; color:#ff9900; font-size:18px;">虎キング 設定</h3>
@@ -206,9 +201,8 @@
     </div>
 </div>
 
-<!-- ガイド説明モーダル -->
 <div id="manual-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
-    <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:440px; box-sizing:border-box;">
+    <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:420px; box-sizing:border-box;">
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #3498db; padding-bottom:8px;">
             <h3 style="margin:0; color:#2c3e50; font-size:1.3rem;">📖 アイコン・操作ガイド</h3>
             <button onclick="closeManualModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">✖</button>
@@ -221,7 +215,6 @@
     </div>
 </div>
 
-<!-- ヒート一覧モーダル -->
 <div id="saved-courses-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
     <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:420px; box-sizing:border-box; text-align:center;">
         <h3 style="margin:0 0 12px 0; color:#2c3e50; font-size:1.3rem;">📁 レース記録・ヒート一覧</h3>
@@ -230,7 +223,6 @@
     </div>
 </div>
 
-<!-- 管理者用・参加者削除モーダル -->
 <div id="admin-users-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
     <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:420px; box-sizing:border-box; text-align:center;">
         <h3 style="margin:0 0 12px 0; color:#c0392b; font-size:1.3rem;">🛡️ 管理者: 参加者削除</h3>
@@ -244,7 +236,7 @@
 <div id="header">
     <div style="font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;">
         <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
-        <span>虎キング v3.4.2 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
+        <span>虎キング v3.4.3 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
     </div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
@@ -258,7 +250,6 @@
 
 <div id="user-list"><div class="list-title" id="user-list-title">参加者</div><div id="list-content"></div></div>
 
-<!-- 設定パネル -->
 <div id="pointSettingsPanel" style="position: fixed; top: 135px; left: 10px; z-index: 5000; width: 300px; max-height: 60vh; overflow-y: auto; background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 12px; border: 2px solid #007AFF; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: #333; display:none;">
     <h3 style="margin: 0 0 10px 0; padding-bottom: 5px; font-size: 15px; color: #007AFF; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
         <span>🚩 コース地点設定</span>
@@ -274,7 +265,6 @@
 
 <div class="status-panel" id="status">GPSシグナル待機中...</div>
 
-<!-- メニューボタン群 -->
 <div id="button-container">
     <button id="logout-btn" class="action-btn menu-child" onclick="triggerLogout()" title="ログアウト">🏃</button>
     <button id="name-btn" class="action-btn menu-child" onclick="triggerSetup()" title="再設定">👤</button>
@@ -1521,7 +1511,7 @@
         const color = document.getElementById('new_color').value;
         const comment = document.getElementById('new_comment').value;
         const initialLabel = type === 'ship' ? 'フネ' : 'ブイ';
-        const randomKey = "M" + Math.floor(Math.random() * 10000);
+        const randomKey = "M" + Math.floor(Math.random() * 1000);
         
         db.ref('objects/' + randomKey).set({ 
             type: type, 
@@ -1629,7 +1619,7 @@
             db.ref('users/'+myId).set(userData);
             
             if (isRecordingActive) {
-                db.ref('temp_history').push(userData);
+                db.ref('temp_history/' + myId).push(userData);
             }
         }
         
