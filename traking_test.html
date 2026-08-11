@@ -3,26 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.4.7 by Popolo App.com</title>
+    <title>虎キング v3.4.8 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
-        #header { background: #1a1a1a; color: #ff9900; padding: 6px 10px; text-align: center; font-weight: bold; position: fixed; width: 100%; height: 55px; z-index: 3000; border-bottom: 2px solid #ff9900; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; }
         
-        #recording-banner { position: fixed; top: 55px; left: 0; width: 100%; background: #c0392b; color: white; text-align: center; font-size: 12px; font-weight: bold; padding: 4px 0; z-index: 2900; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.5); letter-spacing: 1px; animation: flashBanner 1.5s infinite; }
+        /* 文字サイズを大きくしても隠れないよう、高さを持たせて縦並びを許容するヘッダー */
+        #header { background: #1a1a1a; color: #ff9900; padding: 6px 10px; text-align: center; font-weight: bold; position: fixed; top: 0; left: 0; width: 100%; min-height: 55px; height: auto; z-index: 3000; border-bottom: 2px solid #ff9900; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; }
+        
+        #recording-banner { position: fixed; top: 75px; left: 0; width: 100%; background: #c0392b; color: white; text-align: center; font-size: 12px; font-weight: bold; padding: 4px 0; z-index: 2900; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.5); letter-spacing: 1px; animation: flashBanner 1.5s infinite; }
         @keyframes flashBanner { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
         #start-flash-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(231, 76, 60, 0.85); z-index: 8000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; pointer-events: none; animation: flashAlert 0.8s infinite alternate; }
         @keyframes flashAlert { from { opacity: 0.6; } to { opacity: 1; } }
 
-        #replay-countdown-alert { position: fixed; top: 62px; left: 50%; transform: translateX(-50%); background: rgba(243, 156, 18, 0.95); color: white; padding: 6px 20px; border-radius: 15px; font-size: 18px; font-weight: bold; z-index: 9000; display: none; box-shadow: 0 2px 10px rgba(0,0,0,0.5); border: 2px solid white; text-align: center; pointer-events: none; animation: pulseAlert 0.5s infinite alternate; }
+        #replay-countdown-alert { position: fixed; top: 82px; left: 50%; transform: translateX(-50%); background: rgba(243, 156, 18, 0.95); color: white; padding: 6px 20px; border-radius: 15px; font-size: 18px; font-weight: bold; z-index: 9000; display: none; box-shadow: 0 2px 10px rgba(0,0,0,0.5); border: 2px solid white; text-align: center; pointer-events: none; animation: pulseAlert 0.5s infinite alternate; }
         @keyframes pulseAlert { from { transform: translateX(-50%) scale(1); } to { transform: translateX(-50%) scale(1.05); } }
 
-        #floating-stop-btn { position: fixed; top: 90px; right: 10px; z-index: 3500; background: #e74c3c; color: white; border: 2px solid #fff; padding: 10px 16px; border-radius: 25px; font-size: 14px; font-weight: bold; cursor: pointer; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.4); animation: flashBanner 1.5s infinite; }
+        #floating-stop-btn { position: fixed; top: 110px; right: 10px; z-index: 3500; background: #e74c3c; color: white; border: 2px solid #fff; padding: 10px 16px; border-radius: 25px; font-size: 14px; font-weight: bold; cursor: pointer; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.4); animation: flashBanner 1.5s infinite; }
 
         #map { height: 100vh; width: 100vw; z-index: 1; background: #222; }
-        #unit-toggle { background: #333; color: #ff9900; border: 1px solid #ff9900; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; }
-        #course-create-btn { background: #27ae60; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; }
+        #unit-toggle { background: #333; color: #ff9900; border: 1px solid #ff9900; padding: 4px 8px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: bold; }
+        
+        /* コース作成ボタン：ヘッダー内の通常版（3倍サイズ：paddingや文字を大きく） */
+        #course-create-btn { background: #27ae60; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
         
         #setup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 4000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; backdrop-filter: blur(4px); }
         .setup-box { background: rgba(34, 34, 34, 0.9); padding: 20px; border-radius: 15px; border: 2px solid #ff9900; text-align: center; width: 85%; max-width: 340px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-height: 85vh; overflow-y: auto; }
@@ -86,9 +90,10 @@
         #record-start-btn   { bottom: 380px; background: rgba(39, 174, 96, 0.6); }
         #admin-user-del-btn { bottom: 440px; background: rgba(192, 57, 43, 0.6); }
 
-        #hosei-btn          { bottom: 500px; background: rgba(241, 196, 15, 0.45); }
-        #gps-retry-btn      { bottom: 560px; }
-        #add-point-btn      { bottom: 620px; background: rgba(52, 152, 219, 0.45); }
+        #course-menu-btn    { bottom: 500px; background: rgba(39, 174, 96, 0.7); } /* メニュー内コース作成ボタン */
+        #hosei-btn          { bottom: 560px; background: rgba(241, 196, 15, 0.45); }
+        #gps-retry-btn      { bottom: 620px; }
+        #add-point-btn      { bottom: 680px; background: rgba(52, 152, 219, 0.45); }
         
         .popup-form { color: #333; min-width: 140px; font-size: 12px; }
         .popup-form select, .popup-form input { width: 100%; margin: 4px 0; padding: 4px; box-sizing: border-box; }
@@ -104,25 +109,25 @@
         .modal-body-scroll h4 { color: #2c3e50; margin: 10px 0 4px 0; border-bottom: 2px solid #3498db; padding-bottom: 2px; font-size: 1.2rem; }
         .modal-body-scroll p { margin: 6px 0 10px 0; font-size: 1rem; }
 
-        /* コース作成バー：倍のサイズ感＆たためる設計 */
+        /* コース作成バー：さらに倍のサイズに拡大 */
         #course-builder-bar {
-            position: fixed; top: 62px; left: 50%; transform: translateX(-50%); z-index: 3500;
-            background: rgba(30, 39, 46, 0.95); border: 2px solid #ff9900;
-            padding: 12px 16px; border-radius: 16px; display: none; flex-wrap: wrap; gap: 10px; color: white;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.6); align-items: center; justify-content: center; font-size: 14px;
-            width: 88vw; max-width: 520px; box-sizing: border-box;
+            position: fixed; top: 75px; left: 50%; transform: translateX(-50%); z-index: 3500;
+            background: rgba(30, 39, 46, 0.98); border: 3px solid #ff9900;
+            padding: 20px 24px; border-radius: 20px; display: none; flex-wrap: wrap; gap: 14px; color: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7); align-items: center; justify-content: center; font-size: 16px;
+            width: 94vw; max-width: 680px; box-sizing: border-box;
             transition: all 0.3s ease;
         }
-        .cb-btn { background: rgba(50, 50, 50, 0.9); color: white; border: 1.5px solid rgba(255,255,255,0.4); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; }
+        .cb-btn { background: rgba(50, 50, 50, 0.9); color: white; border: 2px solid rgba(255,255,255,0.4); padding: 12px 18px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 15px; }
         .cb-btn.active { background: #ff9900; color: #000; border-color: #ff9900; }
         
-        /* フネ・ブイボタンは一回り大きく */
-        .cb-btn-large { padding: 12px 18px !important; font-size: 16px !important; border-width: 2px !important; }
+        /* フネ・ブイボタンはさらに大きく目立たせる */
+        .cb-btn-large { padding: 18px 28px !important; font-size: 20px !important; border-width: 3px !important; }
 
         #course-builder-minimized {
-            position: fixed; top: 62px; left: 50%; transform: translateX(-50%); z-index: 3500;
-            background: rgba(30, 39, 46, 0.9); border: 2px solid #ff9900;
-            padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: bold; color: #ff9900;
+            position: fixed; top: 75px; left: 50%; transform: translateX(-50%); z-index: 3500;
+            background: rgba(30, 39, 46, 0.95); border: 2px solid #ff9900;
+            padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; color: #ff9900;
             cursor: pointer; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
         }
     </style>
@@ -140,13 +145,13 @@
 <div id="recording-banner">🔴 【録画中・記録中】全参加者の航跡を蓄積しています</div>
 <button id="floating-stop-btn" onclick="stopRaceRecording()">⏹️ 記録ストップ＆保存</button>
 
-<!-- コース作成バー (拡大版・折りたたみ対応) -->
+<!-- コース作成バー (さらに倍のサイズに拡大) -->
 <div id="course-builder-bar">
-    <div style="display:flex; justify-content:space-between; width:100%; align-items:center; border-bottom:1px solid #555; padding-bottom:6px; margin-bottom:2px;">
-        <span style="font-weight:bold; color:#ff9900; font-size:15px;">🛠️ コース作成コントロール</span>
-        <button onclick="minimizeCourseBuilderBar()" style="background:rgba(255,255,255,0.2); border:none; color:white; border-radius:4px; padding:4px 10px; font-size:12px; cursor:pointer;">収納する</button>
+    <div style="display:flex; justify-content:space-between; width:100%; align-items:center; border-bottom:2px solid #555; padding-bottom:10px; margin-bottom:4px;">
+        <span style="font-weight:bold; color:#ff9900; font-size:18px;">🛠️ コース作成コントロールパネル</span>
+        <button onclick="minimizeCourseBuilderBar()" style="background:rgba(255,255,255,0.25); border:none; color:white; border-radius:6px; padding:6px 14px; font-size:14px; cursor:pointer; font-weight:bold;">収納する</button>
     </div>
-    <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; width:100%;">
+    <div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center; width:100%;">
         <button class="cb-btn cb-btn-large" id="cb-mode-ship" onclick="setCourseBuilderMode('ship')">🚤 フネ</button>
         <button class="cb-btn cb-btn-large" id="cb-mode-buoy" onclick="setCourseBuilderMode('buoy')">🚩 ブイ</button>
         <button class="cb-btn" id="cb-mode-dashed" onclick="setCourseBuilderMode('dashed')">┈ 点線</button>
@@ -154,13 +159,13 @@
         <button class="cb-btn" id="cb-mode-data" onclick="setCourseBuilderMode('data')">📊 データ</button>
         <button class="cb-btn" onclick="openDataListModal()" style="background:#2980b9;">📋 一覧</button>
     </div>
-    <div style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-top:4px; border-top:1px solid #555; padding-top:6px;">
-        <button class="cb-btn" onclick="addCurrentPositionObject()" style="background:#27ae60; font-size:13px; width:48%;">📍 現在位置を登録</button>
-        <div style="display:flex; align-items:center; gap:4px; font-size:13px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-top:8px; border-top:2px solid #555; padding-top:10px;">
+        <button class="cb-btn" onclick="addCurrentPositionObject()" style="background:#27ae60; font-size:15px; padding:10px 16px;">📍 現在位置を登録</button>
+        <div style="display:flex; align-items:center; gap:6px; font-size:15px;">
             <span>風向:</span>
-            <input type="number" id="cb-wind-deg" value="0" style="width:50px; padding:4px; font-size:12px; text-align:center;" placeholder="°">°
+            <input type="number" id="cb-wind-deg" value="0" style="width:65px; padding:6px; font-size:14px; text-align:center;" placeholder="°">°
         </div>
-        <button class="cb-btn" onclick="exitCourseBuilder()" style="background:#c0392b; font-size:13px;">終了</button>
+        <button class="cb-btn" onclick="exitCourseBuilder()" style="background:#c0392b; font-size:15px; padding:10px 16px;">終了</button>
     </div>
 </div>
 
@@ -213,7 +218,6 @@
 
 <button id="replay-minimized-btn" onclick="expandReplayBar()">📊 <span id="minimized-title">再生中</span> (表示)</button>
 
-<!-- プロフィール設定画面（フネ・ブイ追加・パスワード保護） -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
         <h3 style="margin-top:0; color:#ff9900; font-size:18px;">虎キング 設定</h3>
@@ -265,17 +269,18 @@
     </div>
 </div>
 
+<!-- 文字を最大にしても隠れないよう上部に固定＆flexラップ対応のヘッダー -->
 <div id="header">
-    <div style="font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;">
+    <div style="font-size:13px; font-weight:bold; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:10px; width:100%; padding:2px 0;">
         <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
-        <span>虎キング v3.4.7 <span style="font-size:9px; font-weight:normal;">by Popolo App.com</span></span>
+        <span>虎キング v3.4.8 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
     </div>
     <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
     <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
     
-    <div style="position: absolute; right: 10px; top: 10px; display: flex; gap: 4px;">
-        <button onclick="openCoordListModal()" style="background: #27ae60; color: white; border: none; padding: 2px 5px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;">座標</button>
-        <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 2px 5px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;">設定</button>
+    <div style="position: absolute; right: 10px; top: 8px; display: flex; gap: 4px; align-items: center;">
+        <button onclick="openCoordListModal()" style="background: #27ae60; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">座標</button>
+        <button id="panel-toggle" onclick="toggleSettingsPanel()" style="background: #007AFF; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定</button>
         <button id="unit-toggle" onclick="toggleSpeedUnit()">km/h</button>
     </div>
 </div>
@@ -305,6 +310,9 @@
     
     <button id="record-start-btn" class="action-btn menu-child" onclick="startRaceRecording()" title="レース記録スタート">🔴</button>
     <button id="admin-user-del-btn" class="action-btn menu-child" onclick="openAdminUsersModal()" title="参加者管理・削除">🛡️</button>
+
+    <!-- メニュー内に追加されたコース作成ボタン -->
+    <button id="course-menu-btn" class="action-btn menu-child" onclick="promptCourseCreate()" title="コース作成">🛠️</button>
 
     <button id="hosei-btn" class="action-btn menu-child" onclick="triggerHoseiMode()" title="位置補正">🔧</button>
     <button id="gps-retry-btn" class="action-btn menu-child" onclick="triggerGPSRetry()" title="GPS再接続">🔄</button>
@@ -341,7 +349,7 @@
     let myName = localStorage.getItem('tora_king_name');
     let myColor = localStorage.getItem('tora_king_color');
     let isViewerMode = localStorage.getItem('tora_king_viewer') === 'true';
-    let myParticipantType = localStorage.getItem('tora_king_part_type') || 'normal'; // normal, ship, buoy
+    let myParticipantType = localStorage.getItem('tora_king_part_type') || 'normal';
 
     let speedUnitMode = parseInt(localStorage.getItem('tora_king_unit') !== null ? localStorage.getItem('tora_king_unit') : "1");
     const units = ["kt", "km/h", "m/s"];
@@ -354,7 +362,7 @@
 
     let myMarker = null, isFollowing = true;
     let watchIdHigh = null, watchIdLow = null;
-    let currentLatestPos = null; // 現在地登録用
+    let currentLatestPos = null;
 
     let offsetLat = parseFloat(localStorage.getItem('tora_king_offset_lat') || "0");
     let offsetLng = parseFloat(localStorage.getItem('tora_king_offset_lng') || "0");
@@ -417,6 +425,7 @@
     }
 
     window.promptCourseCreate = () => {
+        if (isMenuOpen) toggleMenu();
         const inputPass = prompt("コース作成用のパスワードを入力してください:");
         if (inputPass === null) return;
         if (inputPass !== RECORD_PASSWORD) {
@@ -464,7 +473,6 @@
         showToast("コース作成モードを終了しました");
     };
 
-    // 現在位置にそのフネやブイを登録する機能
     window.addCurrentPositionObject = () => {
         if (!currentLatestPos) {
             alert("現在地のGPS位置情報がまだ取得できていません。少しお待ちください。");
@@ -696,7 +704,6 @@
         });
     };
 
-    // 再生以外の操作（切り出し、編集、削除）のパスワード認証ラッパー
     window.authAndTrim = (id) => {
         const pass = prompt("管理者パスワードを入力してください:");
         if (pass === null) return;
@@ -1151,11 +1158,27 @@
         if (partType === 'ship') {
             return L.divIcon({ html: `<div style="font-size:26px; filter: drop-shadow(0 0 3px rgba(0,0,0,0.8)); text-align:center; line-height:26px;" title="フネ">🚤</div>`, className: '', iconSize: [26, 26], iconAnchor: [13, 13] });
         } else if (partType === 'buoy') {
-            return L.divIcon({ html: `<svg width="18" height="24" viewBox="0 0 100 133"><path d="M50 5 L95 125 Q95 128 50 128 Q5 128 5 125 Z" fill="${color || '#ff3b30'}" stroke="white" stroke-width="8" /></svg>`, className: '', iconSize: [24, 26], iconAnchor: [12, 13] });
+            // ブイのアイコンを設置するブイと同じ縦長△（三角形）に変更
+            return L.divIcon({ html: `<svg width="18" height="26" viewBox="0 0 100 133"><path d="M50 5 L95 125 Q95 128 50 128 Q5 128 5 125 Z" fill="${color || '#ff3b30'}" stroke="white" stroke-width="8" /></svg>`, className: '', iconSize: [24, 28], iconAnchor: [12, 14] });
         } else {
             const html = `<div class="arrow-icon-wrapper" style="transform: rotate(${heading||0}deg);"><svg viewBox="0 0 100 100" width="30" height="30"><path d="M50 5 L90 90 L50 75 L10 90 Z" fill="${color}" stroke="white" stroke-width="5" /></svg></div>`;
             return L.divIcon({ html: html, className: '', iconSize: [30, 30], iconAnchor: [15, 15] });
         }
+    }
+
+    function createObjectIcon(type, shape, color) {
+        let iconHtml = '';
+        if (type === 'ship') {
+            iconHtml = `<div style="font-size:26px; filter: drop-shadow(0 0 3px rgba(0,0,0,0.8)); text-align:center; line-height:26px;" title="フネ">🚤</div>`;
+        } else {
+            const hexColor = color || '#ff3b30';
+            if (shape === 'rect') {
+                iconHtml = `<svg width="18" height="24" viewBox="0 0 100 133"><rect x="15" y="5" width="70" height="123" rx="6" fill="${hexColor}" stroke="white" stroke-width="8" /></svg>`;
+            } else {
+                iconHtml = `<svg width="18" height="24" viewBox="0 0 100 133"><path d="M50 5 L95 125 Q95 128 50 128 Q5 128 5 125 Z" fill="${hexColor}" stroke="white" stroke-width="8" /></svg>`;
+            }
+        }
+        return L.divIcon({ html: iconHtml, className: '', iconSize: [24, 26], iconAnchor: [12, 13] });
     }
 
     function createPointCard(key, obj, labelChar) {
@@ -1743,7 +1766,6 @@
         const nameInp = document.getElementById('setup-name').value;
         if (!nameInp) return alert("名前を入力するか、「観戦」を選んでください");
         
-        // フネ・ブイで参加する場合のパスワード認証
         if (myParticipantType === 'ship' || myParticipantType === 'buoy') {
             const pass = prompt("フネ・ブイとして参加用のパスワードを入力してください:");
             if (pass !== RECORD_PASSWORD) {
@@ -1779,6 +1801,17 @@
         showToast("👀 観戦モード（見る専）で開始しました");
         startTracking();
     };
+
+    function createUserIcon(partType, color, heading) {
+        if (partType === 'ship') {
+            return L.divIcon({ html: `<div style="font-size:26px; filter: drop-shadow(0 0 3px rgba(0,0,0,0.8)); text-align:center; line-height:26px;" title="フネ">🚤</div>`, className: '', iconSize: [26, 26], iconAnchor: [13, 13] });
+        } else if (partType === 'buoy') {
+            return L.divIcon({ html: `<svg width="18" height="26" viewBox="0 0 100 133"><path d="M50 5 L95 125 Q95 128 50 128 Q5 128 5 125 Z" fill="${color || '#ff3b30'}" stroke="white" stroke-width="8" /></svg>`, className: '', iconSize: [24, 28], iconAnchor: [12, 14] });
+        } else {
+            const html = `<div class="arrow-icon-wrapper" style="transform: rotate(${heading||0}deg);"><svg viewBox="0 0 100 100" width="30" height="30"><path d="M50 5 L90 90 L50 75 L10 90 Z" fill="${color}" stroke="white" stroke-width="5" /></svg></div>`;
+            return L.divIcon({ html: html, className: '', iconSize: [30, 30], iconAnchor: [15, 15] });
+        }
+    }
 
     function createObjectIcon(type, shape, color) {
         let iconHtml = '';
