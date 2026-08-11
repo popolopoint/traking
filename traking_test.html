@@ -3,41 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.5.2 by Popolo App.com</title>
+    <title>虎キング v3.5.3 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
         
-        #header { background: #1a1a1a; color: #ff9900; padding: 6px 90px 6px 10px; text-align: center; font-weight: bold; position: fixed; top: 0; left: 0; width: 100%; min-height: 55px; height: auto; z-index: 3000; border-bottom: 2px solid #ff9900; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; }
+        #header { background: #1a1a1a; color: #ff9900; padding: 6px 10px; text-align: center; font-weight: bold; position: fixed; top: 0; left: 0; width: 100%; height: 50px; z-index: 3000; border-bottom: 2px solid #ff9900; display: flex; align-items: center; justify-content: space-between; box-sizing: border-box; }
         
-        #recording-banner { position: fixed; top: 75px; left: 0; width: 100%; background: #c0392b; color: white; text-align: center; font-size: 12px; font-weight: bold; padding: 4px 0; z-index: 2900; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.5); letter-spacing: 1px; animation: flashBanner 1.5s infinite; }
+        .header-btn { border: none; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; height: 34px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3); color: white; }
+        
+        #recording-banner { position: fixed; top: 60px; left: 0; width: 100%; background: #c0392b; color: white; text-align: center; font-size: 12px; font-weight: bold; padding: 4px 0; z-index: 2900; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.5); letter-spacing: 1px; animation: flashBanner 1.5s infinite; }
         @keyframes flashBanner { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
         #start-flash-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(231, 76, 60, 0.85); z-index: 8000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; pointer-events: none; animation: flashAlert 0.8s infinite alternate; }
         @keyframes flashAlert { from { opacity: 0.6; } to { opacity: 1; } }
 
-        #replay-countdown-alert { position: fixed; top: 82px; left: 50%; transform: translateX(-50%); background: rgba(243, 156, 18, 0.95); color: white; padding: 6px 20px; border-radius: 15px; font-size: 18px; font-weight: bold; z-index: 9000; display: none; box-shadow: 0 2px 10px rgba(0,0,0,0.5); border: 2px solid white; text-align: center; pointer-events: none; animation: pulseAlert 0.5s infinite alternate; }
+        #replay-countdown-alert { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: rgba(243, 156, 18, 0.95); color: white; padding: 6px 20px; border-radius: 15px; font-size: 18px; font-weight: bold; z-index: 9000; display: none; box-shadow: 0 2px 10px rgba(0,0,0,0.5); border: 2px solid white; text-align: center; pointer-events: none; animation: pulseAlert 0.5s infinite alternate; }
         @keyframes pulseAlert { from { transform: translateX(-50%) scale(1); } to { transform: translateX(-50%) scale(1.05); } }
 
-        #floating-stop-btn { position: fixed; top: 110px; right: 10px; z-index: 3500; background: #e74c3c; color: white; border: 2px solid #fff; padding: 10px 16px; border-radius: 25px; font-size: 14px; font-weight: bold; cursor: pointer; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.4); animation: flashBanner 1.5s infinite; }
+        #floating-stop-btn { position: fixed; top: 95px; right: 10px; z-index: 3500; background: #e74c3c; color: white; border: 2px solid #fff; padding: 10px 16px; border-radius: 25px; font-size: 14px; font-weight: bold; cursor: pointer; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.4); animation: flashBanner 1.5s infinite; }
 
         #map { height: 100vh; width: 100vw; z-index: 1; background: #222; }
-        
-        #course-create-btn { background: #27ae60; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
         
         #setup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 4000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; backdrop-filter: blur(4px); }
         .setup-box { background: rgba(34, 34, 34, 0.9); padding: 20px; border-radius: 15px; border: 2px solid #ff9900; text-align: center; width: 85%; max-width: 340px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-height: 85vh; overflow-y: auto; }
         .color-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
         .color-btn { width: 100%; aspect-ratio: 1/1; border-radius: 50%; border: 2px solid #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; text-shadow: 1px 1px 2px #000; color: #fff; }
         
-        #user-list { position: fixed; top: 135px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 8px; border-radius: 8px; width: 100px; max-height: 200px; overflow-y: auto; border: 1px solid #ff9900; font-size: 10px; }
-        .list-title { color: #ff9900; font-weight: bold; border-bottom: 1px solid #ff9900; margin-bottom: 5px; cursor: pointer; user-select: none; }
+        #user-list { position: fixed; top: 120px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 8px; border-radius: 8px; width: 110px; max-height: 200px; overflow-y: auto; border: 1px solid #ff9900; font-size: 10px; }
+        .list-title { color: #ff9900; font-weight: bold; border-bottom: 1px solid #ff9900; margin-bottom: 5px; cursor: pointer; user-select: none; padding-bottom: 2px; }
         .user-item { border-bottom: 1px solid #444; padding: 4px 0; }
         .user-item.me { color: #00ff00; font-weight: bold; }
         .user-label { background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #ff9900; font-size: 10px; font-weight: bold; padding: 2px 4px; border-radius: 3px; white-space: nowrap; }
         .object-label { background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #ff9900; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
-        .status-panel { position: fixed; bottom: 10px; left: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 11px; max-width: 80%; border: 1px solid #ff9900; }
+        .status-panel { position: fixed; bottom: 32px; left: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 11px; max-width: 80%; border: 1px solid #ff9900; }
         
+        /* マップ下部右側のバージョン表示ウォーターマーク */
+        #map-watermark { position: fixed; bottom: 25px; right: 10px; z-index: 1500; background: rgba(0, 0, 0, 0.65); color: #ffcc00; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; pointer-events: none; border: 1px solid rgba(255,153,0,0.5); backdrop-filter: blur(2px); }
+
         #replay-control-bar { 
             position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%); z-index: 3500; 
             background: rgba(30, 39, 46, 0.85); border: 1.5px solid rgba(255, 255, 255, 0.3); 
@@ -107,7 +110,7 @@
         .modal-body-scroll p { margin: 6px 0 10px 0; font-size: 1rem; }
 
         #course-builder-bar {
-            position: fixed; top: 75px; left: 50%; transform: translateX(-50%); z-index: 3500;
+            position: fixed; top: 65px; left: 50%; transform: translateX(-50%); z-index: 3500;
             background: rgba(30, 39, 46, 0.98); border: 3px solid #ff9900;
             padding: 20px 24px; border-radius: 20px; display: none; flex-wrap: wrap; gap: 14px; color: white;
             box-shadow: 0 10px 30px rgba(0,0,0,0.7); align-items: center; justify-content: center; font-size: 16px;
@@ -119,7 +122,7 @@
         .cb-btn-large { padding: 18px 28px !important; font-size: 20px !important; border-width: 3px !important; }
 
         #course-builder-minimized {
-            position: fixed; top: 75px; left: 50%; transform: translateX(-50%); z-index: 3500;
+            position: fixed; top: 65px; left: 50%; transform: translateX(-50%); z-index: 3500;
             background: rgba(30, 39, 46, 0.95); border: 2px solid #ff9900;
             padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; color: #ff9900;
             cursor: pointer; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
@@ -150,7 +153,6 @@
         <button class="cb-btn" id="cb-mode-dashed" onclick="setCourseBuilderMode('dashed')">┈ 点線</button>
         <button class="cb-btn" id="cb-mode-solid" onclick="setCourseBuilderMode('solid')">━ 実線</button>
         <button class="cb-btn" id="cb-mode-data" onclick="setCourseBuilderMode('data')">📊 データ</button>
-        <!-- コース作成用：直近に置いたフネ・ブイや線を消去（アンドゥ）するボタン -->
         <button class="cb-btn" onclick="undoLastCreatedObjectOrLine()" style="background:#e67e22; border-color:#f39c12;" title="直近で置いたブイや線を消去">↩️ 元に戻す</button>
         <button class="cb-btn" onclick="openDataListModal()" style="background:#2980b9;">📋 一覧</button>
     </div>
@@ -266,32 +268,32 @@
 </div>
 
 <div id="header">
-    <div style="font-size:13px; font-weight:bold; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:10px; width:100%; padding:2px 0;">
-        <button id="course-create-btn" onclick="promptCourseCreate()">コース作成</button>
-        <span>虎キング v3.5.2 <span style="font-size:10px; font-weight:normal;">by Popolo App.com</span></span>
+    <div style="display:flex; align-items:center; gap:6px;">
+        <button class="header-btn" style="background:#27ae60;" onclick="promptCourseCreate()">コース作成</button>
+        <button class="header-btn" style="background:#f1c40f; color:#000;" onclick="openCoordListModal()">座標</button>
     </div>
-    <div id="header-replay-status" style="font-size:13px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none; margin-top:2px;"></div>
-    <div id="header-replay-time" style="font-size:11px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
     
-    <div style="position: absolute; right: 10px; top: 8px; display: flex; gap: 4px; align-items: center;">
-        <button onclick="openCoordListModal()" style="background: #27ae60; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">座標</button>
-        <button id="panel-toggle" onclick="authAndToggleSettings()" style="background: #007AFF; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">設定</button>
-    </div>
+    <div id="header-replay-status" style="font-size:11px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none;"></div>
+    <div id="header-replay-time" style="font-size:10px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
+
+    <button class="header-btn" style="background:#007AFF;" onclick="authAndToggleSettings()">設定</button>
 </div>
+
+<!-- マップ下部のバージョン・制作者表示 -->
+<div id="map-watermark">虎キング v3.5.3 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
     <div id="list-content"></div>
 </div>
 
-<div id="pointSettingsPanel" style="position: fixed; top: 135px; left: 10px; z-index: 5000; width: 300px; max-height: 60vh; overflow-y: auto; background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 12px; border: 2px solid #007AFF; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: #333; display:none;">
+<div id="pointSettingsPanel" style="position: fixed; top: 120px; left: 10px; z-index: 5000; width: 300px; max-height: 60vh; overflow-y: auto; background: rgba(255, 255, 255, 0.95); padding: 12px; border-radius: 12px; border: 2px solid #007AFF; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: #333; display:none;">
     <h3 style="margin: 0 0 10px 0; padding-bottom: 5px; font-size: 15px; color: #007AFF; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
         <span>🚩 コース地点設定</span>
     </h3>
     <div id="pointListContainer">
         <p id="noPointMsg" style="color: #666; font-size: 13px; margin: 0;">座標データが読み込まれていません</p>
     </div>
-    <!-- 設定用：直近で削除した複数のオブジェクトをまとめて復活させるボタン -->
     <button onclick="restoreLastBatchDeletedObjects()" style="width:100%; margin-top:10px; background:#e67e22; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">↩️ 削除を戻す（直近の削除をまとめて復活）</button>
     <button onclick="deleteSelectedObjects()" style="width:100%; margin-top:8px; background:#e74c3c; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">🗑️ 選択した項目を一括削除</button>
     <button onclick="toggleSettingsPanel()" style="width:100%; margin-top:10px; background:#7f8c8d; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
@@ -375,7 +377,6 @@
     let cbMode = 'ship';
     let cbSelectedFirstObj = null;
 
-    // 直近でまとめて削除されたオブジェクト群を一時保持する変数
     let lastBatchDeletedObjects = null;
 
     const userMarkers = {}, objectMarkers = {}, userTrails = {}, userPolylineLines = {};
@@ -490,7 +491,6 @@
         showToast("コース作成モードを終了しました");
     };
 
-    // コース作成時：直近で置いたオブジェクトまたは線を消去する（アンドゥ）
     window.undoLastCreatedObjectOrLine = () => {
         db.ref('custom_lines').once('value', lineSnap => {
             const lines = lineSnap.val() || {};
@@ -561,7 +561,6 @@
         });
     };
 
-    // 設定パネル用：直近でまとめて削除されたオブジェクト群を丸ごと復活させる
     window.restoreLastBatchDeletedObjects = () => {
         if (!lastBatchDeletedObjects || Object.keys(lastBatchDeletedObjects).length === 0) {
             showToast("⚠️ 復活させる削除データがありません");
@@ -2147,6 +2146,34 @@
         localStorage.setItem('tora_king_unit', speedUnitMode);
         document.getElementById('user-list-title').innerText = `参加者 (${units[speedUnitMode]})`;
         showToast(`速度単位を [${units[speedUnitMode]}] に切り替えました`);
+        
+        // 即座にリアルタイムの速度表示を更新するため、usersを強制トリガー
+        db.ref('users').once('value', snap => {
+            const users = snap.val();
+            if (!users) return;
+            let listHtml = "";
+            const now = Date.now();
+            let activeUsersObj = {};
+            for (let id in users) {
+                const u = users[id];
+                if (!u.name || now - u.ts > 600000) continue;
+                if (u.name === myName && id !== myId && !isViewerMode) continue;
+                activeUsersObj[u.name] = { id: id, u: u };
+            }
+            const sortedNames = Object.keys(activeUsersObj).sort();
+            sortedNames.forEach(name => {
+                const item = activeUsersObj[name];
+                const u = item.u;
+                const isMe = (item.id === myId);
+                const rawSpeed = u.speed || 0;
+                let s = 0;
+                if (speedUnitMode === 0) s = rawSpeed * 1.94384;
+                else if (speedUnitMode === 1) s = rawSpeed * 3.6;
+                else s = rawSpeed;
+                listHtml += `<div class="user-item ${isMe ? 'me' : ''}"><span style="color:${u.color}">●</span> ${u.name} ${s.toFixed(1)}${units[speedUnitMode]}</div>`;
+            });
+            document.getElementById('list-content').innerHTML = listHtml;
+        });
     };
 
     window.deleteObject = (key) => { 
