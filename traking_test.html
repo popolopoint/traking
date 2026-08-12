@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.6.1 by Popolo App.com</title>
+    <title>虎キング v3.6.3 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -29,8 +29,8 @@
 
         #map { height: 100vh; width: 100vw; z-index: 1; background: #222; }
         
-        #setup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 4000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; backdrop-filter: blur(4px); }
-        .setup-box { background: rgba(34, 34, 34, 0.9); padding: 20px; border-radius: 15px; border: 2px solid #ff9900; text-align: center; width: 85%; max-width: 340px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-height: 85vh; overflow-y: auto; }
+        #setup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; backdrop-filter: blur(4px); }
+        .setup-box { background: rgba(34, 34, 34, 0.95); padding: 20px; border-radius: 15px; border: 2px solid #ff9900; text-align: center; width: 85%; max-width: 340px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-height: 85vh; overflow-y: auto; }
         .color-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
         .color-btn { width: 100%; aspect-ratio: 1/1; border-radius: 50%; border: 2px solid #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; text-shadow: 1px 1px 2px #000; color: #fff; }
         
@@ -133,7 +133,7 @@
         .modal-body-scroll h4 { color: #2c3e50; margin: 12px 0 4px 0; border-bottom: 2px solid #3498db; padding-bottom: 2px; font-size: 1.15rem; }
         .modal-body-scroll p { margin: 6px 0 10px 0; font-size: 0.95rem; }
 
-        /* ヒート一覧モーダル用（v3.5.9風横並びレイアウト） */
+        /* v3.5.9風 横並びボタンレイアウトモーダル */
         .replay-item-card {
             background: #f8f9fa;
             border: 1px solid #e9ecef;
@@ -212,6 +212,30 @@
     </style>
 </head>
 <body>
+
+<!-- プロフィール設定・ログインモーダル -->
+<div id="setup-overlay" style="display:none;">
+    <div class="setup-box">
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 参加設定</h3>
+        <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
+        
+        <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
+        
+        <div style="font-size:0.9rem; color:#ff9900; font-weight:bold; margin-bottom:6px; text-align:left;">参加スタイル:</div>
+        <div style="display:flex; gap:6px; margin-bottom:14px;">
+            <button type="button" id="style-btn-normal" onclick="selectStyleMode('normal')" style="flex:1; padding:8px 4px; font-size:12px; font-weight:bold; border-radius:6px; border:1px solid #ff9900; background:#ff9900; color:#000; cursor:pointer;">通常(選手)</button>
+            <button type="button" id="style-btn-ship" onclick="selectStyleMode('ship')" style="flex:1; padding:8px 4px; font-size:12px; font-weight:bold; border-radius:6px; border:1px solid #ff9900; background:rgba(0,0,0,0.5); color:#fff; cursor:pointer;">🚤 フネ</button>
+            <button type="button" id="style-btn-buoy" onclick="selectStyleMode('buoy')" style="flex:1; padding:8px 4px; font-size:12px; font-weight:bold; border-radius:6px; border:1px solid #ff9900; background:rgba(0,0,0,0.5); color:#fff; cursor:pointer;">🚩 ブイ</button>
+        </div>
+
+        <div style="font-size:0.9rem; color:#ff9900; font-weight:bold; margin-bottom:6px; text-align:left;">マーカーカラー:</div>
+        <div class="color-grid" id="color-grid"></div>
+
+        <button onclick="closeSetup()" style="width:100%; margin-top:16px; background:#ff9900; color:#000; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">決定して参加</button>
+        <button onclick="saveProfileAsViewer()" style="width:100%; margin-top:8px; background:#4285f4; color:#fff; border:none; padding:10px; border-radius:8px; font-size:1rem; font-weight:bold; cursor:pointer;">👀 観戦モードで開始</button>
+        <button onclick="cancelSetup()" style="width:100%; margin-top:8px; background:#555; color:#fff; border:none; padding:8px; border-radius:8px; font-size:0.9rem; cursor:pointer;">キャンセル</button>
+    </div>
+</div>
 
 <div id="toast-notice" onclick="hideToastImmediate()"></div>
 <div id="replay-countdown-alert">10</div>
@@ -313,7 +337,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.6.1 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.6.3 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -877,7 +901,6 @@
         });
     };
 
-    // v3.5.9風 横並びボタンレイアウトモーダル
     window.openReplayMenu = () => {
         toggleMenu();
         const listDiv = document.getElementById('saved-courses-list');
@@ -1041,13 +1064,11 @@
             const data = snap.val();
             if (!data) return;
 
-            // リプレイ中は通常のリアルタイムブイ・線を非表示にするため、現在描画されているオブジェクトマーカーを一時退避・削除
             for (let key in objectMarkers) {
                 map.removeLayer(objectMarkers[key]);
             }
             customLinesGroup.clearLayers();
 
-            // リプレイ専用のマーカーを配置
             for (let key in replayObjectMarkers) {
                 map.removeLayer(replayObjectMarkers[key]);
             }
@@ -2213,9 +2234,8 @@
     };
 
     window.triggerSetup = () => {
-        showToast("👤 プロフィール（名前・色）の再設定を開きます");
         toggleMenu();
-        setTimeout(openSetup, 400);
+        openSetup();
     };
 
     window.triggerLogout = () => {
