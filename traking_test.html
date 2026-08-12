@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.5.5 by Popolo App.com</title>
+    <title>虎キング v3.5.6 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -39,6 +39,25 @@
         .status-panel { position: fixed; bottom: 80px; left: 10px; z-index: 2000; background: rgba(0,0,0,0.85); color: #fff; padding: 5px 8px; border-radius: 4px; font-size: 10px; max-width: 70%; border: 1px solid #ff9900; pointer-events: none; }
         
         #map-watermark { position: fixed; bottom: 10px; right: 70px; z-index: 1500; background: rgba(0, 0, 0, 0.7); color: #ffcc00; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; pointer-events: none; border: 1px solid rgba(255,153,0,0.5); backdrop-filter: blur(2px); }
+
+        .google-blue-dot {
+            width: 22px;
+            height: 22px;
+            background: rgba(66, 133, 244, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 8px rgba(66, 133, 244, 0.8);
+        }
+        .google-blue-dot-inner {
+            width: 12px;
+            height: 12px;
+            background: #4285f4;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        }
 
         #replay-control-bar { 
             position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%); z-index: 3500; 
@@ -229,7 +248,7 @@
         <div class="color-grid" id="color-grid"></div>
         <div style="display: flex; gap: 8px; margin-top: 15px;">
             <button onclick="saveProfileAsViewer()" style="flex: 1; background: #34495e; color: white; border: none; padding: 8px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; cursor: pointer;">👀 観戦（見る専）</button>
-            <button onclick="closeSetup()" style="flex: 1; background: #555; color: white; border: none; padding: 8px; border-radius: 6px; font-size: 0.85rem; cursor: pointer;">キャンセル</button>
+            <button onclick="cancelSetup()" style="flex: 1; background: #555; color: white; border: none; padding: 8px; border-radius: 6px; font-size: 0.85rem; cursor: pointer;">キャンセル</button>
         </div>
     </div>
 </div>
@@ -244,7 +263,6 @@
             <h4>🛡️ 管理者・編集機能</h4>
             <p>・リプレイメニューでの切り出し、編集、ゴミ箱削除、設定パネル表示にはパスワード認証が必要です。</p>
             <p>・プロフィールで「フネ」「ブイ」として参加するには専用パスワードが必要です。</p>
-            <p>・設定パネル内の限定機能やデータの復元が可能です。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:16px; background:#3498db; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -283,7 +301,7 @@
     </div>
 </div>
 
-<div id="map-watermark">虎キング v3.5.5 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.5.6 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -354,7 +372,7 @@
     let isViewerMode = localStorage.getItem('tora_king_viewer') === 'true';
     let myParticipantType = localStorage.getItem('tora_king_part_type') || 'normal';
 
-    let speedUnitMode = parseInt(localStorage.getItem('tora_king_unit') !== null ? localStorage.getItem('tora_king_unit') : "1");
+    let speedUnitMode = parseInt(localStorage.getItem('tora_king_unit') !== null ? localStorage.getItem('tora_king_unit'] : "1");
     const units = ["kt", "km/h", "m/s"];
     const colorPresets = {"赤":"#ff0000","青":"#0000ff","ピンク":"#ff66cc","紫":"#800080","橙":"#ff9900","黄":"#ffff00","緑":"#32cd32","黒":"#222222","白":"#ffffff"};
     const savedPos = JSON.parse(localStorage.getItem('tora_king_pos')) || { lat: 26.3, lng: 127.8, zoom: 12 };
@@ -381,7 +399,7 @@
     let cbSelectedFirstObj = null;
 
     let lastBatchDeletedObjects = null;
-    let originalObjectsSnapshot = null; // リプレイ前の本番オブジェクトデータを保持
+    let originalObjectsSnapshot = null;
 
     const userMarkers = {}, objectMarkers = {}, userTrails = {}, userPolylineLines = {};
     let coursePolyline = null;
@@ -940,7 +958,6 @@
     window.startReplay = (id) => {
         document.getElementById('saved-courses-modal').style.display = 'none';
         
-        // リプレイ突入前の現在の本番オブジェクトデータを保存しておく
         db.ref('objects').once('value', snap => {
             originalObjectsSnapshot = snap.val();
         });
@@ -949,7 +966,6 @@
             const data = snap.val();
             if (!data) return;
 
-            // リプレイ時は一時的にそのレースのオブジェクトを配置
             if (data.objects) {
                 db.ref('objects').set(data.objects);
             }
@@ -990,7 +1006,6 @@
             replayPaused = false;
             document.getElementById('btn-pause').innerText = "一時停止";
 
-            // リプレイ中は自分のGPSマーカー非表示（または通常の青マーカーのみにするため自分のカスタムトラッキングを隠す）
             if (myMarker) {
                 map.removeLayer(myMarker);
                 myMarker = null;
@@ -1238,13 +1253,8 @@
         document.getElementById('header-replay-time').style.display = 'none';
         document.getElementById('replay-countdown-alert').style.display = 'none';
         
-        // リプレイ終了時に、本来登録されていたオブジェクト（フネ・ブイ）の状態に確実に復元
         if (originalObjectsSnapshot !== null) {
             db.ref('objects').set(originalObjectsSnapshot);
-        } else {
-            db.ref('objects').once('value', snap => {
-                // 万が一バックアップがない場合は現在のDBをそのまま保つかリロード
-            });
         }
 
         showToast("⏹️ リプレイを終了しました");
@@ -1300,6 +1310,11 @@
             const html = `<div class="arrow-icon-wrapper" style="transform: rotate(${heading||0}deg);"><svg viewBox="0 0 100 100" width="30" height="30"><path d="M50 5 L90 90 L50 75 L10 90 Z" fill="${color}" stroke="white" stroke-width="5" /></svg></div>`;
             return L.divIcon({ html: html, className: '', iconSize: [30, 30], iconAnchor: [15, 15] });
         }
+    }
+
+    function createViewerIcon() {
+        const html = `<div class="google-blue-dot"><div class="google-blue-dot-inner"></div></div>`;
+        return L.divIcon({ html: html, className: '', iconSize: [22, 22], iconAnchor: [11, 11] });
     }
 
     function createObjectIcon(type, shape, color) {
@@ -1911,6 +1926,13 @@
         document.getElementById('setup-overlay').style.display = 'flex';
     }
 
+    function cancelSetup() {
+        document.getElementById('setup-overlay').style.display = 'none';
+        if (!myName && !isViewerMode) {
+            saveProfileAsViewer();
+        }
+    }
+
     function closeSetup() {
         const nameInp = document.getElementById('setup-name').value;
         if (!nameInp) return alert("名前を入力するか、「観戦」を選んでください");
@@ -1942,12 +1964,12 @@
         isViewerMode = true;
         myParticipantType = 'normal';
         myName = "👀 観戦者";
-        myColor = "#7f8c8d";
+        myColor = "#4285f4";
         localStorage.setItem('tora_king_viewer', 'true');
         localStorage.removeItem('tora_king_name');
         localStorage.removeItem('tora_king_part_type');
         document.getElementById('setup-overlay').style.display = 'none';
-        showToast("👀 観戦モード（見る専）で開始しました");
+        showToast("👀 観戦モード（青い〇）で開始しました");
         startTracking();
     };
 
@@ -1984,12 +2006,15 @@
         }
         
         const latlng = [latitude, longitude];
+        const iconObj = isViewerMode ? createViewerIcon() : createUserIcon(myParticipantType, myColor || '#7f8c8d', heading);
+        const tooltipName = isViewerMode ? "👀 観戦者" : (myName || '観戦者');
+
         if (!myMarker) {
-            myMarker = L.marker(latlng, { icon: createUserIcon(myParticipantType, myColor || '#7f8c8d', heading) }).addTo(map);
-            myMarker.bindTooltip(myName || '観戦者', { permanent: true, direction: 'top', className: 'user-label' });
+            myMarker = L.marker(latlng, { icon: iconObj }).addTo(map);
+            myMarker.bindTooltip(tooltipName, { permanent: true, direction: 'top', className: 'user-label' });
             map.setView(latlng, 16);
         } else {
-            myMarker.setLatLng(latlng).setIcon(createUserIcon(myParticipantType, myColor || '#7f8c8d', heading));
+            myMarker.setLatLng(latlng).setIcon(iconObj);
         }
         
         if (isFollowing) map.panTo(latlng);
