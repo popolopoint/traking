@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.6.6 by Popolo App.com</title>
+    <title>虎キング v3.6.7 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -49,25 +49,6 @@
             min-height: auto !important;
             border-radius: 3px !important;
             box-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
-        }
-
-        .google-blue-dot {
-            width: 22px;
-            height: 22px;
-            background: rgba(66, 133, 244, 0.3);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 8px rgba(66, 133, 244, 0.8);
-        }
-        .google-blue-dot-inner {
-            width: 12px;
-            height: 12px;
-            background: #4285f4;
-            border: 2px solid #ffffff;
-            border-radius: 50%;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
         }
 
         #replay-control-bar { 
@@ -144,7 +125,6 @@
         .modal-body-scroll h4 { color: #2c3e50; margin: 12px 0 4px 0; border-bottom: 2px solid #3498db; padding-bottom: 2px; font-size: 1.15rem; }
         .modal-body-scroll p { margin: 6px 0 10px 0; font-size: 0.95rem; }
 
-        /* v3.5.9風 横並びボタンレイアウトモーダル */
         .replay-item-card {
             background: #f8f9fa;
             border: 1px solid #e9ecef;
@@ -243,7 +223,7 @@
         <div class="color-grid" id="color-grid"></div>
 
         <button onclick="closeSetup()" style="width:100%; margin-top:16px; background:#ff9900; color:#000; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">決定して参加</button>
-        <button onclick="saveProfileAsViewer()" style="width:100%; margin-top:8px; background:#4285f4; color:#fff; border:none; padding:10px; border-radius:8px; font-size:1rem; font-weight:bold; cursor:pointer;">👀 観戦モードで開始</button>
+        <button onclick="saveProfileAsViewer()" style="width:100%; margin-top:8px; background:#2980b9; color:#fff; border:none; padding:10px; border-radius:8px; font-size:1rem; font-weight:bold; cursor:pointer;">👀 ログインせずに見る</button>
         <button onclick="triggerLogout()" style="width:100%; margin-top:8px; background:#e74c3c; color:#fff; border:none; padding:10px; border-radius:8px; font-size:1rem; font-weight:bold; cursor:pointer;">🚪 ログアウト（データ消去）</button>
         <button onclick="cancelSetup()" style="width:100%; margin-top:8px; background:#555; color:#fff; border:none; padding:8px; border-radius:8px; font-size:0.9rem; cursor:pointer;">キャンセル</button>
     </div>
@@ -349,7 +329,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.6.6 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.6.7 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1423,9 +1403,9 @@
         }
 
         if (userMarkers[name]) {
-            userMarkers[name].setLatLng([lat, lng]).setIcon(isViewerMode ? createViewerIcon() : createUserIcon(partType, color, heading));
+            userMarkers[name].setLatLng([lat, lng]).setIcon(createUserIcon(partType, color, heading));
         } else {
-            userMarkers[name] = L.marker([lat, lng], { icon: isViewerMode ? createViewerIcon() : createUserIcon(partType, color, heading) }).addTo(map);
+            userMarkers[name] = L.marker([lat, lng], { icon: createUserIcon(partType, color, heading) }).addTo(map);
             userMarkers[name].bindTooltip(name, { permanent: true, direction: 'top', className: 'user-label' });
         }
     }
@@ -1439,11 +1419,6 @@
             const html = `<div class="arrow-icon-wrapper" style="transform: rotate(${heading||0}deg);"><svg viewBox="0 0 100 100" width="30" height="30"><path d="M50 5 L90 90 L50 75 L10 90 Z" fill="${color}" stroke="white" stroke-width="5" /></svg></div>`;
             return L.divIcon({ html: html, className: '', iconSize: [30, 30], iconAnchor: [15, 15] });
         }
-    }
-
-    function createViewerIcon() {
-        const html = `<div class="google-blue-dot"><div class="google-blue-dot-inner"></div></div>`;
-        return L.divIcon({ html: html, className: '', iconSize: [22, 22], iconAnchor: [11, 11] });
     }
 
     function createObjectIcon(type, shape, color) {
@@ -2068,7 +2043,7 @@
 
     function closeSetup() {
         const nameInp = document.getElementById('setup-name').value;
-        if (!nameInp) return alert("名前を入力するか、「観戦」を選んでください");
+        if (!nameInp) return alert("名前を入力するか、「ログインせずに見る」を選んでください");
         
         if (myParticipantType === 'ship' || myParticipantType === 'buoy') {
             const pass = prompt("フネ・ブイとして参加用のパスワードを入力してください:");
@@ -2100,20 +2075,21 @@
 
     window.saveProfileAsViewer = () => {
         isViewerMode = true;
-        myParticipantType = 'normal';
-        myName = "👀 観戦者";
-        myColor = "#4285f4";
+        myName = null;
+        myColor = null;
         localStorage.setItem('tora_king_viewer', 'true');
         localStorage.removeItem('tora_king_name');
         localStorage.removeItem('tora_king_part_type');
         document.getElementById('setup-overlay').style.display = 'none';
-        showToast("👀 観戦モード（青い〇）で開始しました");
+        showToast("👀 ログインせずに見るモード（観戦専用）で開始しました");
         
         if (myMarker) {
             map.removeLayer(myMarker);
             myMarker = null;
         }
-        startTracking();
+        // 観戦専用モードなのでGPSトラッキングは開始しない（自分の位置を表示・送信しない）
+        document.getElementById('status').style.background = "rgba(0,0,0,0.8)";
+        document.getElementById('status').innerText = "観戦専用モード（位置非送信）";
     };
 
     function handleGPSError(error) {
@@ -2129,7 +2105,7 @@
     }
 
     function updateLocation(pos) {
-        if (isReplaying) return;
+        if (isReplaying || isViewerMode) return;
 
         const latitude = pos.coords.latitude + offsetLat;
         const longitude = pos.coords.longitude + offsetLng;
@@ -2140,17 +2116,17 @@
         currentLatestPos = { lat: latitude, lng: longitude };
         
         if (myName) {
-            const userData = {lat: latitude, lng: longitude, name: myName, color: myColor, speed: speed, heading: heading, partType: myParticipantType, ts: now, isViewer: isViewerMode};
+            const userData = {lat: latitude, lng: longitude, name: myName, color: myColor, speed: speed, heading: heading, partType: myParticipantType, ts: now, isViewer: false};
             db.ref('users/'+myId).set(userData);
             
-            if (isRecordingActive && !isViewerMode) {
+            if (isRecordingActive) {
                 db.ref('temp_history/' + myId).push(userData);
             }
         }
         
         const latlng = [latitude, longitude];
-        const iconObj = isViewerMode ? createViewerIcon() : createUserIcon(myParticipantType, myColor || '#7f8c8d', heading);
-        const tooltipName = isViewerMode ? "👀 観戦者" : (myName || '観戦者');
+        const iconObj = createUserIcon(myParticipantType, myColor || '#7f8c8d', heading);
+        const tooltipName = myName || '選手';
 
         if (!myMarker) {
             myMarker = L.marker(latlng, { icon: iconObj }).addTo(map);
@@ -2178,6 +2154,7 @@
     }
 
     function startTracking() {
+        if (isViewerMode) return;
         if (!navigator.geolocation) {
             document.getElementById('status').innerText = "Error: GPS非対応環境";
             return;
@@ -2227,12 +2204,20 @@
     }
 
     window.triggerRecenter = () => {
+        if (isViewerMode) {
+            showToast("⚠️ 観戦専用モードでは現在地追従は使用できません");
+            return;
+        }
         showToast("🎯 現在地を画面の中心に追従します");
         isFollowing = true; 
         if(myMarker) map.panTo(myMarker.getLatLng());
     };
 
     window.triggerGPSRetry = () => {
+        if (isViewerMode) {
+            showToast("⚠️ 観戦専用モードではGPSは使用しません");
+            return;
+        }
         showToast("🔄 GPSを強制リセット・再接続します");
         document.getElementById('status').style.background = "#ff9900";
         document.getElementById('status').innerText = "GPSシグナルを強制再起動中...";
@@ -2245,6 +2230,10 @@
     };
 
     window.triggerHoseiMode = () => {
+        if (isViewerMode) {
+            showToast("⚠️ 観戦専用モードでは位置補正は使用できません");
+            return;
+        }
         if (isAddPointMode) setAddPointMode(false);
         isHoseiMode = !isHoseiMode;
         document.getElementById('hosei-btn').style.background = isHoseiMode ? "rgba(231, 76, 60, 0.7)" : "rgba(44, 62, 80, 0.45)";
@@ -2316,8 +2305,6 @@
             activeUserNames[u.name] = true;
             activeUsersObj[u.name] = { id: id, u: u };
             
-            if (id === myId && isViewerMode) continue;
-
             updateUserTrailAndMarker(u.name, u.lat, u.lng, u.color, u.heading, now, u.partType || 'normal');
         }
 
