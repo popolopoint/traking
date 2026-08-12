@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.6.3 by Popolo App.com</title>
+    <title>虎キング v3.6.4 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -39,6 +39,17 @@
         .status-panel { position: fixed; bottom: 80px; left: 10px; z-index: 2000; background: rgba(0,0,0,0.85); color: #fff; padding: 5px 8px; border-radius: 4px; font-size: 10px; max-width: 70%; border: 1px solid #ff9900; pointer-events: none; }
         
         #map-watermark { position: fixed; bottom: 10px; right: 70px; z-index: 1500; background: rgba(0, 0, 0, 0.7); color: #ffcc00; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; pointer-events: none; border: 1px solid rgba(255,153,0,0.5); backdrop-filter: blur(2px); }
+
+        /* 吹き出し（Tooltip）を小さく調整 */
+        .leaflet-tooltip.user-label,
+        .leaflet-tooltip.object-label {
+            font-size: 10px !important;
+            padding: 1px 4px !important;
+            line-height: 1.2 !important;
+            min-height: auto !important;
+            border-radius: 3px !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
+        }
 
         .google-blue-dot {
             width: 22px;
@@ -337,7 +348,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.6.3 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.6.4 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1411,9 +1422,9 @@
         }
 
         if (userMarkers[name]) {
-            userMarkers[name].setLatLng([lat, lng]).setIcon(createUserIcon(partType, color, heading));
+            userMarkers[name].setLatLng([lat, lng]).setIcon(isViewerMode ? createViewerIcon() : createUserIcon(partType, color, heading));
         } else {
-            userMarkers[name] = L.marker([lat, lng], { icon: createUserIcon(partType, color, heading) }).addTo(map);
+            userMarkers[name] = L.marker([lat, lng], { icon: isViewerMode ? createViewerIcon() : createUserIcon(partType, color, heading) }).addTo(map);
             userMarkers[name].bindTooltip(name, { permanent: true, direction: 'top', className: 'user-label' });
         }
     }
@@ -2042,7 +2053,7 @@
     };
 
     function openSetup() {
-        document.getElementById('setup-name').value = (myName && !isViewerMode) ? myName : "";
+        document.getElementById('setup-name').value = (myName && !isViewerMode && myName !== "👀 観戦者") ? myName : "";
         selectStyleMode(myParticipantType || 'normal');
         document.getElementById('setup-overlay').style.display = 'flex';
     }
@@ -2078,6 +2089,12 @@
         localStorage.setItem('tora_king_part_type', myParticipantType);
         localStorage.removeItem('tora_king_viewer');
         document.getElementById('setup-overlay').style.display = 'none'; 
+        
+        // 観戦者モードから切り替えた際、古いマーカーを即座に破棄して再作成
+        if (myMarker) {
+            map.removeLayer(myMarker);
+            myMarker = null;
+        }
         startTracking();
     }
 
@@ -2091,6 +2108,11 @@
         localStorage.removeItem('tora_king_part_type');
         document.getElementById('setup-overlay').style.display = 'none';
         showToast("👀 観戦モード（青い〇）で開始しました");
+        
+        if (myMarker) {
+            map.removeLayer(myMarker);
+            myMarker = null;
+        }
         startTracking();
     };
 
