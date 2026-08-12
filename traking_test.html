@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.6.5 by Popolo App.com</title>
+    <title>虎キング v3.6.6 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -244,6 +244,7 @@
 
         <button onclick="closeSetup()" style="width:100%; margin-top:16px; background:#ff9900; color:#000; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">決定して参加</button>
         <button onclick="saveProfileAsViewer()" style="width:100%; margin-top:8px; background:#4285f4; color:#fff; border:none; padding:10px; border-radius:8px; font-size:1rem; font-weight:bold; cursor:pointer;">👀 観戦モードで開始</button>
+        <button onclick="triggerLogout()" style="width:100%; margin-top:8px; background:#e74c3c; color:#fff; border:none; padding:10px; border-radius:8px; font-size:1rem; font-weight:bold; cursor:pointer;">🚪 ログアウト（データ消去）</button>
         <button onclick="cancelSetup()" style="width:100%; margin-top:8px; background:#555; color:#fff; border:none; padding:8px; border-radius:8px; font-size:0.9rem; cursor:pointer;">キャンセル</button>
     </div>
 </div>
@@ -348,7 +349,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.6.5 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.6.6 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -2139,7 +2140,6 @@
         currentLatestPos = { lat: latitude, lng: longitude };
         
         if (myName) {
-            // 観戦者の場合もFirebaseに送信して自分自身の位置を把握できるようにする（他の人からはフィルタで非表示）
             const userData = {lat: latitude, lng: longitude, name: myName, color: myColor, speed: speed, heading: heading, partType: myParticipantType, ts: now, isViewer: isViewerMode};
             db.ref('users/'+myId).set(userData);
             
@@ -2256,13 +2256,13 @@
     };
 
     window.triggerSetup = () => {
-        toggleMenu();
+        if (isMenuOpen) toggleMenu();
         openSetup();
     };
 
     window.triggerLogout = () => {
+        if (isMenuOpen) toggleMenu();
         showToast("🏃 ログアウトしています...");
-        toggleMenu();
         setTimeout(() => {
             if(confirm("ログアウトしますか？（登録情報がリセットされます）")) { 
                 db.ref('users/'+myId).remove().then(() => {
@@ -2301,7 +2301,6 @@
                 continue;
             }
 
-            // 自分自身、または「他の人の観戦者アカウント」は地図やリストに表示しない
             if (id !== myId) {
                 if (u.isViewer || u.name === "👀 観戦者") {
                     if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
@@ -2317,7 +2316,6 @@
             activeUserNames[u.name] = true;
             activeUsersObj[u.name] = { id: id, u: u };
             
-            // 自分自身の観戦者モード時は自分のマーカーを地図上に描画しない（専用の myMarker があるため）
             if (id === myId && isViewerMode) continue;
 
             updateUserTrailAndMarker(u.name, u.lat, u.lng, u.color, u.heading, now, u.partType || 'normal');
@@ -2327,7 +2325,6 @@
         sortedNames.forEach(name => {
             const item = activeUsersObj[name];
             const u = item.u;
-            // リストからも他の観戦者は除外
             if (item.id !== myId && (u.isViewer || u.name === "👀 観戦者")) return;
 
             const isMe = (item.id === myId);
