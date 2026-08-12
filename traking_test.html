@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.5.6 by Popolo App.com</title>
+    <title>虎キング v3.5.7 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -301,7 +301,7 @@
     </div>
 </div>
 
-<div id="map-watermark">虎キング v3.5.6 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.5.7 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -372,13 +372,24 @@
     let isViewerMode = localStorage.getItem('tora_king_viewer') === 'true';
     let myParticipantType = localStorage.getItem('tora_king_part_type') || 'normal';
 
-    let speedUnitMode = parseInt(localStorage.getItem('tora_king_unit') !== null ? localStorage.getItem('tora_king_unit'] : "1");
+    let speedUnitMode = parseInt(localStorage.getItem('tora_king_unit') !== null ? localStorage.getItem('tora_king_unit') : "1");
     const units = ["kt", "km/h", "m/s"];
     const colorPresets = {"赤":"#ff0000","青":"#0000ff","ピンク":"#ff66cc","紫":"#800080","橙":"#ff9900","黄":"#ffff00","緑":"#32cd32","黒":"#222222","白":"#ffffff"};
     const savedPos = JSON.parse(localStorage.getItem('tora_king_pos')) || { lat: 26.3, lng: 127.8, zoom: 12 };
 
     const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([savedPos.lat, savedPos.lng], savedPos.zoom);
-    try { L.gridLayer.googleMutant({ type: 'roadmap' }).addTo(map); } catch(e) {}
+    
+    // マップタイル安全ロード処理（GoogleMutant失敗時は標準タイルにフォールバック）
+    try {
+        if (typeof L.gridLayer.googleMutant === 'function') {
+            L.gridLayer.googleMutant({ type: 'roadmap' }).addTo(map);
+        } else {
+            throw new Error("GoogleMutant not available");
+        }
+    } catch(e) {
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+    }
+
     L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
 
     let myMarker = null, isFollowing = true;
@@ -2257,6 +2268,7 @@
 
     window.addEventListener('load', () => {
         document.getElementById('user-list-title').innerText = `参加者 (${units[speedUnitMode]})`;
+        setTimeout(() => { map.invalidateSize(); }, 300);
         setTimeout(checkIncomingCourse, 1000);
     });
 </script>
