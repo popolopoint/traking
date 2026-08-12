@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.7.1 by Popolo App.com</title>
+    <title>虎キング v3.7.2 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -328,7 +328,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.7.1 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.7.2 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -450,6 +450,7 @@
     let myColor = localStorage.getItem('tora_king_color');
     let isViewerMode = localStorage.getItem('tora_king_viewer') === 'true';
     let myParticipantType = localStorage.getItem('tora_king_part_type') || 'normal';
+    let isObjectDeletedLocally = false; // 自分が設置した/参加したオブジェクトが削除されたかのフラグ
 
     let speedUnitMode = parseInt(localStorage.getItem('tora_king_unit') !== null ? localStorage.getItem('tora_king_unit') : "1");
     const units = ["kt", "km/h", "m/s"];
@@ -771,7 +772,7 @@
             checkboxes.forEach(chk => {
                 const userId = chk.value;
                 promises.push(db.ref('users/' + userId).remove());
-                promises.push(db.ref('objects/' + userId).remove()); // objects側も連動削除
+                promises.push(db.ref('objects/' + userId).remove());
             });
 
             Promise.all(promises).then(() => {
@@ -1496,6 +1497,7 @@
                         batchDeleted[k] = objs[k];
                         if (objs[k].isParticipantUser) {
                             userDeletes.push(db.ref('users/' + k).remove());
+                            if (k === myId) isObjectDeletedLocally = true;
                         }
                     }
                 });
@@ -2072,6 +2074,7 @@
         myName = nameInp || ""; 
         myColor = color; 
         isViewerMode = false;
+        isObjectDeletedLocally = false; // 再設定時はフラグ解除
         
         localStorage.setItem('tora_king_name', myName); 
         localStorage.setItem('tora_king_color', myColor);
@@ -2085,11 +2088,12 @@
         isViewerMode = true;
         myName = null;
         myColor = null;
+        isObjectDeletedLocally = false;
         localStorage.setItem('tora_king_viewer', 'true');
         localStorage.removeItem('tora_king_name');
         localStorage.removeItem('tora_king_part_type');
         document.getElementById('setup-overlay').style.display = 'none';
-        showToast("👀 ログインせずに見るモードで開始しました");
+        showToast("👀 観戦モードで開始しました");
         startTracking();
     };
 
@@ -2131,7 +2135,8 @@
             };
             db.ref('users/'+myId).set(userData);
             
-            if (myParticipantType === 'ship' || myParticipantType === 'buoy') {
+            // 自分が設定画面等から削除されていない場合のみ、オブジェクトを更新する（ゾンビ化防止）
+            if ((myParticipantType === 'ship' || myParticipantType === 'buoy') && !isObjectDeletedLocally) {
                 db.ref('objects/' + myId).update({
                     type: myParticipantType,
                     shape: 'triangle',
@@ -2415,12 +2420,17 @@
                 const objData = snap.val();
                 let updates = {};
                 updates['objects/' + key] = null;
-                updates['users/' + key] = null; // ユーザーノード側も同時削除
+                updates['users/' + key] = null;
 
                 if (objData) {
                     let batch = {};
                     batch[key] = objData;
                     lastBatchDeletedObjects = batch;
+                    
+                    // もし削除されたのが自分自身のログインオブジェクトであれば、ゾンビ復活フラグをONにする
+                    if (key === myId) {
+                        isObjectDeletedLocally = true;
+                    }
                 }
 
                 db.ref().update(updates, (err) => {
