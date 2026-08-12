@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.6.0 by Popolo App.com</title>
+    <title>虎キング v3.6.1 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -133,6 +133,64 @@
         .modal-body-scroll h4 { color: #2c3e50; margin: 12px 0 4px 0; border-bottom: 2px solid #3498db; padding-bottom: 2px; font-size: 1.15rem; }
         .modal-body-scroll p { margin: 6px 0 10px 0; font-size: 0.95rem; }
 
+        /* ヒート一覧モーダル用（v3.5.9風横並びレイアウト） */
+        .replay-item-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .replay-item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            text-align: left;
+            flex-grow: 1;
+            min-width: 0;
+        }
+        .replay-item-title {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #2c3e50;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .replay-item-sub {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        .replay-item-btns {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .replay-item-btn {
+            border: none;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s;
+        }
+        .replay-item-btn:active { opacity: 0.8; }
+        .replay-btn-play { background: #8e44ad; }
+        .replay-btn-trim { background: #27ae60; }
+        .replay-btn-edit { background: #2980b9; }
+        .replay-btn-del  { background: #c0392b; }
+
         #course-builder-bar {
             position: fixed; top: 65px; left: 50%; transform: translateX(-50%); z-index: 3500;
             background: rgba(30, 39, 46, 0.98); border: 3px solid #ff9900;
@@ -255,7 +313,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.6.0 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.6.1 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -331,10 +389,11 @@
     </div>
 </div>
 
+<!-- 保存済みレース（ヒート）選択モーダル -->
 <div id="saved-courses-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
-    <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:420px; box-sizing:border-box; text-align:center;">
+    <div style="background:white; padding:20px; border-radius:12px; width:94%; max-width:480px; box-sizing:border-box; text-align:center;">
         <h3 style="margin:0 0 12px 0; color:#2c3e50; font-size:1.3rem;">📁 レース記録・ヒート一覧</h3>
-        <div id="saved-courses-list" class="modal-body-scroll" style="min-height:140px; max-height:50vh;"></div>
+        <div id="saved-courses-list" class="modal-body-scroll" style="min-height:140px; max-height:55vh;"></div>
         <button onclick="document.getElementById('saved-courses-modal').style.display='none'" style="width:100%; margin-top:16px; background:#7f8c8d; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
 </div>
@@ -818,6 +877,7 @@
         });
     };
 
+    // v3.5.9風 横並びボタンレイアウトモーダル
     window.openReplayMenu = () => {
         toggleMenu();
         const listDiv = document.getElementById('saved-courses-list');
@@ -833,19 +893,22 @@
             let html = "";
             for (let id in saved) {
                 const c = saved[id];
-                const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleString() : '日時不明';
-                const startInfo = c.startTime ? ` スタート: ${c.startTime}` : '';
-                html += `<div style="background:#f1f2f6; padding:10px; border-radius:6px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; font-size:1.1rem;">
-                    <div style="text-align:left; max-width:150px; overflow:hidden;"><b>🏁 ${c.title || '無題'}</b><br><span style="font-size:0.9rem; color:#555;">${startInfo}</span><br><span style="font-size:0.8rem; color:#888;">${dateStr}</span></div>
-                    <div style="display:flex; gap:6px; flex-direction:column;">
-                        <button onclick="startReplay('${id}')" style="background:#8e44ad; color:white; border:none; padding:6px 12px; border-radius:4px; font-size:1rem; font-weight:bold; cursor:pointer;">再生</button>
-                        <button onclick="authAndTrim('${id}')" style="background:#27ae60; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:0.9rem; cursor:pointer;" title="切り出し">✂️ 切り出し</button>
+                const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '';
+                const startInfo = c.startTime ? `スタート: ${c.startTime}` : '';
+
+                html += `
+                <div class="replay-item-card">
+                    <div class="replay-item-info">
+                        <div class="replay-item-title">🏁 ${c.title || '無題'}</div>
+                        <div class="replay-item-sub">${startInfo} ${dateStr ? ' (' + dateStr + ')' : ''}</div>
                     </div>
-                    <div style="display:flex; gap:4px; flex-direction:column;">
-                        <button onclick="authAndRename('${id}', '${c.title}')" style="background:#2980b9; color:white; border:none; padding:5px 8px; border-radius:4px; font-size:0.9rem; cursor:pointer;" title="名前変更">✏️ 編集</button>
-                        <button onclick="authAndDelete('${id}')" style="background:#c0392b; color:white; border:none; padding:5px 8px; border-radius:4px; font-size:0.9rem; cursor:pointer;" title="削除">🗑️ 削除</button>
+                    <div class="replay-item-btns">
+                        <button class="replay-item-btn replay-btn-play" onclick="startReplay('${id}')">再生</button>
+                        <button class="replay-item-btn replay-btn-trim" onclick="authAndTrim('${id}')" title="切り出し">✂️</button>
+                        <button class="replay-item-btn replay-btn-edit" onclick="authAndRename('${id}', '${c.title}')" title="編集">✏️</button>
+                        <button class="replay-item-btn replay-btn-del" onclick="authAndDelete('${id}')" title="削除">🗑️</button>
                     </div>
-                `;
+                </div>`;
             }
             listDiv.innerHTML = html;
         }, (error) => {
@@ -1521,7 +1584,7 @@
     }
 
     db.ref('objects').on('value', snap => {
-        if (isReplaying) return; // リプレイ中は通常のリアルタイムオブジェクト描画を無視する
+        if (isReplaying) return;
 
         const listContainer = document.getElementById('pointListContainer');
         const panel = document.getElementById('pointSettingsPanel');
