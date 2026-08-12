@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.6.8 by Popolo App.com</title>
+    <title>虎キング v3.6.9 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -329,7 +329,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.6.8 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.6.9 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -751,10 +751,11 @@
             let html = "";
             for (let id in users) {
                 const u = users[id];
-                if (!u.name) continue;
+                if (!u.name && u.partType === 'normal') continue;
+                const displayName = u.name || (u.partType === 'ship' ? '🚤 フネ' : '🚩 ブイ');
                 html += `<div style="padding:8px 0; border-bottom:1px solid #eee; display:flex; align-items:center; gap:10px; font-size:1.1rem;">
                     <input type="checkbox" class="target-user-chk" value="${id}" id="chk_${id}" style="transform:scale(1.4);">
-                    <label for="chk_${id}" style="cursor:pointer;"><span style="color:${u.color}">●</span> <b>${u.name}</b></label>
+                    <label for="chk_${id}" style="cursor:pointer;"><span style="color:${u.color}">●</span> <b>${displayName}</b></label>
                 </div>`;
             }
             listDiv.innerHTML = html || "<p style='color:#666;'>有効なユーザーがいません</p>";
@@ -831,11 +832,11 @@
                 const now = Date.now();
                 for (let uid in users) {
                     const u = users[uid];
-                    if (u && u.name && (now - (u.ts || 0) <= 600000)) {
+                    if (u && (u.name || u.partType !== 'normal') && (now - (u.ts || 0) <= 600000)) {
                         db.ref('temp_history/' + uid).push({
                             lat: u.lat,
                             lng: u.lng,
-                            name: u.name,
+                            name: u.name || (u.partType === 'ship' ? 'フネ' : 'ブイ'),
                             color: u.color || '#ff9900',
                             speed: u.speed || 0,
                             heading: u.heading || 0,
@@ -1877,7 +1878,7 @@
                     <div style="border-bottom:1px solid #ddd; padding:10px 0; display:flex; justify-content:space-between; align-items:center;">
                         <div style="font-size:0.95rem;">
                             <b>📍 ${label}</b><br>
-                            <span style="font-size:0.85rem; color:#555; lat:${o.lat.toFixed(5)}, lng:${o.lng.toFixed(5)}</span>
+                            <span style="font-size:0.85rem; color:#555;">緯度:${o.lat.toFixed(5)}, 経度:${o.lng.toFixed(5)}</span>
                         </div>
                         <button onclick="shareSingleCoord('${key}')" style="background:#2980b9; color:white; border:none; padding:6px 12px; border-radius:6px; font-size:0.9rem; cursor:pointer; font-weight:bold;">送信</button>
                     </div>
@@ -2047,14 +2048,15 @@
 
     function closeSetup() {
         const nameInp = document.getElementById('setup-name').value;
-        if (!nameInp) return alert("名前を入力するか、「ログインせずに見る」を選んでください");
         
         if (myParticipantType === 'ship' || myParticipantType === 'buoy') {
             const pass = prompt("フネ・ブイとして参加用のパスワードを入力してください:");
             if (pass !== RECORD_PASSWORD) {
-                alert("❌ パスワードが違います！通常参加に変更します。");
-                selectStyleMode('normal');
+                alert("❌ パスワードが違います！");
+                return;
             }
+        } else {
+            if (!nameInp) return alert("名前を入力してください");
         }
         
         saveProfile(myColor || "#ff9900");
@@ -2062,8 +2064,12 @@
 
     function saveProfile(color) {
         const nameInp = document.getElementById('setup-name').value;
-        if (!nameInp) return alert("名前を入力してください");
-        myName = nameInp; myColor = color; isViewerMode = false;
+        if (myParticipantType === 'normal' && !nameInp) return alert("名前を入力してください");
+
+        myName = nameInp || ""; 
+        myColor = color; 
+        isViewerMode = false;
+        
         localStorage.setItem('tora_king_name', myName); 
         localStorage.setItem('tora_king_color', myColor);
         localStorage.setItem('tora_king_part_type', myParticipantType);
@@ -2085,13 +2091,12 @@
         localStorage.removeItem('tora_king_name');
         localStorage.removeItem('tora_king_part_type');
         document.getElementById('setup-overlay').style.display = 'none';
-        showToast("👀 ログインせずに見るモードで開始しました（現在地登録用GPS取得中・非公開）");
+        showToast("👀 ログインせずに見るモードで開始しました");
         
         if (myMarker) {
             map.removeLayer(myMarker);
             myMarker = null;
         }
-        // 観戦モードでもGPS測位（現在地記憶）だけはバックグラウンドで開始する（サーバー送信はしない）
         startTracking();
     };
 
@@ -2118,17 +2123,39 @@
         
         currentLatestPos = { lat: latitude, lng: longitude };
         
-        // 観戦モード（ログインしていない状態）ではサーバーへ自分の位置を一切送信しない
-        if (!isViewerMode && myName) {
-            const userData = {lat: latitude, lng: longitude, name: myName, color: myColor, speed: speed, heading: heading, partType: myParticipantType, ts: now, isViewer: false};
+        if (!isViewerMode && (myName || myParticipantType === 'ship' || myParticipantType === 'buoy')) {
+            const displayName = myName || (myParticipantType === 'ship' ? 'フネ' : 'ブイ');
+            const userData = {
+                lat: latitude, 
+                lng: longitude, 
+                name: displayName, 
+                color: myColor, 
+                speed: speed, 
+                heading: heading, 
+                partType: myParticipantType, 
+                ts: now, 
+                isViewer: false
+            };
             db.ref('users/'+myId).set(userData);
             
+            if (myParticipantType === 'ship' || myParticipantType === 'buoy') {
+                db.ref('objects/' + myId).set({
+                    type: myParticipantType,
+                    shape: 'triangle',
+                    color: myColor || '#ff3b30',
+                    lat: latitude,
+                    lng: longitude,
+                    comment: displayName,
+                    assignedLabel: displayName,
+                    ts: now
+                });
+            }
+
             if (isRecordingActive) {
                 db.ref('temp_history/' + myId).push(userData);
             }
         }
         
-        // 観戦モードの場合は地図上に自分のアイコン（青丸や矢印）は表示しない
         if (isViewerMode) {
             document.getElementById('status').style.background = "rgba(0,128,0,0.8)";
             document.getElementById('status').innerText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)} (GPS測位中/観戦中)`;
@@ -2137,7 +2164,7 @@
 
         const latlng = [latitude, longitude];
         const iconObj = createUserIcon(myParticipantType, myColor || '#7f8c8d', heading);
-        const tooltipName = myName || '選手';
+        const tooltipName = myName || (myParticipantType === 'ship' ? 'フネ' : 'ブイ');
 
         if (!myMarker) {
             myMarker = L.marker(latlng, { icon: iconObj }).addTo(map);
@@ -2260,7 +2287,11 @@
         showToast("🏃 ログアウトしています...");
         setTimeout(() => {
             if(confirm("ログアウトしますか？（登録情報がリセットされます）")) { 
-                db.ref('users/'+myId).remove().then(() => {
+                let cleanupPromises = [db.ref('users/'+myId).remove()];
+                if (myParticipantType === 'ship' || myParticipantType === 'buoy') {
+                    cleanupPromises.push(db.ref('objects/'+myId).remove());
+                }
+                Promise.all(cleanupPromises).then(() => {
                     localStorage.removeItem('tora_king_name');
                     localStorage.removeItem('tora_king_color');
                     localStorage.removeItem('tora_king_viewer');
@@ -2278,7 +2309,7 @@
     };
 
     initSetupUI();
-    if (!myName && !isViewerMode) openSetup(); else startTracking();
+    if (!myName && !isViewerMode && myParticipantType === 'normal') openSetup(); else startTracking();
 
     db.ref('users').on('value', snap => {
         if (isReplaying) return;
@@ -2291,7 +2322,7 @@
 
         for (let id in users) {
             const u = users[id];
-            if (!u.name || now - u.ts > 600000) {
+            if ((!u.name && u.partType === 'normal') || now - u.ts > 600000) {
                 if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
                 continue;
             }
@@ -2308,10 +2339,11 @@
                 continue;
             }
 
-            activeUserNames[u.name] = true;
-            activeUsersObj[u.name] = { id: id, u: u };
+            const displayName = u.name || (u.partType === 'ship' ? 'フネ' : 'ブイ');
+            activeUserNames[displayName] = true;
+            activeUsersObj[displayName] = { id: id, u: u };
             
-            updateUserTrailAndMarker(u.name, u.lat, u.lng, u.color, u.heading, now, u.partType || 'normal');
+            updateUserTrailAndMarker(displayName, u.lat, u.lng, u.color, u.heading, now, u.partType || 'normal');
         }
 
         const sortedNames = Object.keys(activeUsersObj).sort();
@@ -2327,7 +2359,7 @@
             else if (speedUnitMode === 1) s = rawSpeed * 3.6;
             else s = rawSpeed;
 
-            listHtml += `<div class="user-item ${isMe ? 'me' : ''}"><span style="color:${u.color}">●</span> ${u.name} ${s.toFixed(1)}${units[speedUnitMode]}</div>`;
+            listHtml += `<div class="user-item ${isMe ? 'me' : ''}"><span style="color:${u.color}">●</span> ${name} ${s.toFixed(1)}${units[speedUnitMode]}</div>`;
         });
 
         for (let name in userTrails) {
@@ -2361,10 +2393,11 @@
             let activeUsersObj = {};
             for (let id in users) {
                 const u = users[id];
-                if (!u.name || now - u.ts > 600000) continue;
+                if ((!u.name && u.partType === 'normal') || now - u.ts > 600000) continue;
                 if (id !== myId && (u.isViewer || u.name === "👀 観戦者")) continue;
                 if (u.name === myName && id !== myId && !isViewerMode) continue;
-                activeUsersObj[u.name] = { id: id, u: u };
+                const displayName = u.name || (u.partType === 'ship' ? 'フネ' : 'ブイ');
+                activeUsersObj[displayName] = { id: id, u: u };
             }
             const sortedNames = Object.keys(activeUsersObj).sort();
             sortedNames.forEach(name => {
@@ -2376,7 +2409,7 @@
                 if (speedUnitMode === 0) s = rawSpeed * 1.94384;
                 else if (speedUnitMode === 1) s = rawSpeed * 3.6;
                 else s = rawSpeed;
-                listHtml += `<div class="user-item ${isMe ? 'me' : ''}"><span style="color:${u.color}">●</span> ${u.name} ${s.toFixed(1)}${units[speedUnitMode]}</div>`;
+                listHtml += `<div class="user-item ${isMe ? 'me' : ''}"><span style="color:${u.color}">●</span> ${name} ${s.toFixed(1)}${units[speedUnitMode]}</div>`;
             });
             document.getElementById('list-content').innerHTML = listHtml;
         });
