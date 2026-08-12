@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.7.6 by Popolo App.com</title>
+    <title>虎キング v3.7.7 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -329,7 +329,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.7.6 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.7.7 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1452,11 +1452,12 @@
         return L.divIcon({ html: iconHtml, className: '', iconSize: [24, 26], iconAnchor: [12, 13] });
     }
 
-    function createPointCard(key, obj, labelChar) {
+   function createPointCard(key, obj, labelChar) {
         const listContainer = document.getElementById('pointListContainer');
         const msg = document.getElementById('noPointMsg');
         if (msg) msg.style.display = 'none';
 
+        // すでにカードが存在する場合は再生成せずスキップ（チェックや入力中の状態を保持）
         let card = document.querySelector(`.point-card[data-key="${key}"]`);
         if (card) return;
 
@@ -1496,7 +1497,7 @@
         listContainer.appendChild(div);
     }
 
-  window.deleteSelectedObjects = () => {
+    window.deleteSelectedObjects = () => {
         const checkedBoxes = document.querySelectorAll('.point-del-chk:checked');
         if (checkedBoxes.length === 0) {
             alert("削除する項目が選択されていません");
@@ -1522,6 +1523,12 @@
 
                 db.ref().update(updates, err => {
                     if (!err) {
+                        // 削除されたカードのDOMを即座に画面から取り除く
+                        checkedBoxes.forEach(chk => {
+                            const k = chk.value;
+                            const cardEl = document.querySelector(`.point-card[data-key="${k}"]`);
+                            if (cardEl) cardEl.remove();
+                        });
                         showToast("🗑️ 選択したポイントを削除しました");
                     } else {
                         alert("削除に失敗しました: " + (err.message || ''));
