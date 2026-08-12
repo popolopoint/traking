@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.7.4 by Popolo App.com</title>
+    <title>虎キング v3.7.5 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -329,7 +329,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.7.4 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.7.5 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -716,6 +716,7 @@
             lng: lng, 
             comment: commentText,
             assignedLabel: initialLabel,
+            ownerId: myId,
             ts: Date.now() 
         }, err => {
             if (!err) {
@@ -1922,6 +1923,7 @@
                     lng: lng, 
                     comment: commentText,
                     assignedLabel: initialLabel,
+                    ownerId: myId,
                     ts: Date.now() 
                 }, err => {
                     if (!err) showToast(`📍 ${commentText}を設置しました`);
@@ -1994,6 +1996,7 @@
             lng: lng, 
             comment: comment, 
             assignedLabel: initialLabel,
+            ownerId: myId,
             ts: Date.now() 
         });
         map.closePopup();
@@ -2133,6 +2136,7 @@
                     lng: longitude,
                     comment: displayName,
                     assignedLabel: displayName,
+                    ownerId: myId,
                     isParticipantUser: true,
                     ts: now
                 });
@@ -2273,23 +2277,31 @@
         if (isMenuOpen) toggleMenu();
         showToast("🏃 ログアウトしています...");
         setTimeout(() => {
-            if(confirm("ログアウトしますか？（登録情報がリセットされます）")) { 
+            if(confirm("ログアウトしますか？（登録情報と設置したブイが削除されます）")) { 
                 let cleanupPromises = [db.ref('users/'+myId).remove()];
-                if (myParticipantType === 'ship' || myParticipantType === 'buoy') {
-                    cleanupPromises.push(db.ref('objects/'+myId).remove());
-                }
-                Promise.all(cleanupPromises).then(() => {
-                    localStorage.removeItem('tora_king_name');
-                    localStorage.removeItem('tora_king_color');
-                    localStorage.removeItem('tora_king_viewer');
-                    localStorage.removeItem('tora_king_part_type');
-                    location.reload();
-                }).catch(() => {
-                    localStorage.removeItem('tora_king_name');
-                    localStorage.removeItem('tora_king_color');
-                    localStorage.removeItem('tora_king_viewer');
-                    localStorage.removeItem('tora_king_part_type');
-                    location.reload();
+                
+                db.ref('objects').orderByChild('ownerId').equalTo(myId).once('value', snapshot => {
+                    snapshot.forEach(childSnapshot => {
+                        cleanupPromises.push(childSnapshot.ref.remove());
+                    });
+
+                    if (myParticipantType === 'ship' || myParticipantType === 'buoy') {
+                        cleanupPromises.push(db.ref('objects/'+myId).remove());
+                    }
+
+                    Promise.all(cleanupPromises).then(() => {
+                        localStorage.removeItem('tora_king_name');
+                        localStorage.removeItem('tora_king_color');
+                        localStorage.removeItem('tora_king_viewer');
+                        localStorage.removeItem('tora_king_part_type');
+                        location.reload();
+                    }).catch(() => {
+                        localStorage.removeItem('tora_king_name');
+                        localStorage.removeItem('tora_king_color');
+                        localStorage.removeItem('tora_king_viewer');
+                        localStorage.removeItem('tora_king_part_type');
+                        location.reload();
+                    });
                 });
             }
         }, 300);
