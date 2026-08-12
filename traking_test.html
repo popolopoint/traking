@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.6.7 by Popolo App.com</title>
+    <title>虎キング v3.6.8 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -329,7 +329,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.6.7 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.6.8 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1877,7 +1877,7 @@
                     <div style="border-bottom:1px solid #ddd; padding:10px 0; display:flex; justify-content:space-between; align-items:center;">
                         <div style="font-size:0.95rem;">
                             <b>📍 ${label}</b><br>
-                            <span style="font-size:0.85rem; color:#555;">緯度:${o.lat.toFixed(5)}, 経度:${o.lng.toFixed(5)}</span>
+                            <span style="font-size:0.85rem; color:#555; lat:${o.lat.toFixed(5)}, lng:${o.lng.toFixed(5)}</span>
                         </div>
                         <button onclick="shareSingleCoord('${key}')" style="background:#2980b9; color:white; border:none; padding:6px 12px; border-radius:6px; font-size:0.9rem; cursor:pointer; font-weight:bold;">送信</button>
                     </div>
@@ -1936,6 +1936,10 @@
         }
 
         if (isHoseiMode) {
+            if (isViewerMode) {
+                showToast("⚠️ 観戦モードでは位置補正は使用できません");
+                return;
+            }
             if (confirm("現在地をこの場所に補正しますか？")) {
                 navigator.geolocation.getCurrentPosition(pos => {
                     offsetLat = lat - pos.coords.latitude;
@@ -2081,15 +2085,14 @@
         localStorage.removeItem('tora_king_name');
         localStorage.removeItem('tora_king_part_type');
         document.getElementById('setup-overlay').style.display = 'none';
-        showToast("👀 ログインせずに見るモード（観戦専用）で開始しました");
+        showToast("👀 ログインせずに見るモードで開始しました（現在地登録用GPS取得中・非公開）");
         
         if (myMarker) {
             map.removeLayer(myMarker);
             myMarker = null;
         }
-        // 観戦専用モードなのでGPSトラッキングは開始しない（自分の位置を表示・送信しない）
-        document.getElementById('status').style.background = "rgba(0,0,0,0.8)";
-        document.getElementById('status').innerText = "観戦専用モード（位置非送信）";
+        // 観戦モードでもGPS測位（現在地記憶）だけはバックグラウンドで開始する（サーバー送信はしない）
+        startTracking();
     };
 
     function handleGPSError(error) {
@@ -2105,7 +2108,7 @@
     }
 
     function updateLocation(pos) {
-        if (isReplaying || isViewerMode) return;
+        if (isReplaying) return;
 
         const latitude = pos.coords.latitude + offsetLat;
         const longitude = pos.coords.longitude + offsetLng;
@@ -2115,7 +2118,8 @@
         
         currentLatestPos = { lat: latitude, lng: longitude };
         
-        if (myName) {
+        // 観戦モード（ログインしていない状態）ではサーバーへ自分の位置を一切送信しない
+        if (!isViewerMode && myName) {
             const userData = {lat: latitude, lng: longitude, name: myName, color: myColor, speed: speed, heading: heading, partType: myParticipantType, ts: now, isViewer: false};
             db.ref('users/'+myId).set(userData);
             
@@ -2124,6 +2128,13 @@
             }
         }
         
+        // 観戦モードの場合は地図上に自分のアイコン（青丸や矢印）は表示しない
+        if (isViewerMode) {
+            document.getElementById('status').style.background = "rgba(0,128,0,0.8)";
+            document.getElementById('status').innerText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)} (GPS測位中/観戦中)`;
+            return;
+        }
+
         const latlng = [latitude, longitude];
         const iconObj = createUserIcon(myParticipantType, myColor || '#7f8c8d', heading);
         const tooltipName = myName || '選手';
@@ -2154,7 +2165,6 @@
     }
 
     function startTracking() {
-        if (isViewerMode) return;
         if (!navigator.geolocation) {
             document.getElementById('status').innerText = "Error: GPS非対応環境";
             return;
@@ -2204,20 +2214,16 @@
     }
 
     window.triggerRecenter = () => {
-        if (isViewerMode) {
-            showToast("⚠️ 観戦専用モードでは現在地追従は使用できません");
+        if (!currentLatestPos) {
+            showToast("⚠️ 現在地GPSがまだ取得できていません");
             return;
         }
-        showToast("🎯 現在地を画面の中心に追従します");
+        showToast("🎯 現在地を画面の中心に移動します");
         isFollowing = true; 
-        if(myMarker) map.panTo(myMarker.getLatLng());
+        map.panTo([currentLatestPos.lat, currentLatestPos.lng]);
     };
 
     window.triggerGPSRetry = () => {
-        if (isViewerMode) {
-            showToast("⚠️ 観戦専用モードではGPSは使用しません");
-            return;
-        }
         showToast("🔄 GPSを強制リセット・再接続します");
         document.getElementById('status').style.background = "#ff9900";
         document.getElementById('status').innerText = "GPSシグナルを強制再起動中...";
@@ -2231,7 +2237,7 @@
 
     window.triggerHoseiMode = () => {
         if (isViewerMode) {
-            showToast("⚠️ 観戦専用モードでは位置補正は使用できません");
+            showToast("⚠️ 観戦モードでは位置補正は使用できません");
             return;
         }
         if (isAddPointMode) setAddPointMode(false);
