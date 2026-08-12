@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.5.4 by Popolo App.com</title>
+    <title>虎キング v3.5.5 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -36,10 +36,8 @@
         
         #user-list { position: fixed; top: 65px; right: 10px; z-index: 2000; background: rgba(0,0,0,0.8); color: #fff; padding: 8px; border-radius: 8px; width: 110px; max-height: 200px; overflow-y: auto; border: 1px solid #ff9900; font-size: 10px; transition: top 0.3s ease; }
         
-        /* 緯度経度表示パネルをiPhone等で右下ボタンと重ならないよう上部に配置・コンパクト化 */
         .status-panel { position: fixed; bottom: 80px; left: 10px; z-index: 2000; background: rgba(0,0,0,0.85); color: #fff; padding: 5px 8px; border-radius: 4px; font-size: 10px; max-width: 70%; border: 1px solid #ff9900; pointer-events: none; }
         
-        /* マップ下部右側のバージョン表示（右下ボタン・スケールバーと重ならない位置） */
         #map-watermark { position: fixed; bottom: 10px; right: 70px; z-index: 1500; background: rgba(0, 0, 0, 0.7); color: #ffcc00; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; pointer-events: none; border: 1px solid rgba(255,153,0,0.5); backdrop-filter: blur(2px); }
 
         #replay-control-bar { 
@@ -246,7 +244,7 @@
             <h4>🛡️ 管理者・編集機能</h4>
             <p>・リプレイメニューでの切り出し、編集、ゴミ箱削除、設定パネル表示にはパスワード認証が必要です。</p>
             <p>・プロフィールで「フネ」「ブイ」として参加するには専用パスワードが必要です。</p>
-            <p>・設定パネル内の「削除を戻す」ボタンで直近に削除した複数のブイやフネをまとめて復活させることができます。</p>
+            <p>・設定パネル内の限定機能やデータの復元が可能です。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:16px; background:#3498db; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -285,8 +283,7 @@
     </div>
 </div>
 
-<!-- マップ下部のバージョン・制作者表示 -->
-<div id="map-watermark">虎キング v3.5.4 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.5.5 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -384,6 +381,7 @@
     let cbSelectedFirstObj = null;
 
     let lastBatchDeletedObjects = null;
+    let originalObjectsSnapshot = null; // リプレイ前の本番オブジェクトデータを保持
 
     const userMarkers = {}, objectMarkers = {}, userTrails = {}, userPolylineLines = {};
     let coursePolyline = null;
@@ -941,10 +939,17 @@
 
     window.startReplay = (id) => {
         document.getElementById('saved-courses-modal').style.display = 'none';
+        
+        // リプレイ突入前の現在の本番オブジェクトデータを保存しておく
+        db.ref('objects').once('value', snap => {
+            originalObjectsSnapshot = snap.val();
+        });
+
         db.ref('saved_courses/' + id).once('value', snap => {
             const data = snap.val();
             if (!data) return;
 
+            // リプレイ時は一時的にそのレースのオブジェクトを配置
             if (data.objects) {
                 db.ref('objects').set(data.objects);
             }
@@ -984,6 +989,12 @@
             isReplaying = true;
             replayPaused = false;
             document.getElementById('btn-pause').innerText = "一時停止";
+
+            // リプレイ中は自分のGPSマーカー非表示（または通常の青マーカーのみにするため自分のカスタムトラッキングを隠す）
+            if (myMarker) {
+                map.removeLayer(myMarker);
+                myMarker = null;
+            }
 
             for (let name in userPolylineLines) {
                 if(userPolylineLines[name]) {
@@ -1226,8 +1237,18 @@
         document.getElementById('header-replay-status').style.display = 'none';
         document.getElementById('header-replay-time').style.display = 'none';
         document.getElementById('replay-countdown-alert').style.display = 'none';
+        
+        // リプレイ終了時に、本来登録されていたオブジェクト（フネ・ブイ）の状態に確実に復元
+        if (originalObjectsSnapshot !== null) {
+            db.ref('objects').set(originalObjectsSnapshot);
+        } else {
+            db.ref('objects').once('value', snap => {
+                // 万が一バックアップがない場合は現在のDBをそのまま保つかリロード
+            });
+        }
+
         showToast("⏹️ リプレイを終了しました");
-        location.reload();
+        setTimeout(() => { location.reload(); }, 500);
     };
 
     function updateUserTrailAndMarker(name, lat, lng, color, heading, timestamp, partType = 'normal') {
@@ -1364,7 +1385,7 @@
                     updates['objects/' + chk.value] = null;
                 });
                 db.ref().update(updates).then(() => {
-                    showToast("🗑️ 選択したポイントを削除しました（設定の「削除を戻す」でまとめて復活可能）");
+                    showToast("🗑️ 選択したポイントを削除しました");
                 }).catch(err => {
                     alert("削除に失敗しました: " + err.message);
                 });
@@ -2201,7 +2222,7 @@
                 db.ref('objects/' + key).remove().then(() => {
                     const c = document.querySelector(`.point-card[data-key="${key}"]`); 
                     if (c) c.remove();
-                    showToast("🗑️ 削除しました（設定の「削除を戻す」で復活可能）");
+                    showToast("🗑️ 削除しました");
                 });
             });
         }
