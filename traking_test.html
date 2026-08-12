@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.5.8 by Popolo App.com</title>
+    <title>虎キング v3.5.9 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -11,7 +11,7 @@
         #header { background: #1a1a1a; color: #ff9900; padding: 6px 10px; text-align: center; font-weight: bold; position: fixed; top: 0; left: 0; width: 100%; height: 50px; z-index: 3000; border-bottom: 2px solid #ff9900; display: flex; align-items: center; justify-content: space-between; box-sizing: border-box; transition: transform 0.3s ease; }
         #header.minimized { transform: translateY(-44px); border-bottom: none; }
         
-        #header-expand-btn { position: fixed; top: 2px; left: 50%; transform: translateX(-50%); z-index: 3001; background: rgba(26,26,26,0.9); color: #ff9900; border: 1px solid #ff9900; border-radius: 0 0 8px 8px; padding: 2px 12px; font-size: 10px; font-weight: bold; cursor: pointer; display: none; }
+        #header-expand-btn { position: fixed; top: 2px; left: 50%; transform: translateX(-50%); z-index: 3001; background: rgba(26,26,26,0.95); color: #ff9900; border: 1.5px solid #ff9900; border-radius: 0 0 10px 10px; padding: 4px 16px; font-size: 11px; font-weight: bold; cursor: pointer; display: none; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
         #header.minimized ~ #header-expand-btn { display: block; }
 
         .header-btn { border: none; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; height: 34px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3); color: white; }
@@ -82,8 +82,13 @@
             display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
         }
 
+        /* 2列メニュー用のコンテナ＆ボタン配置 */
+        #button-container {
+            position: fixed; right: 10px; bottom: 15px; z-index: 3000;
+            display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+        }
+
         .action-btn { 
-            position: fixed; right: 10px; z-index: 3000; 
             background: rgba(44, 62, 80, 0.45); color: white; 
             border: 1.5px solid rgba(255, 255, 255, 0.3); border-radius: 50%; 
             width: 45px; height: 45px; cursor: pointer; 
@@ -94,24 +99,27 @@
         }
         .action-btn:active { background: rgba(52, 152, 219, 0.6); }
         
-        #recenter-btn { bottom: 15px; font-size: 20px; background: rgba(41, 128, 185, 0.6); }
-        #menu-toggle-btn { bottom: 68px; background: rgba(44, 62, 80, 0.6); font-weight: bold; }
+        #recenter-btn { font-size: 20px; background: rgba(41, 128, 185, 0.6); }
+        #menu-toggle-btn { background: rgba(44, 62, 80, 0.6); font-weight: bold; }
         
-        .menu-child { opacity: 0; transform: translateY(20px) scale(0.8); pointer-events: none; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
-        .menu-active .menu-child { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
-        
-        #logout-btn         { bottom: 125px; background: rgba(231, 76, 60, 0.45); }
-        #name-btn           { bottom: 175px; }
-        #manual-btn         { bottom: 225px; background: rgba(39, 174, 96, 0.45); }
-        #replay-btn         { bottom: 275px; background: rgba(155, 89, 182, 0.45); }
-        
-        #record-start-btn   { bottom: 325px; background: rgba(39, 174, 96, 0.6); }
-        #admin-user-del-btn { bottom: 375px; background: rgba(192, 57, 43, 0.6); }
-
-        #course-menu-btn    { bottom: 425px; background: rgba(39, 174, 96, 0.7); }
-        #hosei-btn          { bottom: 475px; background: rgba(241, 196, 15, 0.45); }
-        #gps-retry-btn      { bottom: 525px; }
-        #add-point-btn      { bottom: 575px; background: rgba(52, 152, 219, 0.45); }
+        /* メニュー展開時の2列レイアウトグリッド */
+        #menu-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 45px);
+            gap: 8px;
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(20px) scale(0.8);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+        }
+        .menu-active #menu-grid {
+            max-height: 400px;
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
         
         .popup-form { color: #333; min-width: 140px; font-size: 12px; }
         .popup-form select, .popup-form input { width: 100%; margin: 4px 0; padding: 4px; box-sizing: border-box; }
@@ -124,8 +132,8 @@
         #toast-notice { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; z-index: 6000; border: 1px solid #ff9900; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: center; cursor: pointer; }
         
         .modal-body-scroll { max-height: 55vh; overflow-y: auto; margin-top: 10px; font-size: 1.05rem; line-height: 1.5; color: #333; text-align: left; }
-        .modal-body-scroll h4 { color: #2c3e50; margin: 10px 0 4px 0; border-bottom: 2px solid #3498db; padding-bottom: 2px; font-size: 1.2rem; }
-        .modal-body-scroll p { margin: 6px 0 10px 0; font-size: 1rem; }
+        .modal-body-scroll h4 { color: #2c3e50; margin: 12px 0 4px 0; border-bottom: 2px solid #3498db; padding-bottom: 2px; font-size: 1.15rem; }
+        .modal-body-scroll p { margin: 6px 0 10px 0; font-size: 0.95rem; }
 
         #course-builder-bar {
             position: fixed; top: 65px; left: 50%; transform: translateX(-50%); z-index: 3500;
@@ -233,59 +241,7 @@
 
 <button id="replay-minimized-btn" onclick="expandReplayBar()">📊 <span id="minimized-title">再生中</span> (表示)</button>
 
-<button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
-
-<div id="setup-overlay" style="display:none;">
-    <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:18px;">虎キング 設定</h3>
-        <input type="text" id="setup-name" placeholder="あなたの名前（例: 本部A、艇番1）" style="padding:10px; width:90%; border-radius:8px; border:1px solid #ccc; margin-bottom:10px; font-size:16px;">
-        <p style="font-size:12px; margin-bottom:10px; color:#ddd;">参加スタイルを選んでください</p>
-        <div style="display:flex; gap:8px; margin-bottom:12px; justify-content:center;">
-            <button type="button" onclick="selectStyleMode('normal')" id="style-btn-normal" style="flex:1; padding:8px; font-size:11px; font-weight:bold; border-radius:6px; border:2px solid #ff9900; background:#ff9900; color:#000; cursor:pointer;">👤 通常参加</button>
-            <button type="button" onclick="selectStyleMode('ship')" id="style-btn-ship" style="flex:1; padding:8px; font-size:11px; font-weight:bold; border-radius:6px; border:2px solid #ff9900; background:rgba(0,0,0,0.5); color:#fff; cursor:pointer;">🚤 フネ (要パス)</button>
-            <button type="button" onclick="selectStyleMode('buoy')" id="style-btn-buoy" style="flex:1; padding:8px; font-size:11px; font-weight:bold; border-radius:6px; border:2px solid #ff9900; background:rgba(0,0,0,0.5); color:#fff; cursor:pointer;">🚩 ブイ (要パス)</button>
-        </div>
-        <div class="color-grid" id="color-grid"></div>
-        <div style="display: flex; gap: 8px; margin-top: 15px;">
-            <button onclick="saveProfileAsViewer()" style="flex: 1; background: #34495e; color: white; border: none; padding: 8px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; cursor: pointer;">👀 観戦（見る専）</button>
-            <button onclick="cancelSetup()" style="flex: 1; background: #555; color: white; border: none; padding: 8px; border-radius: 6px; font-size: 0.85rem; cursor: pointer;">キャンセル</button>
-        </div>
-    </div>
-</div>
-
-<div id="manual-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
-    <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:420px; box-sizing:border-box;">
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #3498db; padding-bottom:8px;">
-            <h3 style="margin:0; color:#2c3e50; font-size:1.3rem;">📖 アイコン・操作ガイド</h3>
-            <button onclick="closeManualModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">✖</button>
-        </div>
-        <div class="modal-body-scroll">
-            <h4>🛡️ 管理者・編集機能</h4>
-            <p>・リプレイメニューでの切り出し、編集、ゴミ箱削除、設定パネル表示にはパスワード認証が必要です。</p>
-            <p>・プロフィールで「フネ」「ブイ」として参加するには専用パスワードが必要です。</p>
-        </div>
-        <button onclick="closeManualModal()" style="width:100%; margin-top:16px; background:#3498db; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
-    </div>
-</div>
-
-<div id="saved-courses-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
-    <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:420px; box-sizing:border-box; text-align:center;">
-        <h3 style="margin:0 0 12px 0; color:#2c3e50; font-size:1.3rem;">📁 レース記録・ヒート一覧</h3>
-        <div id="saved-courses-list" class="modal-body-scroll" style="min-height:140px; max-height:50vh;"></div>
-        <button onclick="document.getElementById('saved-courses-modal').style.display='none'" style="width:100%; margin-top:16px; background:#7f8c8d; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
-    </div>
-</div>
-
-<div id="admin-users-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
-    <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:420px; box-sizing:border-box; text-align:center;">
-        <h3 style="margin:0 0 12px 0; color:#c0392b; font-size:1.3rem;">🛡️ 管理者: 参加者削除</h3>
-        <p style="font-size:1rem; color:#555; margin-bottom:12px;">削除したい参加者にチェックを入れてください</p>
-        <div id="admin-users-list" class="modal-body-scroll" style="min-height:100px; max-height:40vh; text-align:left;"></div>
-        <button onclick="executeSelectedUsersDelete()" style="width:100%; margin-top:16px; background:#c0392b; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">チェックした参加者を強制退出（削除）</button>
-        <button onclick="document.getElementById('admin-users-modal').style.display='none'" style="width:100%; margin-top:8px; background:#7f8c8d; color:white; border:none; padding:10px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
-    </div>
-</div>
-
+<!-- ヘッダーおよび収納時復活ボタン -->
 <div id="header">
     <div style="display:flex; align-items:center;">
         <button class="header-btn" style="background:#27ae60;" onclick="promptCourseCreate()">コース作成</button>
@@ -300,8 +256,9 @@
         <button class="header-btn" style="background:#555; padding:6px 8px; font-size:11px;" onclick="toggleHeaderMinimize()">収納</button>
     </div>
 </div>
+<button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.5.8 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.5.9 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -324,23 +281,77 @@
 
 <div class="status-panel" id="status">GPSシグナル待機中...</div>
 
+<!-- 右下メニューおよび2列グリッド -->
 <div id="button-container">
-    <button id="logout-btn" class="action-btn menu-child" onclick="triggerLogout()" title="ログアウト">🏃</button>
-    <button id="name-btn" class="action-btn menu-child" onclick="triggerSetup()" title="再設定">👤</button>
-    <button id="manual-btn" class="action-btn menu-child" onclick="openManualModal()" title="使い方・アイコン説明">❓</button>
-    <button id="replay-btn" class="action-btn menu-child" onclick="openReplayMenu()" title="航跡リプレイ再生">▶️</button>
-    
-    <button id="record-start-btn" class="action-btn menu-child" onclick="startRaceRecording()" title="レース記録スタート">🔴</button>
-    <button id="admin-user-del-btn" class="action-btn menu-child" onclick="openAdminUsersModal()" title="参加者管理・削除">🛡️</button>
+    <div id="menu-grid">
+        <button class="action-btn" id="logout-btn" onclick="triggerLogout()" title="ログアウト">🏃</button>
+        <button class="action-btn" id="name-btn" onclick="triggerSetup()" title="再設定">👤</button>
+        <button class="action-btn" id="manual-btn" onclick="openManualModal()" title="使い方・ヘルプ">❓</button>
+        <button class="action-btn" id="replay-btn" onclick="openReplayMenu()" title="航跡リプレイ再生">▶️</button>
+        
+        <button class="action-btn" id="record-start-btn" onclick="startRaceRecording()" title="レース記録スタート">🔴</button>
+        <button class="action-btn" id="admin-user-del-btn" onclick="openAdminUsersModal()" title="参加者管理・削除">🛡️</button>
 
-    <button id="course-menu-btn" class="action-btn menu-child" onclick="promptCourseCreate()" title="コース作成">🛠️</button>
+        <button class="action-btn" id="course-menu-btn" onclick="promptCourseCreate()" title="コース作成">🛠️</button>
+        <button class="action-btn" id="hosei-btn" onclick="triggerHoseiMode()" title="位置補正">🔧</button>
 
-    <button id="hosei-btn" class="action-btn menu-child" onclick="triggerHoseiMode()" title="位置補正">🔧</button>
-    <button id="gps-retry-btn" class="action-btn menu-child" onclick="triggerGPSRetry()" title="GPS再接続">🔄</button>
-    <button id="add-point-btn" class="action-btn menu-child" onclick="triggerAddPointMode()" title="マーク追加">🚩</button>
+        <button class="action-btn" id="gps-retry-btn" onclick="triggerGPSRetry()" title="GPS再接続">🔄</button>
+        <button class="action-btn" id="add-point-btn" onclick="triggerAddPointMode()" title="マーク追加">🚩</button>
+    </div>
     
     <button id="menu-toggle-btn" class="action-btn" onclick="toggleMenu()" title="メニュー">☰</button>
     <button id="recenter-btn" class="action-btn" onclick="triggerRecenter()" title="現在地追従">🎯</button>
+</div>
+
+<!-- すべての機能を網羅したヘルプ・使い方モーダル -->
+<div id="manual-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:440px; box-sizing:border-box;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #3498db; padding-bottom:8px;">
+            <h3 style="margin:0; color:#2c3e50; font-size:1.3rem;">📖 虎キング 完全ヘルプガイド</h3>
+            <button onclick="closeManualModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">✖</button>
+        </div>
+        <div class="modal-body-scroll">
+            <h4>🎯 画面・基本操作</h4>
+            <p>・<b>🎯（現在地追従）:</b> 自分の現在地を地図の中心に固定します。地図を動かすと解除されます。</p>
+            <p>・<b>右上参加者リスト:</b> タップすると速度単位（kt / km/h / m/s）が切り替わります。</p>
+
+            <h4>🛠️ コース作成・編集</h4>
+            <p>・<b>上部「コース作成」:</b> パスワード認証後、フネやブイの配置、線（実線・点線）の結びつけ、角度・距離データ計測が行えます。</p>
+            <p>・<b>🚩（マーク追加）:</b> 地図上の任意の場所をタップして、新規にマークやフネを設置できます。</p>
+
+            <h4>📍 補正・GPS管理</h4>
+            <p>・<b>🔧（位置補正）:</b> 現在地のGPS位置にズレがある場合、正確な位置をタップして補正できます。</p>
+            <p>・<b>🔄（GPS再接続）:</b> GPSシグナルを強制リセットし、再測位を行います。</p>
+
+            <h4>▶️ レース記録・リプレイ</h4>
+            <p>・<b>🔴（記録スタート）:</b> 本部スタッフ用パスワードで、全参加者の航跡・ブイ配置の記録を開始します。</p>
+            <p>・<b>▶️（リプレイ再生）:</b> 保存されたヒート記録を選択して再生・一時停止・倍速変更・切り出しを行えます。</p>
+
+            <h4>🛡️ 管理者・アカウント</h4>
+            <p>・<b>🛡️（参加者管理）:</b> 参加中のメンバーを一覧確認し、強制退出させることができます。</p>
+            <p>・<b>👤（再設定）:</b> 自分の表示名、カラー、参加スタイル（通常 / フネ / ブイ）を変更できます。</p>
+            <p>・<b>🏃（ログアウト）:</b> 参加情報を消去して退出します。</p>
+        </div>
+        <button onclick="closeManualModal()" style="width:100%; margin-top:16px; background:#3498db; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
+    </div>
+</div>
+
+<div id="saved-courses-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:420px; box-sizing:border-box; text-align:center;">
+        <h3 style="margin:0 0 12px 0; color:#2c3e50; font-size:1.3rem;">📁 レース記録・ヒート一覧</h3>
+        <div id="saved-courses-list" class="modal-body-scroll" style="min-height:140px; max-height:50vh;"></div>
+        <button onclick="document.getElementById('saved-courses-modal').style.display='none'" style="width:100%; margin-top:16px; background:#7f8c8d; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
+    </div>
+</div>
+
+<div id="admin-users-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:24px; border-radius:12px; width:92%; max-width:420px; box-sizing:border-box; text-align:center;">
+        <h3 style="margin:0 0 12px 0; color:#c0392b; font-size:1.3rem;">🛡️ 管理者: 参加者削除</h3>
+        <p style="font-size:1rem; color:#555; margin-bottom:12px;">削除したい参加者にチェックを入れてください</p>
+        <div id="admin-users-list" class="modal-body-scroll" style="min-height:100px; max-height:40vh; text-align:left;"></div>
+        <button onclick="executeSelectedUsersDelete()" style="width:100%; margin-top:16px; background:#c0392b; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">チェックした参加者を強制退出（削除）</button>
+        <button onclick="document.getElementById('admin-users-modal').style.display='none'" style="width:100%; margin-top:8px; background:#7f8c8d; color:white; border:none; padding:10px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
+    </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -411,7 +422,7 @@
     let lastBatchDeletedObjects = null;
 
     const userMarkers = {}, objectMarkers = {}, userTrails = {}, userPolylineLines = {};
-    let replayObjectMarkers = {}; // リプレイ専用の独立したブイ・フネマーカー
+    let replayObjectMarkers = {};
     let coursePolyline = null;
     let customLinesGroup = L.layerGroup().addTo(map);
 
@@ -972,7 +983,6 @@
             const data = snap.val();
             if (!data) return;
 
-            // リプレイ時はサーバーの objects を変更せず、リプレイ専用のマーカーとして独立表示
             for (let key in replayObjectMarkers) {
                 map.removeLayer(replayObjectMarkers[key]);
             }
@@ -1273,7 +1283,6 @@
         document.getElementById('header-replay-time').style.display = 'none';
         document.getElementById('replay-countdown-alert').style.display = 'none';
         
-        // リプレイ専用マーカーを削除
         for (let key in replayObjectMarkers) {
             map.removeLayer(replayObjectMarkers[key]);
         }
@@ -2081,15 +2090,15 @@
         } else {
             container.classList.remove('menu-active');
             toggleBtn.innerText = "☰";
-            toggleBtn.style.background = "rgba(44, 62, 80, 0.45)";
+            toggleBtn.style.background = "rgba(44, 62, 80, 0.6)";
             
             if (isAddPointMode) setAddPointMode(false);
-            if (isHoseiMode) { isHoseiMode = false; document.getElementById('hosei-btn').style.background = "rgba(241, 196, 15, 0.45)"; }
+            if (isHoseiMode) { isHoseiMode = false; document.getElementById('hosei-btn').style.background = "rgba(44, 62, 80, 0.45)"; }
         }
     };
 
     window.triggerAddPointMode = () => {
-        if (isHoseiMode) { isHoseiMode = false; document.getElementById('hosei-btn').style.background = "rgba(241, 196, 15, 0.45)"; }
+        if (isHoseiMode) { isHoseiMode = false; document.getElementById('hosei-btn').style.background = "rgba(44, 62, 80, 0.45)"; }
         setAddPointMode(!isAddPointMode);
     };
 
@@ -2100,7 +2109,7 @@
             btn.style.background = "rgba(230, 126, 34, 0.7)";
             showToast("🚩 マーク追加モード：ON (設置したい地図上を1回タップ)");
         } else {
-            btn.style.background = "rgba(52, 152, 219, 0.45)";
+            btn.style.background = "rgba(44, 62, 80, 0.45)";
             showToast("🚩 マーク追加モード：OFF");
         }
     }
@@ -2126,7 +2135,7 @@
     window.triggerHoseiMode = () => {
         if (isAddPointMode) setAddPointMode(false);
         isHoseiMode = !isHoseiMode;
-        document.getElementById('hosei-btn').style.background = isHoseiMode ? "rgba(231, 76, 60, 0.7)" : "rgba(241, 196, 15, 0.45)";
+        document.getElementById('hosei-btn').style.background = isHoseiMode ? "rgba(231, 76, 60, 0.7)" : "rgba(44, 62, 80, 0.45)";
         if(isHoseiMode) {
             showToast("🔧 位置補正モード：ON (地図上をタップして現在地をズラせます)");
         } else {
