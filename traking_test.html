@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.6.4 by Popolo App.com</title>
+    <title>虎キング v3.6.5 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -348,7 +348,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.6.4 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.6.5 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -2090,7 +2090,6 @@
         localStorage.removeItem('tora_king_viewer');
         document.getElementById('setup-overlay').style.display = 'none'; 
         
-        // 観戦者モードから切り替えた際、古いマーカーを即座に破棄して再作成
         if (myMarker) {
             map.removeLayer(myMarker);
             myMarker = null;
@@ -2139,11 +2138,12 @@
         
         currentLatestPos = { lat: latitude, lng: longitude };
         
-        if (!isViewerMode && myName) {
-            const userData = {lat: latitude, lng: longitude, name: myName, color: myColor, speed: speed, heading: heading, partType: myParticipantType, ts: now};
+        if (myName) {
+            // 観戦者の場合もFirebaseに送信して自分自身の位置を把握できるようにする（他の人からはフィルタで非表示）
+            const userData = {lat: latitude, lng: longitude, name: myName, color: myColor, speed: speed, heading: heading, partType: myParticipantType, ts: now, isViewer: isViewerMode};
             db.ref('users/'+myId).set(userData);
             
-            if (isRecordingActive) {
+            if (isRecordingActive && !isViewerMode) {
                 db.ref('temp_history/' + myId).push(userData);
             }
         }
@@ -2301,6 +2301,14 @@
                 continue;
             }
 
+            // 自分自身、または「他の人の観戦者アカウント」は地図やリストに表示しない
+            if (id !== myId) {
+                if (u.isViewer || u.name === "👀 観戦者") {
+                    if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
+                    continue;
+                }
+            }
+
             if (u.name === myName && id !== myId && !isViewerMode) {
                 if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
                 continue;
@@ -2309,6 +2317,9 @@
             activeUserNames[u.name] = true;
             activeUsersObj[u.name] = { id: id, u: u };
             
+            // 自分自身の観戦者モード時は自分のマーカーを地図上に描画しない（専用の myMarker があるため）
+            if (id === myId && isViewerMode) continue;
+
             updateUserTrailAndMarker(u.name, u.lat, u.lng, u.color, u.heading, now, u.partType || 'normal');
         }
 
@@ -2316,6 +2327,9 @@
         sortedNames.forEach(name => {
             const item = activeUsersObj[name];
             const u = item.u;
+            // リストからも他の観戦者は除外
+            if (item.id !== myId && (u.isViewer || u.name === "👀 観戦者")) return;
+
             const isMe = (item.id === myId);
             const rawSpeed = u.speed || 0;
             let s = 0;
@@ -2358,6 +2372,7 @@
             for (let id in users) {
                 const u = users[id];
                 if (!u.name || now - u.ts > 600000) continue;
+                if (id !== myId && (u.isViewer || u.name === "👀 観戦者")) continue;
                 if (u.name === myName && id !== myId && !isViewerMode) continue;
                 activeUsersObj[u.name] = { id: id, u: u };
             }
