@@ -798,9 +798,6 @@
         }
     };
 
-
-    
-
     window.startRaceRecording = () => {
         toggleMenu();
         const inputPass = prompt("本部スタッフ用パスワードを入力してください:");
@@ -1452,12 +1449,12 @@
         return L.divIcon({ html: iconHtml, className: '', iconSize: [24, 26], iconAnchor: [12, 13] });
     }
 
-   function createPointCard(key, obj, labelChar) {
+    function createPointCard(key, obj, labelChar) {
         const listContainer = document.getElementById('pointListContainer');
         const msg = document.getElementById('noPointMsg');
         if (msg) msg.style.display = 'none';
 
-        // すでにカードが存在する場合は再生成せずスキップ（チェックや入力中の状態を保持）
+        // 既にDOMが存在するか確認（存在する場合は入力中要素を壊さないよう再生成をスキップ）
         let card = document.querySelector(`.point-card[data-key="${key}"]`);
         if (card) return;
 
@@ -1523,7 +1520,6 @@
 
                 db.ref().update(updates, err => {
                     if (!err) {
-                        // 削除されたカードのDOMを即座に画面から取り除く
                         checkedBoxes.forEach(chk => {
                             const k = chk.value;
                             const cardEl = document.querySelector(`.point-card[data-key="${k}"]`);
@@ -1624,20 +1620,27 @@
         const panel = document.getElementById('pointSettingsPanel');
         const isPanelOpen = (panel && panel.style.display === 'block');
 
-        listContainer.innerHTML = '<p id="noPointMsg" style="color: #666; font-size: 13px; margin: 0; display:none;">座標データが読み込まれていません</p>';
-        
+        // 既存のDOMリストにあるがFirebaseから消えたものを削除
+        const objects = snap.val() || {};
+        const existingCards = listContainer.querySelectorAll('.point-card');
+        existingCards.forEach(card => {
+            const key = card.dataset.key;
+            if (!objects[key]) {
+                card.remove();
+            }
+        });
+
+        const msg = document.getElementById('noPointMsg');
+        if (Object.keys(objects).length === 0) {
+            if (msg) msg.style.display = 'block';
+        } else {
+            if (msg) msg.style.display = 'none';
+        }
+
         for (let key in objectMarkers) {
             map.removeLayer(objectMarkers[key]);
         }
         Object.keys(objectMarkers).forEach(k => delete objectMarkers[k]);
-
-        const objects = snap.val();
-        if (!objects) {
-            const msg = document.getElementById('noPointMsg');
-            if (msg) msg.style.display = 'block';
-            customLinesGroup.clearLayers();
-            return;
-        }
 
         const sortedKeys = Object.keys(objects).sort((a, b) => (objects[a].ts || 0) - (objects[b].ts || 0));
 
