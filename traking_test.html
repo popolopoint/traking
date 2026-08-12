@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.5.7 by Popolo App.com</title>
+    <title>虎キング v3.5.8 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -301,7 +301,7 @@
     </div>
 </div>
 
-<div id="map-watermark">虎キング v3.5.7 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.5.8 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -379,7 +379,6 @@
 
     const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([savedPos.lat, savedPos.lng], savedPos.zoom);
     
-    // マップタイル安全ロード処理（GoogleMutant失敗時は標準タイルにフォールバック）
     try {
         if (typeof L.gridLayer.googleMutant === 'function') {
             L.gridLayer.googleMutant({ type: 'roadmap' }).addTo(map);
@@ -410,9 +409,9 @@
     let cbSelectedFirstObj = null;
 
     let lastBatchDeletedObjects = null;
-    let originalObjectsSnapshot = null;
 
     const userMarkers = {}, objectMarkers = {}, userTrails = {}, userPolylineLines = {};
+    let replayObjectMarkers = {}; // リプレイ専用の独立したブイ・フネマーカー
     let coursePolyline = null;
     let customLinesGroup = L.layerGroup().addTo(map);
 
@@ -968,17 +967,27 @@
 
     window.startReplay = (id) => {
         document.getElementById('saved-courses-modal').style.display = 'none';
-        
-        db.ref('objects').once('value', snap => {
-            originalObjectsSnapshot = snap.val();
-        });
 
         db.ref('saved_courses/' + id).once('value', snap => {
             const data = snap.val();
             if (!data) return;
 
+            // リプレイ時はサーバーの objects を変更せず、リプレイ専用のマーカーとして独立表示
+            for (let key in replayObjectMarkers) {
+                map.removeLayer(replayObjectMarkers[key]);
+            }
+            replayObjectMarkers = {};
+
             if (data.objects) {
-                db.ref('objects').set(data.objects);
+                for (let key in data.objects) {
+                    const obj = data.objects[key];
+                    const letter = obj.assignedLabel || (obj.type === 'ship' ? 'フネ' : 'ブイ');
+                    const marker = L.marker([obj.lat, obj.lng], { 
+                        icon: createObjectIcon(obj.type, obj.shape, obj.color) 
+                    }).addTo(map);
+                    marker.bindTooltip(letter, { permanent: true, direction: 'top', className: 'object-label' });
+                    replayObjectMarkers[key] = marker;
+                }
             }
 
             const heatTitle = data.title || '再生中';
@@ -1264,9 +1273,11 @@
         document.getElementById('header-replay-time').style.display = 'none';
         document.getElementById('replay-countdown-alert').style.display = 'none';
         
-        if (originalObjectsSnapshot !== null) {
-            db.ref('objects').set(originalObjectsSnapshot);
+        // リプレイ専用マーカーを削除
+        for (let key in replayObjectMarkers) {
+            map.removeLayer(replayObjectMarkers[key]);
         }
+        replayObjectMarkers = {};
 
         showToast("⏹️ リプレイを終了しました");
         setTimeout(() => { location.reload(); }, 500);
