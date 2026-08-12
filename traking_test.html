@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.7.2 by Popolo App.com</title>
+    <title>虎キング v3.7.3 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -328,7 +328,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.7.2 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.7.3 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -450,7 +450,7 @@
     let myColor = localStorage.getItem('tora_king_color');
     let isViewerMode = localStorage.getItem('tora_king_viewer') === 'true';
     let myParticipantType = localStorage.getItem('tora_king_part_type') || 'normal';
-    let isObjectDeletedLocally = false; // 自分が設置した/参加したオブジェクトが削除されたかのフラグ
+    let isObjectDeletedLocally = false;
 
     let speedUnitMode = parseInt(localStorage.getItem('tora_king_unit') !== null ? localStorage.getItem('tora_king_unit') : "1");
     const units = ["kt", "km/h", "m/s"];
@@ -1604,22 +1604,14 @@
         const panel = document.getElementById('pointSettingsPanel');
         const isPanelOpen = (panel && panel.style.display === 'block');
 
-        if (!isPanelOpen) {
-            listContainer.innerHTML = '<p id="noPointMsg" style="color: #666; font-size: 13px; margin: 0;">座標データが読み込まれていません</p>';
-        }
+        // パネルが閉じている、または開いていてもリストを確実に構築し直すためクリア
+        listContainer.innerHTML = '<p id="noPointMsg" style="color: #666; font-size: 13px; margin: 0; display:none;">座標データが読み込まれていません</p>';
         
-        for (let key in objectMarkers) map.removeLayer(objectMarkers[key]);
+        // 既存のマップマーカーをすべて一度削除して再描画
+        for (let key in objectMarkers) {
+            map.removeLayer(objectMarkers[key]);
+        }
         Object.keys(objectMarkers).forEach(k => delete objectMarkers[k]);
-
-        const existingCards = document.querySelectorAll('.point-card');
-        existingCards.forEach(card => {
-            const k = card.dataset.key;
-            if (!snap.hasChild(k)) {
-                card.remove();
-            }
-        });
-
-        if (coursePolyline) { map.removeLayer(coursePolyline); coursePolyline = null; }
 
         const objects = snap.val();
         if (!objects) {
@@ -1654,9 +1646,7 @@
             });
 
             objectMarkers[key] = marker;
-            if (!isPanelOpen) {
-                createPointCard(key, obj, letter);
-            }
+            createPointCard(key, obj, letter);
         });
 
         triggerCustomLinesRedraw();
@@ -2074,7 +2064,7 @@
         myName = nameInp || ""; 
         myColor = color; 
         isViewerMode = false;
-        isObjectDeletedLocally = false; // 再設定時はフラグ解除
+        isObjectDeletedLocally = false;
         
         localStorage.setItem('tora_king_name', myName); 
         localStorage.setItem('tora_king_color', myColor);
@@ -2135,7 +2125,6 @@
             };
             db.ref('users/'+myId).set(userData);
             
-            // 自分が設定画面等から削除されていない場合のみ、オブジェクトを更新する（ゾンビ化防止）
             if ((myParticipantType === 'ship' || myParticipantType === 'buoy') && !isObjectDeletedLocally) {
                 db.ref('objects/' + myId).update({
                     type: myParticipantType,
@@ -2427,7 +2416,6 @@
                     batch[key] = objData;
                     lastBatchDeletedObjects = batch;
                     
-                    // もし削除されたのが自分自身のログインオブジェクトであれば、ゾンビ復活フラグをONにする
                     if (key === myId) {
                         isObjectDeletedLocally = true;
                     }
@@ -2435,6 +2423,11 @@
 
                 db.ref().update(updates, (err) => {
                     if (!err) {
+                        // マップ上のマーカーを明示的に即座に削除
+                        if (objectMarkers[key]) {
+                            map.removeLayer(objectMarkers[key]);
+                            delete objectMarkers[key];
+                        }
                         const c = document.querySelector(`.point-card[data-key="${key}"]`); 
                         if (c) c.remove();
                         showToast("🗑️ 削除しました");
