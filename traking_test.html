@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.7.9 by Popolo App.com</title>
+    <title>虎キング v3.8.0 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -206,7 +206,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.0 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -329,7 +329,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.7.9 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.8.0 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -399,7 +399,7 @@
             <h4>🛡️ 管理者・アカウント</h4>
             <p>・<b>🛡️（参加者管理）:</b> 参加中のメンバーを一覧確認し、強制退出させることができます。</p>
             <p>・<b>👤（再設定）:</b> 自分の表示名、カラー、参加スタイル（通常 / フネ / ブイ）を変更できます。</p>
-            <p>・<b>🏃（ログアウト）:</b> 参加情報を消去して退出します。※船でログインした場合は2回連続で押すと船を消去できます。</p>
+            <p>・<b>🏃（ログアウト）:</b> 参加情報を消去して退出します。※船でログインした場合は2回連続で押すと船のオブジェクトを消去できます。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:16px; background:#3498db; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -2091,6 +2091,7 @@
         localStorage.setItem('tora_king_color', myColor);
         localStorage.setItem('tora_king_part_type', myParticipantType);
         localStorage.removeItem('tora_king_viewer');
+        localStorage.removeItem('tora_king_logout_count');
         document.getElementById('setup-overlay').style.display = 'none'; 
         startTracking();
     }
