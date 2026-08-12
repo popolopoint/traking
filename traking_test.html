@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.7.8 by Popolo App.com</title>
+    <title>虎キング v3.7.9 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -329,7 +329,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.7.8 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.7.9 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -394,12 +394,12 @@
 
             <h4>▶️ レース記録・リプレイ</h4>
             <p>・<b>🔴（記録スタート）:</b> 本部スタッフ用パスワードで、全参加者の航跡・ブイ配置の記録を開始します。</p>
-            <p>・<b>▶️（リプレイ再生）:</b> 保存されたヒート記録を選択して再生・一時停止・倍速変更・切り出しを行えます。</p>
+            <p>・<b>▶️（リプレイ再生）:</b> 保存されたヒート記録を選択して再生・一時停止・倍速変更・切り出しが行えます。</p>
 
             <h4>🛡️ 管理者・アカウント</h4>
             <p>・<b>🛡️（参加者管理）:</b> 参加中のメンバーを一覧確認し、強制退出させることができます。</p>
             <p>・<b>👤（再設定）:</b> 自分の表示名、カラー、参加スタイル（通常 / フネ / ブイ）を変更できます。</p>
-            <p>・<b>🏃（ログアウト）:</b> 参加情報を消去して退出します。</p>
+            <p>・<b>🏃（ログアウト）:</b> 参加情報を消去して退出します。※船でログインした場合は2回連続で押すと船を消去できます。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:16px; background:#3498db; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -996,7 +996,7 @@
             allTs.sort((a,b) => a - b);
             const minTs = allTs[0];
 
-            const startMinutesFromMin = prompt(`全記録の開始から「何分後」を新しいスタート地点にしますか？\n（例: 5 と入力すると、記録開始から5分後以降を切り出します）`, "0");
+            const startMinutesFromMin = prompt(`全記録の開始から「何分後」を新しいスタートにしますか？\n（例: 5 と入力すると、記録開始から5分後以降を切り出します）`, "0");
             if (startMinutesFromMin === null) return;
             const durationMinutes = prompt(`そこから「何分間」を切り出しますか？\n（例: 3 と入力すると、3分間のレース分を切り出します）`, "3");
             if (durationMinutes === null) return;
@@ -1454,7 +1454,6 @@
         const msg = document.getElementById('noPointMsg');
         if (msg) msg.style.display = 'none';
 
-        // 既にDOMが存在するか確認（存在する場合は入力中要素を壊さないよう再生成をスキップ）
         let card = document.querySelector(`.point-card[data-key="${key}"]`);
         if (card) return;
 
@@ -1620,7 +1619,6 @@
         const panel = document.getElementById('pointSettingsPanel');
         const isPanelOpen = (panel && panel.style.display === 'block');
 
-        // 既存のDOMリストにあるがFirebaseから消えたものを削除
         const objects = snap.val() || {};
         const existingCards = listContainer.querySelectorAll('.point-card');
         existingCards.forEach(card => {
@@ -2296,9 +2294,35 @@
 
     window.triggerLogout = () => {
         if (isMenuOpen) toggleMenu();
-        showToast("🏃 ログアウトしています...");
+
+        let logoutCount = parseInt(localStorage.getItem('tora_king_logout_count') || "0") + 1;
+        const isShipUser = (myParticipantType === 'ship');
+
+        if (isShipUser && logoutCount < 2) {
+            localStorage.setItem('tora_king_logout_count', logoutCount);
+            if (confirm("船（フネ）でログイン中です。\nもう一度ログアウトボタンを押すと、マップ上の船オブジェクトが完全に消去されます。\n\nログアウトを実行しますか？")) {
+                let cleanupPromises = [db.ref('users/'+myId).remove()];
+                Promise.all(cleanupPromises).then(() => {
+                    localStorage.removeItem('tora_king_name');
+                    localStorage.removeItem('tora_king_color');
+                    localStorage.removeItem('tora_king_viewer');
+                    localStorage.removeItem('tora_king_part_type');
+                    location.reload();
+                }).catch(() => {
+                    location.reload();
+                });
+            }
+            return;
+        }
+
+        let confirmMsg = "ログアウトしますか？（登録情報がリセットされます）";
+        if (isShipUser && logoutCount >= 2) {
+            confirmMsg = "⚠️ 2回目のログアウトです。\nマップ上に配置されている「船」のオブジェクトを完全に消去してログアウトしますか？";
+        }
+
+        showToast("🏃 ログアウト処理中...");
         setTimeout(() => {
-            if(confirm("ログアウトしますか？（登録情報と設置したブイが削除されます）")) { 
+            if(confirm(confirmMsg)) { 
                 let cleanupPromises = [db.ref('users/'+myId).remove()];
                 
                 db.ref('objects').orderByChild('ownerId').equalTo(myId).once('value', snapshot => {
@@ -2306,7 +2330,7 @@
                         cleanupPromises.push(childSnapshot.ref.remove());
                     });
 
-                    if (myParticipantType === 'ship' || myParticipantType === 'buoy') {
+                    if (myParticipantType === 'ship' || myParticipantType === 'buoy' || (isShipUser && logoutCount >= 2)) {
                         cleanupPromises.push(db.ref('objects/'+myId).remove());
                     }
 
@@ -2315,12 +2339,14 @@
                         localStorage.removeItem('tora_king_color');
                         localStorage.removeItem('tora_king_viewer');
                         localStorage.removeItem('tora_king_part_type');
+                        localStorage.removeItem('tora_king_logout_count');
                         location.reload();
                     }).catch(() => {
                         localStorage.removeItem('tora_king_name');
                         localStorage.removeItem('tora_king_color');
                         localStorage.removeItem('tora_king_viewer');
                         localStorage.removeItem('tora_king_part_type');
+                        localStorage.removeItem('tora_king_logout_count');
                         location.reload();
                     });
                 });
