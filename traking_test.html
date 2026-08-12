@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.7.3 by Popolo App.com</title>
+    <title>虎キング v3.7.4 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -323,12 +323,13 @@
     <div style="display:flex; align-items:center; gap:6px;">
         <button class="header-btn" style="background:#f1c40f; color:#000;" onclick="openCoordListModal()">座標</button>
         <button class="header-btn" style="background:#007AFF;" onclick="authAndToggleSettings()">設定</button>
+        <button class="header-btn" style="background:#e67e22;" onclick="triggerSetup()">👤 ログイン</button>
         <button class="header-btn" style="background:#555; padding:6px 8px; font-size:11px;" onclick="toggleHeaderMinimize()">収納</button>
     </div>
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.7.3 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.7.4 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1604,10 +1605,8 @@
         const panel = document.getElementById('pointSettingsPanel');
         const isPanelOpen = (panel && panel.style.display === 'block');
 
-        // パネルが閉じている、または開いていてもリストを確実に構築し直すためクリア
         listContainer.innerHTML = '<p id="noPointMsg" style="color: #666; font-size: 13px; margin: 0; display:none;">座標データが読み込まれていません</p>';
         
-        // 既存のマップマーカーをすべて一度削除して再描画
         for (let key in objectMarkers) {
             map.removeLayer(objectMarkers[key]);
         }
@@ -2423,7 +2422,6 @@
 
                 db.ref().update(updates, (err) => {
                     if (!err) {
-                        // マップ上のマーカーを明示的に即座に削除
                         if (objectMarkers[key]) {
                             map.removeLayer(objectMarkers[key]);
                             delete objectMarkers[key];
