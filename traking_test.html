@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.7.0 by Popolo App.com</title>
+    <title>虎キング v3.7.1 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -328,7 +328,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.7.0 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.7.1 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -771,6 +771,7 @@
             checkboxes.forEach(chk => {
                 const userId = chk.value;
                 promises.push(db.ref('users/' + userId).remove());
+                promises.push(db.ref('objects/' + userId).remove()); // objects側も連動削除
             });
 
             Promise.all(promises).then(() => {
@@ -2409,21 +2410,27 @@
     };
 
     window.deleteObject = (key) => { 
-        if (confirm("消去しますか？")) { 
+        if (confirm("このオブジェクト（フネ・ブイ・マーク）を削除しますか？")) { 
             db.ref('objects/' + key).once('value', snap => {
                 const objData = snap.val();
+                let updates = {};
+                updates['objects/' + key] = null;
+                updates['users/' + key] = null; // ユーザーノード側も同時削除
+
                 if (objData) {
-                    if (objData.isParticipantUser) {
-                        db.ref('users/' + key).remove();
-                    }
                     let batch = {};
                     batch[key] = objData;
                     lastBatchDeletedObjects = batch;
                 }
-                db.ref('objects/' + key).remove().then(() => {
-                    const c = document.querySelector(`.point-card[data-key="${key}"]`); 
-                    if (c) c.remove();
-                    showToast("🗑️ 削除しました");
+
+                db.ref().update(updates, (err) => {
+                    if (!err) {
+                        const c = document.querySelector(`.point-card[data-key="${key}"]`); 
+                        if (c) c.remove();
+                        showToast("🗑️ 削除しました");
+                    } else {
+                        alert("削除に失敗しました");
+                    }
                 });
             });
         }
