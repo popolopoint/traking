@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.7.5 by Popolo App.com</title>
+    <title>虎キング v3.7.6 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -329,7 +329,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.7.5 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.7.6 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -762,7 +762,7 @@
         });
     };
 
-    window.executeSelectedUsersDelete = () => {
+   window.executeSelectedUsersDelete = () => {
         const checkboxes = document.querySelectorAll('.target-user-chk:checked');
         if (checkboxes.length === 0) {
             alert("削除するユーザーが選択されていません");
@@ -770,21 +770,36 @@
         }
 
         if (confirm(`選択した ${checkboxes.length} 名の参加者を強制退出（削除）させますか？`)) {
-            let promises = [];
+            let updates = {};
             checkboxes.forEach(chk => {
                 const userId = chk.value;
-                promises.push(db.ref('users/' + userId).remove());
-                promises.push(db.ref('objects/' + userId).remove());
+                updates['users/' + userId] = null;
             });
 
-            Promise.all(promises).then(() => {
-                showToast("🗑️ 選択した参加者を削除しました");
-                document.getElementById('admin-users-modal').style.display = 'none';
-            }).catch(err => {
-                alert("削除に失敗しました: " + err.message);
+            db.ref().update(updates, (err) => {
+                if (err) return alert("削除エラー: " + err.message);
+                
+                db.ref('objects').once('value', snap => {
+                    let objUpdates = {};
+                    snap.forEach(child => {
+                        const val = child.val();
+                        checkboxes.forEach(chk => {
+                            if (val.ownerId === chk.value || child.key === chk.value) {
+                                objUpdates['objects/' + child.key] = null;
+                            }
+                        });
+                    });
+                    db.ref().update(objUpdates).then(() => {
+                        showToast("🗑️ 参加者と、そのユーザーが作成したオブジェクトを削除しました");
+                        document.getElementById('admin-users-modal').style.display = 'none';
+                    });
+                });
             });
         }
     };
+
+
+    
 
     window.startRaceRecording = () => {
         toggleMenu();
@@ -1481,7 +1496,7 @@
         listContainer.appendChild(div);
     }
 
-    window.deleteSelectedObjects = () => {
+  window.deleteSelectedObjects = () => {
         const checkedBoxes = document.querySelectorAll('.point-del-chk:checked');
         if (checkedBoxes.length === 0) {
             alert("削除する項目が選択されていません");
@@ -1491,30 +1506,26 @@
             db.ref('objects').once('value', snap => {
                 const objs = snap.val() || {};
                 let batchDeleted = {};
-                let userDeletes = [];
+                let updates = {};
 
                 checkedBoxes.forEach(chk => {
                     const k = chk.value;
+                    updates['objects/' + k] = null;
+                    updates['users/' + k] = null;
                     if (objs[k]) {
                         batchDeleted[k] = objs[k];
-                        if (objs[k].isParticipantUser) {
-                            userDeletes.push(db.ref('users/' + k).remove());
-                            if (k === myId) isObjectDeletedLocally = true;
-                        }
+                        if (k === myId) isObjectDeletedLocally = true;
                     }
                 });
 
                 lastBatchDeletedObjects = batchDeleted;
 
-                let updates = {};
-                checkedBoxes.forEach(chk => {
-                    updates['objects/' + chk.value] = null;
-                });
-
-                Promise.all([db.ref().update(updates), ...userDeletes]).then(() => {
-                    showToast("🗑️ 選択したポイントを削除しました");
-                }).catch(err => {
-                    alert("削除に失敗しました: " + err.message);
+                db.ref().update(updates, err => {
+                    if (!err) {
+                        showToast("🗑️ 選択したポイントを削除しました");
+                    } else {
+                        alert("削除に失敗しました: " + (err.message || ''));
+                    }
                 });
             });
         }
