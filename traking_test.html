@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.6.9 by Popolo App.com</title>
+    <title>虎キング v3.7.0 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -40,7 +40,6 @@
         
         #map-watermark { position: fixed; bottom: 10px; right: 70px; z-index: 1500; background: rgba(0, 0, 0, 0.7); color: #ffcc00; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; pointer-events: none; border: 1px solid rgba(255,153,0,0.5); backdrop-filter: blur(2px); }
 
-        /* 吹き出し（Tooltip）を小さく調整 */
         .leaflet-tooltip.user-label,
         .leaflet-tooltip.object-label {
             font-size: 10px !important;
@@ -329,7 +328,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.6.9 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.7.0 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -405,7 +404,6 @@
     </div>
 </div>
 
-<!-- 保存済みレース（ヒート）選択モーダル -->
 <div id="saved-courses-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
     <div style="background:white; padding:20px; border-radius:12px; width:94%; max-width:480px; box-sizing:border-box; text-align:center;">
         <h3 style="margin:0 0 12px 0; color:#2c3e50; font-size:1.3rem;">📁 レース記録・ヒート一覧</h3>
@@ -505,7 +503,6 @@
     let replayCurrentIndex = 0;
     let isSeeking = false;
     let replayStartTimeMs = null;
-    let hasAlertedStart = false;
 
     const COLOR_OPTIONS = [
         { name: '赤', hex: '#ff3b30' },
@@ -1106,7 +1103,6 @@
             } else {
                 replayStartTimeMs = null;
             }
-            hasAlertedStart = false;
 
             document.getElementById('replay-control-bar').style.display = 'flex';
             document.getElementById('replay-minimized-btn').style.display = 'none';
@@ -1491,10 +1487,15 @@
             db.ref('objects').once('value', snap => {
                 const objs = snap.val() || {};
                 let batchDeleted = {};
+                let userDeletes = [];
+
                 checkedBoxes.forEach(chk => {
                     const k = chk.value;
                     if (objs[k]) {
                         batchDeleted[k] = objs[k];
+                        if (objs[k].isParticipantUser) {
+                            userDeletes.push(db.ref('users/' + k).remove());
+                        }
                     }
                 });
 
@@ -1504,7 +1505,8 @@
                 checkedBoxes.forEach(chk => {
                     updates['objects/' + chk.value] = null;
                 });
-                db.ref().update(updates).then(() => {
+
+                Promise.all([db.ref().update(updates), ...userDeletes]).then(() => {
                     showToast("🗑️ 選択したポイントを削除しました");
                 }).catch(err => {
                     alert("削除に失敗しました: " + err.message);
@@ -2075,11 +2077,6 @@
         localStorage.setItem('tora_king_part_type', myParticipantType);
         localStorage.removeItem('tora_king_viewer');
         document.getElementById('setup-overlay').style.display = 'none'; 
-        
-        if (myMarker) {
-            map.removeLayer(myMarker);
-            myMarker = null;
-        }
         startTracking();
     }
 
@@ -2092,11 +2089,6 @@
         localStorage.removeItem('tora_king_part_type');
         document.getElementById('setup-overlay').style.display = 'none';
         showToast("👀 ログインせずに見るモードで開始しました");
-        
-        if (myMarker) {
-            map.removeLayer(myMarker);
-            myMarker = null;
-        }
         startTracking();
     };
 
@@ -2123,7 +2115,7 @@
         
         currentLatestPos = { lat: latitude, lng: longitude };
         
-        if (!isViewerMode && (myName || myParticipantType === 'ship' || myParticipantType === 'buoy')) {
+        if (!isViewerMode && (myName || myParticipantType !== 'normal')) {
             const displayName = myName || (myParticipantType === 'ship' ? 'フネ' : 'ブイ');
             const userData = {
                 lat: latitude, 
@@ -2139,7 +2131,7 @@
             db.ref('users/'+myId).set(userData);
             
             if (myParticipantType === 'ship' || myParticipantType === 'buoy') {
-                db.ref('objects/' + myId).set({
+                db.ref('objects/' + myId).update({
                     type: myParticipantType,
                     shape: 'triangle',
                     color: myColor || '#ff3b30',
@@ -2147,6 +2139,7 @@
                     lng: longitude,
                     comment: displayName,
                     assignedLabel: displayName,
+                    isParticipantUser: true,
                     ts: now
                 });
             }
@@ -2420,6 +2413,9 @@
             db.ref('objects/' + key).once('value', snap => {
                 const objData = snap.val();
                 if (objData) {
+                    if (objData.isParticipantUser) {
+                        db.ref('users/' + key).remove();
+                    }
                     let batch = {};
                     batch[key] = objData;
                     lastBatchDeletedObjects = batch;
