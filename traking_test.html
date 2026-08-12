@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.8.0 by Popolo App.com</title>
+    <title>虎キング v3.8.1 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -206,7 +206,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.0 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.1 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -329,7 +329,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.8.0 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.8.1 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -452,6 +452,7 @@
     let isViewerMode = localStorage.getItem('tora_king_viewer') === 'true';
     let myParticipantType = localStorage.getItem('tora_king_part_type') || 'normal';
     let isObjectDeletedLocally = false;
+    let isKicked = false;
 
     let speedUnitMode = parseInt(localStorage.getItem('tora_king_unit') !== null ? localStorage.getItem('tora_king_unit') : "1");
     const units = ["kt", "km/h", "m/s"];
@@ -774,6 +775,7 @@
             checkboxes.forEach(chk => {
                 const userId = chk.value;
                 updates['users/' + userId] = null;
+                updates['kicked_users/' + userId] = true; // 強制退場リストに登録
             });
 
             db.ref().update(updates, (err) => {
@@ -2086,7 +2088,11 @@
         myColor = color; 
         isViewerMode = false;
         isObjectDeletedLocally = false;
+        isKicked = false;
         
+        // 再参加時に強制退場リストから自身のIDをクリアして復活可能にする
+        db.ref('kicked_users/' + myId).remove();
+
         localStorage.setItem('tora_king_name', myName); 
         localStorage.setItem('tora_king_color', myColor);
         localStorage.setItem('tora_king_part_type', myParticipantType);
@@ -2101,6 +2107,7 @@
         myName = null;
         myColor = null;
         isObjectDeletedLocally = false;
+        isKicked = false;
         localStorage.setItem('tora_king_viewer', 'true');
         localStorage.removeItem('tora_king_name');
         localStorage.removeItem('tora_king_part_type');
@@ -2122,7 +2129,7 @@
     }
 
     function updateLocation(pos) {
-        if (isReplaying) return;
+        if (isReplaying || isKicked) return;
 
         const latitude = pos.coords.latitude + offsetLat;
         const longitude = pos.coords.longitude + offsetLng;
@@ -2355,6 +2362,15 @@
         }, 300);
     };
 
+    // 自分のIDが強制退場リストに含まれていないか常時監視（自分だけは自分の画面が見られる状態を維持）
+    db.ref('kicked_users/' + myId).on('value', snap => {
+        if (snap.exists() && snap.val() === true) {
+            isKicked = true;
+            document.getElementById('status').style.background = "rgba(192, 57, 43, 0.9)";
+            document.getElementById('status').innerText = "⚠️ 管理者により強制退場させられました（画面はそのまま維持されています）";
+        }
+    });
+
     initSetupUI();
     if (!myName && !isViewerMode && myParticipantType === 'normal') openSetup(); else startTracking();
 
@@ -2367,63 +2383,73 @@
         const activeUserNames = {};
         let activeUsersObj = {};
 
-        for (let id in users) {
-            const u = users[id];
-            if ((!u.name && u.partType === 'normal') || now - u.ts > 600000) {
-                if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
-                continue;
-            }
+        db.ref('kicked_users').once('value', kickedSnap => {
+            const kickedList = kickedSnap.val() || {};
 
-            if (id !== myId) {
-                if (u.isViewer || u.name === "👀 観戦者") {
+            for (let id in users) {
+                // 強制退場リストに載っているユーザーは他の人の画面・リストから完全に無視（非表示）にする
+                if (kickedList[id]) {
                     if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
                     continue;
                 }
+
+                const u = users[id];
+                if ((!u.name && u.partType === 'normal') || now - u.ts > 600000) {
+                    if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
+                    continue;
+                }
+
+                if (id !== myId) {
+                    if (u.isViewer || u.name === "👀 観戦者") {
+                        if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
+                        continue;
+                    }
+                }
+
+                if (u.name === myName && id !== myId && !isViewerMode) {
+                    if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
+                    continue;
+                }
+
+                const displayName = u.name || (u.partType === 'ship' ? 'フネ' : 'ブイ');
+                activeUserNames[displayName] = true;
+                activeUsersObj[displayName] = { id: id, u: u };
+                
+                updateUserTrailAndMarker(displayName, u.lat, u.lng, u.color, u.heading, now, u.partType || 'normal');
             }
 
-            if (u.name === myName && id !== myId && !isViewerMode) {
-                if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
-                continue;
+            const sortedNames = Object.keys(activeUsersObj).sort();
+            sortedNames.forEach(name => {
+                const item = activeUsersObj[name];
+                const u = item.u;
+                if (item.id !== myId && (u.isViewer || u.name === "👀 観戦者")) return;
+
+                const isMe = (item.id === myId);
+                const rawSpeed = u.speed || 0;
+                let s = 0;
+                if (speedUnitMode === 0) s = rawSpeed * 1.94384;
+                else if (speedUnitMode === 1) s = rawSpeed * 3.6;
+                else s = rawSpeed;
+
+                listHtml += `<div class="user-item ${isMe ? 'me' : ''}"><span style="color:${u.color}">●</span> ${name} ${s.toFixed(1)}${units[speedUnitMode]}</div>`;
+            });
+
+            for (let name in userTrails) {
+                if (!activeUserNames[name]) {
+                    if (userPolylineLines[name]) {
+                        userPolylineLines[name].forEach(seg => map.removeLayer(seg));
+                        delete userPolylineLines[name];
+                    }
+                    delete userTrails[name];
+                    if (userMarkers[name]) {
+                        map.removeLayer(userMarkers[name]);
+                        delete userMarkers[name];
+                    }
+                }
             }
 
-            const displayName = u.name || (u.partType === 'ship' ? 'フネ' : 'ブイ');
-            activeUserNames[displayName] = true;
-            activeUsersObj[displayName] = { id: id, u: u };
-            
-            updateUserTrailAndMarker(displayName, u.lat, u.lng, u.color, u.heading, now, u.partType || 'normal');
-        }
-
-        const sortedNames = Object.keys(activeUsersObj).sort();
-        sortedNames.forEach(name => {
-            const item = activeUsersObj[name];
-            const u = item.u;
-            if (item.id !== myId && (u.isViewer || u.name === "👀 観戦者")) return;
-
-            const isMe = (item.id === myId);
-            const rawSpeed = u.speed || 0;
-            let s = 0;
-            if (speedUnitMode === 0) s = rawSpeed * 1.94384;
-            else if (speedUnitMode === 1) s = rawSpeed * 3.6;
-            else s = rawSpeed;
-
-            listHtml += `<div class="user-item ${isMe ? 'me' : ''}"><span style="color:${u.color}">●</span> ${name} ${s.toFixed(1)}${units[speedUnitMode]}</div>`;
+            document.getElementById('list-content').innerHTML = listHtml;
         });
-
-        for (let name in userTrails) {
-            if (!activeUserNames[name]) {
-                if (userPolylineLines[name]) {
-                    userPolylineLines[name].forEach(seg => map.removeLayer(seg));
-                    delete userPolylineLines[name];
-                }
-                delete userTrails[name];
-                if (userMarkers[name]) {
-                    map.removeLayer(userMarkers[name]);
-                    delete userMarkers[name];
-                }
-            }
-        }
-
-        document.getElementById('list-content').innerHTML = listHtml;
     });
 
     window.toggleSpeedUnit = () => {
