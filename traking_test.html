@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.8.4 by Popolo App.com</title>
+    <title>虎キング v3.8.6 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -14,7 +14,17 @@
         #header-expand-btn { position: fixed; top: 2px; left: 50%; transform: translateX(-50%); z-index: 3001; background: rgba(26,26,26,0.95); color: #ff9900; border: 1.5px solid #ff9900; border-radius: 0 0 10px 10px; padding: 4px 16px; font-size: 11px; font-weight: bold; cursor: pointer; display: none; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
         #header.minimized ~ #header-expand-btn { display: block; }
 
-        .header-btn { border: none; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; height: 34px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3); color: white; }
+        .header-btn { border: none; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; height: 34px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3); color: white; transition: all 0.3s ease; }
+        
+        /* 管理者モードONかつ「コース作成」選択時の縦長サイズ（3倍） */
+        .header-btn.giant-course-btn {
+            height: 102px !important;
+            font-size: 16px !important;
+            padding: 6px 18px !important;
+            align-self: flex-start;
+            z-index: 3005;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+        }
         
         #recording-banner { position: fixed; top: 60px; left: 0; width: 100%; background: #c0392b; color: white; text-align: center; font-size: 12px; font-weight: bold; padding: 4px 0; z-index: 2900; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.5); letter-spacing: 1px; animation: flashBanner 1.5s infinite; }
         @keyframes flashBanner { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
@@ -206,7 +216,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.4 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.6 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -315,22 +325,22 @@
 <div id="header">
     <div style="display:flex; align-items:center; gap:6px;">
         <button id="admin-mode-btn" class="header-btn" style="background:#8e44ad;" onclick="toggleAdminMode()">🔐 管理者モード: OFF</button>
-        <button class="header-btn" style="background:#27ae60;" onclick="promptCourseCreate()">コース作成</button>
+        <button id="course-create-header-btn" class="header-btn" style="background:#27ae60;" onclick="promptCourseCreate()">コース作成</button>
     </div>
     
     <div id="header-replay-status" style="font-size:11px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none;"></div>
     <div id="header-replay-time" style="font-size:10px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
 
     <div style="display:flex; align-items:center; gap:6px;">
-        <button class="header-btn" style="background:#f1c40f; color:#000;" onclick="openCoordListModal()">座標</button>
-        <button class="header-btn" style="background:#007AFF;" onclick="authAndToggleSettings()">設定</button>
-        <button class="header-btn" style="background:#e67e22;" onclick="triggerSetup()">👤 ログイン</button>
-        <button class="header-btn" style="background:#555; padding:6px 8px; font-size:11px;" onclick="toggleHeaderMinimize()">収納</button>
+        <button class="header-btn" style="background:#f1c40f; color:#000;" onclick="handleHeaderAction(openCoordListModal)">座標</button>
+        <button class="header-btn" style="background:#007AFF;" onclick="handleHeaderAction(authAndToggleSettings)">設定</button>
+        <button class="header-btn" style="background:#e67e22;" onclick="handleHeaderAction(triggerSetup)">👤 ログイン</button>
+        <button class="header-btn" style="background:#555; padding:6px 8px; font-size:11px;" onclick="handleHeaderAction(toggleHeaderMinimize)">収納</button>
     </div>
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.8.4 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.8.6 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -450,6 +460,7 @@
     let myId = localStorage.getItem('tora_king_id') || "tiger_" + Math.floor(Math.random()*10000);
     localStorage.setItem('tora_king_id', myId);
 
+    // 再読み込み後もセッション（ログイン状態）を保持
     let myName = localStorage.getItem('tora_king_name');
     let myColor = localStorage.getItem('tora_king_color');
     let isViewerMode = localStorage.getItem('tora_king_viewer') === 'true';
@@ -543,8 +554,20 @@
         if (window.toastTimeout) clearTimeout(window.toastTimeout);
     };
 
+    // ヘッダーの他のボタンが押されたとき、コース作成ボタンの巨大化を解除する共通処理
+    function resetCourseBtnSizeIfNeeded() {
+        const courseBtn = document.getElementById('course-create-header-btn');
+        if (courseBtn) courseBtn.classList.remove('giant-course-btn');
+    }
+
+    window.handleHeaderAction = (actionFunc) => {
+        resetCourseBtnSizeIfNeeded();
+        actionFunc();
+    };
+
     // 管理者モードの切り替え・認証
     window.toggleAdminMode = () => {
+        resetCourseBtnSizeIfNeeded();
         if (!isAdminMode) {
             const inputPass = prompt("管理者モードを有効にするためのパスワードを入力してください:");
             if (inputPass === null) return;
@@ -556,7 +579,7 @@
             const btn = document.getElementById('admin-mode-btn');
             btn.innerText = "🔐 管理者モード: ON";
             btn.style.background = "#27ae60";
-            showToast("🔐 管理者モードを有効化しました（以降パスワード不要）");
+            showToast("🔐 管理者モードを有効化しました（コース作成ボタンを押すと巨大化します）");
         } else {
             isAdminMode = false;
             const btn = document.getElementById('admin-mode-btn');
@@ -595,6 +618,13 @@
 
     window.promptCourseCreate = () => {
         if (isMenuOpen) toggleMenu();
+        
+        // 管理者モードがONの時だけ、「コース作成」ボタンを3倍の縦長サイズにする
+        const courseBtn = document.getElementById('course-create-header-btn');
+        if (isAdminMode && courseBtn) {
+            courseBtn.classList.add('giant-course-btn');
+        }
+
         if (isAdminMode) {
             startCourseCreateSession();
             return;
