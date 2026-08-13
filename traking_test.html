@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.9.3 by Popolo App.com</title>
+    <title>虎キング v3.9.4 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -235,7 +235,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.9.3 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.9.4 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -363,7 +363,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.9.3 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.9.4 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1928,53 +1928,65 @@
 
     db.ref('users').on('value', snap => {
         if (isReplaying) return;
+
         const users = snap.val();
         let listHtml = "";
         const now = Date.now();
-        let activeUserNames = {}, activeUsersObj = {};
+        const activeUserNames = {};
+        let activeUsersObj = {};
 
-        db.ref('kicked_users').once('value', kickedSnap => {
-            const kickedList = kickedSnap.val() || {};
-
-            for (let id in users) {
-                if (kickedList[id]) {
-                    if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
-                    continue;
-                }
-
-                const u = users[id];
-                if (!u) continue;
-
-                // 観戦者（isViewer）だけはマップ上のマーカーから除外
-                if (u.isViewer) {
-                    if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
-                    continue;
-                }
-
-                const displayName = u.name || (u.partType === 'ship' ? '🚤 フネ' : '🚩 ブイ');
-                activeUserNames[displayName] = true;
-                activeUsersObj[displayName] = { id: id, u: u };
-                
-                updateUserTrailAndMarker(displayName, u.lat, u.lng, u.color, u.heading, now, u.partType || 'normal');
+        for (let id in users) {
+            const u = users[id];
+            if (!u || now - (u.ts || 0) > 600000) {
+                if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
+                continue;
             }
 
-            Object.keys(activeUsersObj).sort().forEach(name => {
-                const item = activeUsersObj[name];
-                const u = item.u;
-                const s = (u.speed || 0) * (speedUnitMode === 0 ? 1.94384 : (speedUnitMode === 1 ? 3.6 : 1));
-                listHtml += `<div class="user-item ${(item.id === myId) ? 'me' : ''}"><span style="color:${u.color}">●</span> ${name} ${s.toFixed(1)}${units[speedUnitMode]}</div>`;
-            });
-
-            for (let name in userTrails) {
-                if (!activeUserNames[name]) {
-                    if (userPolylineLines[name]) { userPolylineLines[name].forEach(seg => map.removeLayer(seg)); delete userPolylineLines[name]; }
-                    delete userTrails[name];
-                    if (userMarkers[name]) { map.removeLayer(userMarkers[name]); delete userMarkers[name]; }
-                }
+            // 自分自身の重複を除外
+            if (u.name === myName && id !== myId && !isViewerMode) {
+                if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
+                continue;
             }
 
-            document.getElementById('list-content').innerHTML = listHtml;
+            // 表示名の決定（名前がなければpartTypeに応じてフネ・ブイと表示）
+            const displayName = u.name || (u.partType === 'ship' ? '🚤 フネ' : (u.partType === 'buoy' ? '🚩 ブイ' : '参加者'));
+
+            activeUserNames[displayName] = true;
+            activeUsersObj[displayName] = { id: id, u: u };
+            
+            updateUserTrailAndMarker(displayName, u.lat, u.lng, u.color, u.heading, now, u.partType || 'normal');
+        }
+
+        const sortedNames = Object.keys(activeUsersObj).sort();
+        sortedNames.forEach(name => {
+            const item = activeUsersObj[name];
+            const u = item.u;
+            const isMe = (item.id === myId);
+            const rawSpeed = u.speed || 0;
+            let s = 0;
+            if (speedUnitMode === 0) s = rawSpeed * 1.94384;
+            else if (speedUnitMode === 1) s = rawSpeed * 3.6;
+            else s = rawSpeed;
+
+            const dispTitle = u.name || (u.partType === 'ship' ? '🚤 フネ' : '🚩 ブイ');
+            listHtml += `<div class="user-item ${isMe ? 'me' : ''}"><span style="color:${u.color || '#ff9900'}">●</span> ${dispTitle} ${s.toFixed(1)}${units[speedUnitMode]}</div>`;
         });
+
+        for (let name in userTrails) {
+            if (!activeUserNames[name]) {
+                if (userPolylineLines[name]) {
+                    userPolylineLines[name].forEach(seg => map.removeLayer(seg));
+                    delete userPolylineLines[name];
+                }
+                delete userTrails[name];
+                if (userMarkers[name]) {
+                    map.removeLayer(userMarkers[name]);
+                    delete userMarkers[name];
+                }
+            }
+        }
+
+        document.getElementById('list-content').innerHTML = listHtml;
     });
 
     window.toggleSpeedUnit = () => {
