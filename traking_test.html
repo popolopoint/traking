@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.8.7 by Popolo App.com</title>
+    <title>虎キング v3.8.8 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -39,7 +39,7 @@
 
         #map { height: 100vh; width: 100vw; z-index: 1; background: #222; }
         
-        #setup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; backdrop-filter: blur(4px); }
+        #setup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; backdrop-filter: blur(4px); }
         .setup-box { background: rgba(34, 34, 34, 0.95); padding: 20px; border-radius: 15px; border: 2px solid #ff9900; text-align: center; width: 85%; max-width: 340px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-height: 85vh; overflow-y: auto; }
         .color-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
         .color-btn { width: 100%; aspect-ratio: 1/1; border-radius: 50%; border: 2px solid #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; text-shadow: 1px 1px 2px #000; color: #fff; }
@@ -216,7 +216,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.7 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.8 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -340,7 +340,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.8.7 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.8.8 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -2465,13 +2465,9 @@
     });
 
     initSetupUI();
-    // 初めてアクセスしたとき（未登録かつ観戦モードでもないとき）はマップを背面に表示しつつ自動でセットアップ画面を開く
-    if (!myName && !isViewerMode && myParticipantType === 'normal') {
-        startTracking();
-        openSetup();
-    } else {
-        startTracking();
-    }
+    
+    // 【修正】初回の読み込み時・ログアウト後も、設定モーダルを強制表示せず最初からマップ画面をメインで表示する
+    startTracking();
 
     db.ref('users').on('value', snap => {
         if (isReplaying) return;
@@ -2567,7 +2563,7 @@
                 if ((!u.name && u.partType === 'normal') || now - u.ts > 600000) continue;
                 if (id !== myId && (u.isViewer || u.name === "👀 観戦者")) continue;
                 if (u.name === myName && id !== myId && !isViewerMode) continue;
-                const displayName = u.name || (u.partType === 'ship' ? 'フネ' : 'ブイ');
+                const displayName = u.name || (u.partType === 'ship' ? '🚤 フネ' : '🚩 ブイ');
                 activeUsersObj[displayName] = { id: id, u: u };
             }
             const sortedNames = Object.keys(activeUsersObj).sort();
