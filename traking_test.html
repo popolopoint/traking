@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.8.8 by Popolo App.com</title>
+    <title>虎キング v3.8.9 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -216,7 +216,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.8 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.9 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -340,7 +340,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.8.8 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.8.9 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -455,7 +455,7 @@
     const db = firebase.database();
     const RECORD_PASSWORD = "1234";
 
-    let isAdminMode = false; // 管理者モードの状態
+    let isAdminMode = localStorage.getItem('tora_king_admin') === 'true'; // 管理者モードの状態（保存状態から復元）
 
     let myId = localStorage.getItem('tora_king_id') || "tiger_" + Math.floor(Math.random()*10000);
     localStorage.setItem('tora_king_id', myId);
@@ -574,18 +574,27 @@
                 return;
             }
             isAdminMode = true;
-            const btn = document.getElementById('admin-mode-btn');
-            btn.innerText = "🔐 管理者モード: ON";
-            btn.style.background = "#27ae60";
+            localStorage.setItem('tora_king_admin', 'true');
+            updateAdminModeUI();
             showToast("🔐 管理者モードを有効化しました（コース作成ボタンを押すと巨大化します）");
         } else {
             isAdminMode = false;
-            const btn = document.getElementById('admin-mode-btn');
-            btn.innerText = "🔐 管理者モード: OFF";
-            btn.style.background = "#8e44ad";
+            localStorage.removeItem('tora_king_admin');
+            updateAdminModeUI();
             showToast("🔒 管理者モードを無効化しました");
         }
     };
+
+    function updateAdminModeUI() {
+        const btn = document.getElementById('admin-mode-btn');
+        if (isAdminMode) {
+            btn.innerText = "🔐 管理者モード: ON";
+            btn.style.background = "#27ae60";
+        } else {
+            btn.innerText = "🔐 管理者モード: OFF";
+            btn.style.background = "#8e44ad";
+        }
+    }
 
     window.authAndToggleSettings = () => {
         if (isAdminMode) {
@@ -2465,8 +2474,8 @@
     });
 
     initSetupUI();
+    updateAdminModeUI(); // 起動時に保存された管理者モードの状態をUIに反映
     
-    // 【修正】初回の読み込み時・ログアウト後も、設定モーダルを強制表示せず最初からマップ画面をメインで表示する
     startTracking();
 
     db.ref('users').on('value', snap => {
