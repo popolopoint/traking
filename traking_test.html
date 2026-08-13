@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.8.1 by Popolo App.com</title>
+    <title>虎キング v3.8.2 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -206,7 +206,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.1 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.2 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -314,7 +314,7 @@
 
 <div id="header">
     <div style="display:flex; align-items:center;">
-        <button class="header-btn" style="background:#27ae60;" onclick="promptCourseCreate()">コース作成</button>
+        <button id="admin-mode-btn" class="header-btn" style="background:#8e44ad;" onclick="toggleAdminMode()">🔐 管理者モード: OFF</button>
     </div>
     
     <div id="header-replay-status" style="font-size:11px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none;"></div>
@@ -329,7 +329,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.8.1 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.8.2 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -385,7 +385,7 @@
             <p>・<b>右上参加者リスト:</b> タップすると速度単位（kt / km/h / m/s）が切り替わります。</p>
 
             <h4>🛠️ コース作成・編集</h4>
-            <p>・<b>上部「コース作成」:</b> パスワード認証後、フネやブイの配置、線（実線・点線）の結びつけ、角度・距離データ計測が行えます。</p>
+            <p>・<b>🔐 管理者モード:</b> 事前にパスワードを認証すると、コース作成・設定・録画・切り出し・削除などの管理者機能がパスワード不要で実行できます。</p>
             <p>・<b>🚩（マーク追加）:</b> 地図上の任意の場所をタップして、新規にマークやフネを設置できます。</p>
 
             <h4>📍 補正・GPS管理</h4>
@@ -393,7 +393,7 @@
             <p>・<b>🔄（GPS再接続）:</b> GPSシグナルを強制リセットし、再測位を行います。</p>
 
             <h4>▶️ レース記録・リプレイ</h4>
-            <p>・<b>🔴（記録スタート）:</b> 本部スタッフ用パスワードで、全参加者の航跡・ブイ配置の記録を開始します。</p>
+            <p>・<b>🔴（記録スタート）:</b> 全参加者の航跡・ブイ配置の記録を開始します。</p>
             <p>・<b>▶️（リプレイ再生）:</b> 保存されたヒート記録を選択して再生・一時停止・倍速変更・切り出しが行えます。</p>
 
             <h4>🛡️ 管理者・アカウント</h4>
@@ -443,6 +443,8 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const RECORD_PASSWORD = "1234";
+
+    let isAdminMode = false; // 管理者モードの状態
 
     let myId = localStorage.getItem('tora_king_id') || "tiger_" + Math.floor(Math.random()*10000);
     localStorage.setItem('tora_king_id', myId);
@@ -540,7 +542,34 @@
         if (window.toastTimeout) clearTimeout(window.toastTimeout);
     };
 
+    // 管理者モードの切り替え・認証
+    window.toggleAdminMode = () => {
+        if (!isAdminMode) {
+            const inputPass = prompt("管理者モードを有効にするためのパスワードを入力してください:");
+            if (inputPass === null) return;
+            if (inputPass !== RECORD_PASSWORD) {
+                alert("❌ パスワードが違います！");
+                return;
+            }
+            isAdminMode = true;
+            const btn = document.getElementById('admin-mode-btn');
+            btn.innerText = "🔐 管理者モード: ON";
+            btn.style.background = "#27ae60";
+            showToast("🔐 管理者モードを有効化しました（以降パスワード不要）");
+        } else {
+            isAdminMode = false;
+            const btn = document.getElementById('admin-mode-btn');
+            btn.innerText = "🔐 管理者モード: OFF";
+            btn.style.background = "#8e44ad";
+            showToast("🔒 管理者モードを無効化しました");
+        }
+    };
+
     window.authAndToggleSettings = () => {
+        if (isAdminMode) {
+            toggleSettingsPanel();
+            return;
+        }
         const inputPass = prompt("設定を開くためのパスワードを入力してください:");
         if (inputPass === null) return;
         if (inputPass !== RECORD_PASSWORD) {
@@ -565,18 +594,26 @@
 
     window.promptCourseCreate = () => {
         if (isMenuOpen) toggleMenu();
+        if (isAdminMode) {
+            startCourseCreateSession();
+            return;
+        }
         const inputPass = prompt("コース作成用のパスワードを入力してください:");
         if (inputPass === null) return;
         if (inputPass !== RECORD_PASSWORD) {
             alert("❌ パスワードが違います！");
             return;
         }
+        startCourseCreateSession();
+    };
+
+    function startCourseCreateSession() {
         isCourseBuilderActive = true;
         document.getElementById('course-builder-bar').style.display = 'flex';
         document.getElementById('course-builder-minimized').style.display = 'none';
         setCourseBuilderMode('ship');
         showToast("🛠️ コース作成モードを起動しました");
-    };
+    }
 
     window.minimizeCourseBuilderBar = () => {
         document.getElementById('course-builder-bar').style.display = 'none';
@@ -730,6 +767,10 @@
 
     window.openAdminUsersModal = () => {
         toggleMenu();
+        if (isAdminMode) {
+            showAdminUsersModalProcess();
+            return;
+        }
         const inputPass = prompt("管理者用パスワードを入力してください:");
         if (inputPass === null) return;
 
@@ -737,7 +778,10 @@
             alert("❌ パスワードが違います！");
             return;
         }
+        showAdminUsersModalProcess();
+    };
 
+    function showAdminUsersModalProcess() {
         const listDiv = document.getElementById('admin-users-list');
         listDiv.innerHTML = "読み込み中...";
         document.getElementById('admin-users-modal').style.display = 'flex';
@@ -761,7 +805,7 @@
             }
             listDiv.innerHTML = html || "<p style='color:#666;'>有効なユーザーがいません</p>";
         });
-    };
+    }
 
    window.executeSelectedUsersDelete = () => {
         const checkboxes = document.querySelectorAll('.target-user-chk:checked');
@@ -775,7 +819,7 @@
             checkboxes.forEach(chk => {
                 const userId = chk.value;
                 updates['users/' + userId] = null;
-                updates['kicked_users/' + userId] = true; // 強制退場リストに登録
+                updates['kicked_users/' + userId] = true;
             });
 
             db.ref().update(updates, (err) => {
@@ -802,6 +846,10 @@
 
     window.startRaceRecording = () => {
         toggleMenu();
+        if (isAdminMode) {
+            executeStartRaceRecording();
+            return;
+        }
         const inputPass = prompt("本部スタッフ用パスワードを入力してください:");
         if (inputPass === null) return;
 
@@ -809,7 +857,10 @@
             alert("❌ パスワードが違います！記録を開始できません。");
             return;
         }
+        executeStartRaceRecording();
+    };
 
+    function executeStartRaceRecording() {
         if (confirm("パスワード認証成功。全参加者のレース記録を開始しますか？（前回の未保存一時履歴はリセットされます）")) {
             db.ref('temp_history').remove().then(() => {
                 isRecordingActive = true;
@@ -835,7 +886,7 @@
                 showToast("🔴 レース記録をスタートしました！(ローカル)");
             });
         }
-    };
+    }
 
     function startGlobalRecordingLoop() {
         if (recordingInterval) clearInterval(recordingInterval);
@@ -948,6 +999,10 @@
     };
 
     window.authAndTrim = (id) => {
+        if (isAdminMode) {
+            trimAndSaveCourse(id);
+            return;
+        }
         const pass = prompt("管理者パスワードを入力してください:");
         if (pass === null) return;
         if (pass !== RECORD_PASSWORD) {
@@ -958,6 +1013,10 @@
     };
 
     window.authAndRename = (id, currentTitle) => {
+        if (isAdminMode) {
+            renameCourse(id, currentTitle);
+            return;
+        }
         const pass = prompt("管理者パスワードを入力してください:");
         if (pass === null) return;
         if (pass !== RECORD_PASSWORD) {
@@ -968,6 +1027,10 @@
     };
 
     window.authAndDelete = (id) => {
+        if (isAdminMode) {
+            deleteCourse(id);
+            return;
+        }
         const pass = prompt("管理者パスワードを入力してください:");
         if (pass === null) return;
         if (pass !== RECORD_PASSWORD) {
@@ -2090,7 +2153,6 @@
         isObjectDeletedLocally = false;
         isKicked = false;
         
-        // 再参加時に強制退場リストから自身のIDをクリアして復活可能にする
         db.ref('kicked_users/' + myId).remove();
 
         localStorage.setItem('tora_king_name', myName); 
@@ -2362,7 +2424,6 @@
         }, 300);
     };
 
-    // 自分のIDが強制退場リストに含まれていないか常時監視（自分だけは自分の画面が見られる状態を維持）
     db.ref('kicked_users/' + myId).on('value', snap => {
         if (snap.exists() && snap.val() === true) {
             isKicked = true;
@@ -2387,7 +2448,6 @@
             const kickedList = kickedSnap.val() || {};
 
             for (let id in users) {
-                // 強制退場リストに載っているユーザーは他の人の画面・リストから完全に無視（非表示）にする
                 if (kickedList[id]) {
                     if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
                     continue;
