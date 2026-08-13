@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.8.3 by Popolo App.com</title>
+    <title>虎キング v3.8.4 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -206,7 +206,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.3 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.4 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -314,8 +314,8 @@
 
 <div id="header">
     <div style="display:flex; align-items:center; gap:6px;">
-        <button class="header-btn" style="background:#27ae60;" onclick="promptCourseCreate()">コース作成</button>
         <button id="admin-mode-btn" class="header-btn" style="background:#8e44ad;" onclick="toggleAdminMode()">🔐 管理者モード: OFF</button>
+        <button class="header-btn" style="background:#27ae60;" onclick="promptCourseCreate()">コース作成</button>
     </div>
     
     <div id="header-replay-status" style="font-size:11px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none;"></div>
@@ -330,7 +330,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.8.3 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.8.4 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -2132,10 +2132,13 @@
         const nameInp = document.getElementById('setup-name').value;
         
         if (myParticipantType === 'ship' || myParticipantType === 'buoy') {
-            const pass = prompt("フネ・ブイとして参加用のパスワードを入力してください:");
-            if (pass !== RECORD_PASSWORD) {
-                alert("❌ パスワードが違います！");
-                return;
+            if (!isAdminMode) {
+                const pass = prompt("フネ・ブイとして参加用のパスワードを入力してください:");
+                if (pass === null) return;
+                if (pass !== RECORD_PASSWORD) {
+                    alert("❌ パスワードが違います！");
+                    return;
+                }
             }
         } else {
             if (!nameInp) return alert("名前を入力してください");
