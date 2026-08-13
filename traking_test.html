@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.9.0 by Popolo App.com</title>
+    <title>虎キング v3.9.1 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -16,7 +16,6 @@
 
         .header-btn { border: none; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; height: 34px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3); color: white; transition: all 0.3s ease; }
         
-        /* 管理者モードONかつ「コース作成」選択時の縦長サイズ（3倍） */
         .header-btn.giant-course-btn {
             height: 102px !important;
             font-size: 16px !important;
@@ -216,7 +215,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.9.0 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.9.1 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -340,7 +339,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.9.0 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.9.1 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -486,7 +485,7 @@
 
     L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
 
-    let myMarker = null, isFollowing = true;
+    let myMarker = null, viewerAccuracyCircle = null, isFollowing = true;
     let watchIdHigh = null, watchIdLow = null;
     let currentLatestPos = null;
 
@@ -1231,6 +1230,10 @@
             if (myMarker) {
                 map.removeLayer(myMarker);
                 myMarker = null;
+            }
+            if (viewerAccuracyCircle) {
+                map.removeLayer(viewerAccuracyCircle);
+                viewerAccuracyCircle = null;
             }
 
             for (let name in userPolylineLines) {
@@ -2022,7 +2025,7 @@
             navigator.share({ title: '座標一覧データ', text: allText }).catch(() => {});
         } else {
             navigator.clipboard.writeText(allText).then(() => {
-                showToast("📋 全ての座標をクリップボードにコピーしました！");
+                showToast("📋 모든 座標をクリップボードにコピーしました！");
             });
         }
     };
@@ -2200,6 +2203,11 @@
         localStorage.removeItem('tora_king_viewer');
         localStorage.removeItem('tora_king_logout_count');
         document.getElementById('setup-overlay').style.display = 'none'; 
+        
+        // ログインしたら、ログアウト時の青い薄い丸と精度サークルを確実に消去
+        if (myMarker) { map.removeLayer(myMarker); myMarker = null; }
+        if (viewerAccuracyCircle) { map.removeLayer(viewerAccuracyCircle); viewerAccuracyCircle = null; }
+
         startTracking();
     }
 
@@ -2234,6 +2242,7 @@
 
         const latitude = pos.coords.latitude + offsetLat;
         const longitude = pos.coords.longitude + offsetLng;
+        const accuracy = pos.coords.accuracy || 30;
         const speed = pos.coords.speed || 0;
         const heading = pos.coords.heading || 0;
         const now = Date.now();
@@ -2276,30 +2285,49 @@
             }
         }
         
-        // 観戦モード（ログアウト状態）のときはサーバーに送信せず、自分用の青い選手アイコンを表示
+        // 観戦モード（ログアウト状態）のときはサーバーに送信せず、Googleマップ風の青いドットと薄い青の丸を表示
         if (isViewerMode) {
             document.getElementById('status').style.background = "rgba(0,128,0,0.8)";
             document.getElementById('status').innerText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)} (ログアウト中 / 非公開)`;
 
             const latlng = [latitude, longitude];
-            // 青い矢印（選手アイコン）を作成
-            const viewerIcon = L.divIcon({
-                html: `<div class="arrow-icon-wrapper" style="transform: rotate(${heading||0}deg);"><svg viewBox="0 0 100 100" width="30" height="30"><path d="M50 5 L90 90 L50 75 L10 90 Z" fill="#007AFF" stroke="white" stroke-width="5" /></svg></div>`,
+            
+            // Googleマップ風の青いドットアイコン（中央の濃い青丸と白い枠）
+            const googleMapDotIcon = L.divIcon({
+                html: `<div style="width: 16px; height: 16px; background: #1a73e8; border: 2.5px solid #ffffff; border-radius: 50%; box-shadow: 0 0 6px rgba(0,0,0,0.5);"></div>`,
                 className: '',
-                iconSize: [30, 30],
-                iconAnchor: [15, 15]
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
             });
 
+            if (!viewerAccuracyCircle) {
+                viewerAccuracyCircle = L.circle(latlng, {
+                    radius: accuracy,
+                    color: '#4285f4',
+                    weight: 1,
+                    fillColor: '#4285f4',
+                    fillOpacity: 0.18
+                }).addTo(map);
+            } else {
+                viewerAccuracyCircle.setLatLng(latlng);
+                viewerAccuracyCircle.setRadius(accuracy);
+            }
+
             if (!myMarker) {
-                myMarker = L.marker(latlng, { icon: viewerIcon }).addTo(map);
-                myMarker.bindTooltip("自分(未ログイン)", { permanent: true, direction: 'top', className: 'user-label' });
+                myMarker = L.marker(latlng, { icon: googleMapDotIcon }).addTo(map);
                 map.setView(latlng, 16);
             } else {
-                myMarker.setLatLng(latlng).setIcon(viewerIcon);
+                myMarker.setLatLng(latlng).setIcon(googleMapDotIcon);
             }
 
             if (isFollowing) map.panTo(latlng);
             return;
+        }
+
+        // ログイン時は精度サークルが存在していれば消去
+        if (viewerAccuracyCircle) {
+            map.removeLayer(viewerAccuracyCircle);
+            viewerAccuracyCircle = null;
         }
 
         const latlng = [latitude, longitude];
@@ -2527,11 +2555,6 @@
                     continue;
                 }
 
-                if (u.name === myName && id !== myId && !isViewerMode) {
-                    if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
-                    continue;
-                }
-
                 const displayName = u.name || (u.partType === 'ship' ? '🚤 フネ' : '🚩 ブイ');
                 activeUserNames[displayName] = true;
                 activeUsersObj[displayName] = { id: id, u: u };
@@ -2589,7 +2612,6 @@
                 const u = users[id];
                 if ((!u.name && u.partType === 'normal') || now - u.ts > 600000) continue;
                 if (u.isViewer || u.name === "👀 観戦者") continue;
-                if (u.name === myName && id !== myId && !isViewerMode) continue;
                 const displayName = u.name || (u.partType === 'ship' ? '🚤 フネ' : '🚩 ブイ');
                 activeUsersObj[displayName] = { id: id, u: u };
             }
