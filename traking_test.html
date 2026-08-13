@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.8.9 by Popolo App.com</title>
+    <title>虎キング v3.9.0 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
@@ -216,7 +216,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.9 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.9.0 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -340,7 +340,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.8.9 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.9.0 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -455,12 +455,11 @@
     const db = firebase.database();
     const RECORD_PASSWORD = "1234";
 
-    let isAdminMode = localStorage.getItem('tora_king_admin') === 'true'; // 管理者モードの状態（保存状態から復元）
+    let isAdminMode = localStorage.getItem('tora_king_admin') === 'true';
 
     let myId = localStorage.getItem('tora_king_id') || "tiger_" + Math.floor(Math.random()*10000);
     localStorage.setItem('tora_king_id', myId);
 
-    // 再読み込み後もセッション（ログイン状態）を保持
     let myName = localStorage.getItem('tora_king_name');
     let myColor = localStorage.getItem('tora_king_color');
     let isViewerMode = localStorage.getItem('tora_king_viewer') === 'true';
@@ -576,7 +575,7 @@
             isAdminMode = true;
             localStorage.setItem('tora_king_admin', 'true');
             updateAdminModeUI();
-            showToast("🔐 管理者モードを有効化しました（コース作成ボタンを押すと巨大化します）");
+            showToast("🔐 管理者モードを有効化しました");
         } else {
             isAdminMode = false;
             localStorage.removeItem('tora_king_admin');
@@ -2214,7 +2213,7 @@
         localStorage.removeItem('tora_king_name');
         localStorage.removeItem('tora_king_part_type');
         document.getElementById('setup-overlay').style.display = 'none';
-        showToast("👀 観戦モードで開始しました");
+        showToast("👀 観戦モード（ログアウト状態）で開始しました");
         startTracking();
     };
 
@@ -2241,8 +2240,9 @@
         
         currentLatestPos = { lat: latitude, lng: longitude };
         
+        // ログイン状態のときのみサーバーへ位置を共有する
         if (!isViewerMode && (myName || myParticipantType !== 'normal')) {
-            const displayName = myName || (myParticipantType === 'ship' ? 'フネ' : 'ブイ');
+            const displayName = myName || (myParticipantType === 'ship' ? '🚤 フネ' : '🚩 ブイ');
             const userData = {
                 lat: latitude, 
                 lng: longitude, 
@@ -2276,9 +2276,29 @@
             }
         }
         
+        // 観戦モード（ログアウト状態）のときはサーバーに送信せず、自分用の青い選手アイコンを表示
         if (isViewerMode) {
             document.getElementById('status').style.background = "rgba(0,128,0,0.8)";
-            document.getElementById('status').innerText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)} (GPS測位中/観戦中)`;
+            document.getElementById('status').innerText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)} (ログアウト中 / 非公開)`;
+
+            const latlng = [latitude, longitude];
+            // 青い矢印（選手アイコン）を作成
+            const viewerIcon = L.divIcon({
+                html: `<div class="arrow-icon-wrapper" style="transform: rotate(${heading||0}deg);"><svg viewBox="0 0 100 100" width="30" height="30"><path d="M50 5 L90 90 L50 75 L10 90 Z" fill="#007AFF" stroke="white" stroke-width="5" /></svg></div>`,
+                className: '',
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
+            });
+
+            if (!myMarker) {
+                myMarker = L.marker(latlng, { icon: viewerIcon }).addTo(map);
+                myMarker.bindTooltip("自分(未ログイン)", { permanent: true, direction: 'top', className: 'user-label' });
+                map.setView(latlng, 16);
+            } else {
+                myMarker.setLatLng(latlng).setIcon(viewerIcon);
+            }
+
+            if (isFollowing) map.panTo(latlng);
             return;
         }
 
@@ -2415,7 +2435,7 @@
                 Promise.all(cleanupPromises).then(() => {
                     localStorage.removeItem('tora_king_name');
                     localStorage.removeItem('tora_king_color');
-                    localStorage.removeItem('tora_king_viewer');
+                    localStorage.setItem('tora_king_viewer', 'true');
                     localStorage.removeItem('tora_king_part_type');
                     localStorage.removeItem('tora_king_logout_count');
                     location.reload();
@@ -2426,7 +2446,7 @@
             return;
         }
 
-        let confirmMsg = "ログアウトしますか？（登録情報がリセットされます）";
+        let confirmMsg = "ログアウトしますか？（登録情報がリセットされ、観戦モードになります）";
         if (isShipUser && logoutCount >= 2) {
             confirmMsg = "⚠️ 2回目のログアウトです。\nマップ上に配置されている「船」のオブジェクトを完全に消去してログアウトしますか？";
         }
@@ -2448,14 +2468,14 @@
                     Promise.all(cleanupPromises).then(() => {
                         localStorage.removeItem('tora_king_name');
                         localStorage.removeItem('tora_king_color');
-                        localStorage.removeItem('tora_king_viewer');
+                        localStorage.setItem('tora_king_viewer', 'true');
                         localStorage.removeItem('tora_king_part_type');
                         localStorage.removeItem('tora_king_logout_count');
                         location.reload();
                     }).catch(() => {
                         localStorage.removeItem('tora_king_name');
                         localStorage.removeItem('tora_king_color');
-                        localStorage.removeItem('tora_king_viewer');
+                        localStorage.setItem('tora_king_viewer', 'true');
                         localStorage.removeItem('tora_king_part_type');
                         localStorage.removeItem('tora_king_logout_count');
                         location.reload();
@@ -2474,7 +2494,7 @@
     });
 
     initSetupUI();
-    updateAdminModeUI(); // 起動時に保存された管理者モードの状態をUIに反映
+    updateAdminModeUI();
     
     startTracking();
 
@@ -2502,11 +2522,9 @@
                     continue;
                 }
 
-                if (id !== myId) {
-                    if (u.isViewer || u.name === "👀 観戦者") {
-                        if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
-                        continue;
-                    }
+                if (u.isViewer || u.name === "👀 観戦者") {
+                    if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
+                    continue;
                 }
 
                 if (u.name === myName && id !== myId && !isViewerMode) {
@@ -2525,7 +2543,7 @@
             sortedNames.forEach(name => {
                 const item = activeUsersObj[name];
                 const u = item.u;
-                if (item.id !== myId && (u.isViewer || u.name === "👀 観戦者")) return;
+                if (u.isViewer || u.name === "👀 観戦者") return;
 
                 const isMe = (item.id === myId);
                 const rawSpeed = u.speed || 0;
@@ -2570,7 +2588,7 @@
             for (let id in users) {
                 const u = users[id];
                 if ((!u.name && u.partType === 'normal') || now - u.ts > 600000) continue;
-                if (id !== myId && (u.isViewer || u.name === "👀 観戦者")) continue;
+                if (u.isViewer || u.name === "👀 観戦者") continue;
                 if (u.name === myName && id !== myId && !isViewerMode) continue;
                 const displayName = u.name || (u.partType === 'ship' ? '🚤 フネ' : '🚩 ブイ');
                 activeUsersObj[displayName] = { id: id, u: u };
@@ -2579,6 +2597,7 @@
             sortedNames.forEach(name => {
                 const item = activeUsersObj[name];
                 const u = item.u;
+                if (u.isViewer || u.name === "👀 観戦者") return;
                 const isMe = (item.id === myId);
                 const rawSpeed = u.speed || 0;
                 let s = 0;
