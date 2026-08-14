@@ -1564,6 +1564,23 @@
         }
     };
 
+
+// ▼ ここに追加！
+    window.deleteAllCustomLines = () => {
+        if (confirm("マップ上に描画されているすべての点線・実線を削除しますか？")) {
+            db.ref('custom_lines').remove(err => {
+                if (!err) {
+                    showToast("〰️ すべての線を消去しました");
+                    customLinesGroup.clearLayers();
+                } else {
+                    alert("削除に失敗しました");
+                }
+            });
+        }
+    };
+    // ▲ ここまで追加
+
+    
     window.onLabelInputChanged = (key, inputEl) => {
         const card = document.querySelector(`.point-card[data-key="${key}"]`);
         if (!card) return;
