@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.8.3f by Popolo App.com</title>
+    <title>虎キング v3.8.3g by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         #header-course-btn { transition: height 0.3s ease, padding 0.3s ease; }
@@ -217,7 +217,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.3f 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.3g 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -342,7 +342,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.8.3f by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.8.3g by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -443,6 +443,59 @@
 <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@latest/dist/Leaflet.GoogleMutant.js"></script>
 
 <script>
+
+// --- ① 管理モード関連の処理 ---
+let isAdminMode = localStorage.getItem('tora_king_admin_mode') === 'true';
+
+// 画面読み込み時に状態を反映
+window.addEventListener('load', () => {
+    updateAdminModeUI();
+});
+
+window.toggleAdminMode = () => {
+    if (!isAdminMode) {
+        const inputPass = prompt("管理モードをONにするためのパスワードを入力してください:");
+        if (inputPass === null) return;
+        if (inputPass !== RECORD_PASSWORD) {
+            alert("❌ パスワードが違います！");
+            return;
+        }
+        isAdminMode = true;
+        localStorage.setItem('tora_king_admin_mode', 'true');
+        showToast("🛡️ 管理モードをONにしました（以降のパスワードは省略されます）");
+    } else {
+        if (confirm("管理モードをOFFにしますか？")) {
+            isAdminMode = false;
+            localStorage.setItem('tora_king_admin_mode', 'false');
+            showToast("🛡️ 管理モードをOFFにしました");
+        }
+    }
+    updateAdminModeUI();
+};
+
+function updateAdminModeUI() {
+    const btn = document.getElementById('header-admin-btn');
+    if (!btn) return;
+    if (isAdminMode) {
+        btn.style.backgroundColor = '#e74c3c';
+        btn.innerText = '管理:ON';
+    } else {
+        btn.style.backgroundColor = '#7f8c8d';
+        btn.innerText = '管理:OFF';
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+    
     const firebaseConfig = { 
         apiKey: "AIzaSyB_OOgXiE1YkFzQK0Nujhnx3lNM_7dp66U", 
         authDomain: "tra-king.firebaseapp.com", 
