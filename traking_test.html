@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.8.3q by Popolo App.com</title>
+    <title>虎キング v3.9.4by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         #header-course-btn { transition: height 0.3s ease, padding 0.3s ease; }
@@ -217,7 +217,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.3q 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.9.4 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -323,24 +323,31 @@
 
 <button id="replay-minimized-btn" onclick="expandReplayBar()">📊 <span id="minimized-title">再生中</span> (表示)</button>
 
+    
 <div id="header">
     <div style="display:flex; align-items:center;">
-        <button class="header-btn" style="background:#27ae60;" onclick="promptCourseCreate()">コース作成</button>
     </div>
     
     <div id="header-replay-status" style="font-size:11px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none;"></div>
     <div id="header-replay-time" style="font-size:10px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
 
     <div style="display:flex; align-items:center; gap:6px;">
+        
+        <button class="header-btn" id="header-admin-mode-btn" style="background:#555;" onclick="toggleAdminMode()">🛡️ 管理OFF</button>
+        <button class="header-btn" style="background:#27ae60;" onclick="promptCourseCreate()">コース作成</button>
         <button class="header-btn" style="background:#f1c40f; color:#000;" onclick="openCoordListModal()">座標</button>
         <button class="header-btn" style="background:#007AFF;" onclick="authAndToggleSettings()">設定</button>
         <button class="header-btn" style="background:#e67e22;" onclick="triggerSetup()">👤 ログイン</button>
         <button class="header-btn" style="background:#555; padding:6px 8px; font-size:11px;" onclick="toggleHeaderMinimize()">収納</button>
     </div>
 </div>
+
+
+
+    
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.8.3q by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.9.4 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -464,6 +471,57 @@
     let myParticipantType = localStorage.getItem('tora_king_part_type') || 'normal';
     let isObjectDeletedLocally = (myParticipantType === 'normal');
 
+
+// ▼ ここから追加
+    let isAdminMode = localStorage.getItem('tora_king_admin') === 'true';
+
+    window.toggleAdminMode = () => {
+        if (!isAdminMode) {
+            const pass = prompt("管理者用パスワードを入力してください:");
+            if (pass === null) return;
+            if (pass !== RECORD_PASSWORD) {
+                alert("❌ パスワードが違います！");
+                return;
+            }
+            isAdminMode = true;
+            localStorage.setItem('tora_king_admin', 'true');
+            showToast("🛡️ 管理モードをオンしました（パスワード免除）");
+        } else {
+            isAdminMode = false;
+            localStorage.removeItem('tora_king_admin');
+            showToast("🛡️ 管理モードをオフしました");
+        }
+        updateAdminModeUI();
+    };
+
+    function updateAdminModeUI() {
+        const btn = document.getElementById('header-admin-mode-btn');
+        if (btn) {
+            if (isAdminMode) {
+                btn.style.background = '#c0392b';
+                btn.innerText = '🛡️ 管理ON';
+            } else {
+                btn.style.background = '#555';
+                btn.innerText = '🛡️ 管理OFF';
+            }
+        }
+    }
+    // ▲ ここまで追加
+
+
+function checkAdminAuth() {
+        if (isAdminMode) return true;
+        const pass = prompt("パスワードを入力してください:");
+        if (pass === null) return false;
+        if (pass !== RECORD_PASSWORD) {
+            alert("❌ パスワードが違います！");
+            return false;
+        }
+        return true;
+    }
+
+
+    
     let speedUnitMode = parseInt(localStorage.getItem('tora_king_unit') !== null ? localStorage.getItem('tora_king_unit') : "1");
     const units = ["kt", "km/h", "m/s"];
     const colorPresets = {"赤":"#ff0000","青":"#0000ff","ピンク":"#ff66cc","紫":"#800080","橙":"#ff9900","黄":"#ffff00","緑":"#32cd32","黒":"#222222","白":"#ffffff"};
@@ -550,15 +608,12 @@
         if (window.toastTimeout) clearTimeout(window.toastTimeout);
     };
 
-    window.authAndToggleSettings = () => {
-        const inputPass = prompt("設定を開くためのパスワードを入力してください:");
-        if (inputPass === null) return;
-        if (inputPass !== RECORD_PASSWORD) {
-            alert("❌ パスワードが違います！");
-            return;
-        }
+ window.authAndToggleSettings = () => {
+        if (!checkAdminAuth()) return;
         toggleSettingsPanel();
     };
+
+    
 
     window.toggleSettingsPanel = () => {
         const panel = document.getElementById('pointSettingsPanel');
@@ -573,14 +628,14 @@
         document.getElementById('manual-modal').style.display = 'none';
     }
 
-    window.promptCourseCreate = () => {
+   window.promptCourseCreate = () => {
         if (isMenuOpen) toggleMenu();
-        const inputPass = prompt("コース作成用のパスワードを入力してください:");
-        if (inputPass === null) return;
-        if (inputPass !== RECORD_PASSWORD) {
-            alert("❌ パスワードが違います！");
-            return;
-        }
+        if (!checkAdminAuth()) return;
+        ...
+
+
+
+        
         isCourseBuilderActive = true;
         document.getElementById('course-builder-bar').style.display = 'flex';
         document.getElementById('course-builder-minimized').style.display = 'none';
@@ -738,15 +793,11 @@
         });
     };
 
-    window.openAdminUsersModal = () => {
+  window.openAdminUsersModal = () => {
         toggleMenu();
-        const inputPass = prompt("管理者用パスワードを入力してください:");
-        if (inputPass === null) return;
+        if (!checkAdminAuth()) return; // ← ここに置き換え
 
-        if (inputPass !== RECORD_PASSWORD) {
-            alert("❌ パスワードが違います！");
-            return;
-        }
+        
 
         const listDiv = document.getElementById('admin-users-list');
         listDiv.innerHTML = "読み込み中...";
@@ -808,15 +859,11 @@
         }
     };
 
-    window.startRaceRecording = () => {
+ window.startRaceRecording = () => {
         toggleMenu();
-        const inputPass = prompt("本部スタッフ用パスワードを入力してください:");
-        if (inputPass === null) return;
-
-        if (inputPass !== RECORD_PASSWORD) {
-            alert("❌ パスワードが違います！記録を開始できません。");
-            return;
-        }
+        if (!checkAdminAuth()) return;
+        ...
+     
 
         if (confirm("パスワード認証成功。全参加者のレース記録を開始しますか？（前回の未保存一時履歴はリセットされます）")) {
             db.ref('temp_history').remove().then(() => {
@@ -955,13 +1002,8 @@
         });
     };
 
-    window.authAndTrim = (id) => {
-        const pass = prompt("管理者パスワードを入力してください:");
-        if (pass === null) return;
-        if (pass !== RECORD_PASSWORD) {
-            alert("❌ パスワードが違います！");
-            return;
-        }
+   window.authAndTrim = (id) => {
+        if (!checkAdminAuth()) return;
         trimAndSaveCourse(id);
     };
 
@@ -2086,12 +2128,11 @@
     function closeSetup() {
         const nameInp = document.getElementById('setup-name').value;
         
-        if (myParticipantType === 'ship' || myParticipantType === 'buoy') {
-            const pass = prompt("フネ・ブイとして参加用のパスワードを入力してください:");
-            if (pass !== RECORD_PASSWORD) {
-                alert("❌ パスワードが違います！");
-                return;
-            }
+      if (myParticipantType === 'ship' || myParticipantType === 'buoy') {
+            if (!checkAdminAuth()) return;
+        }
+
+        
         } else {
             if (!nameInp) return alert("名前を入力してください");
         }
@@ -2508,8 +2549,13 @@
     
     map.on('movestart', () => isFollowing = false);
 
+
+    
     window.addEventListener('load', () => {
         document.getElementById('user-list-title').innerText = `参加者 (${units[speedUnitMode]})`;
+      
+updateAdminModeUI(); // ← ここに追加
+        
         setTimeout(() => { map.invalidateSize(); }, 300);
         setTimeout(checkIncomingCourse, 1000);
     });
