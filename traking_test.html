@@ -1007,23 +1007,13 @@ function checkAdminAuth() {
         trimAndSaveCourse(id);
     };
 
-    window.authAndRename = (id, currentTitle) => {
-        const pass = prompt("管理者パスワードを入力してください:");
-        if (pass === null) return;
-        if (pass !== RECORD_PASSWORD) {
-            alert("❌ パスワードが違います！");
-            return;
-        }
+   window.authAndRename = (id, currentTitle) => {
+        if (!checkAdminAuth()) return; // ← ここに置き換え
         renameCourse(id, currentTitle);
     };
 
-    window.authAndDelete = (id) => {
-        const pass = prompt("管理者パスワードを入力してください:");
-        if (pass === null) return;
-        if (pass !== RECORD_PASSWORD) {
-            alert("❌ パスワードが違います！");
-            return;
-        }
+ window.authAndDelete = (id) => {
+        if (!checkAdminAuth()) return; // ← ここに置き換え
         deleteCourse(id);
     };
 
