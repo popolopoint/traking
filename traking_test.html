@@ -332,8 +332,10 @@
     <div id="header-replay-time" style="font-size:10px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
 
     <div style="display:flex; align-items:center; gap:6px;">
+
+          <button class="header-btn" id="header-admin-mode-btn" style="background:#555;" onclick="toggleAdminMode()">🛡️ 管理OFF</button>
         <button class="header-btn" style="background:#27ae60;" onclick="promptCourseCreate()">コース作成</button>
-        <button class="header-btn" id="header-admin-mode-btn" style="background:#555;" onclick="toggleAdminMode()">🛡️ 管理OFF</button>
+      
         <button class="header-btn" style="background:#f1c40f; color:#000;" onclick="openCoordListModal()">座標</button>
         <button class="header-btn" style="background:#007AFF;" onclick="authAndToggleSettings()">設定</button>
         <button class="header-btn" style="background:#e67e22;" onclick="triggerSetup()">👤 ログイン</button>
