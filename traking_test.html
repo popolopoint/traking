@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.8.3k by Popolo App.com</title>
+    <title>虎キング v3.8.3l by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         #header-course-btn { transition: height 0.3s ease, padding 0.3s ease; }
@@ -217,7 +217,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.3k 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.3l 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -340,7 +340,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.8.3k by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.8.3l by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -2085,15 +2085,15 @@
         }
 
 // ★修正: 選手（normal）に切り替えた際、以前のフネ・ブイ用オブジェクトが残らないよう削除する
-        if (myParticipantType === 'normal') {
-            db.ref('objects/' + myId).remove();
-        }
-
-
         
+            db.ref('objects/' + myId).remove();
+          
         saveProfile(myColor || "#ff9900");
     }
 
+
+
+    
     function saveProfile(color) {
         const nameInp = document.getElementById('setup-name').value;
         if (myParticipantType === 'normal' && !nameInp) return alert("名前を入力してください");
