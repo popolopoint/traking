@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.9.4by Popolo App.com</title>
+    <title>虎キング v3.9.4 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         #header-course-btn { transition: height 0.3s ease, padding 0.3s ease; }
@@ -23,7 +23,7 @@
         @keyframes blinkIcon { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
         .blinking-marker { animation: blinkIcon 1s infinite; }
 
-       #start-flash-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(255, 0, 0, 0.9); z-index: 8000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; pointer-events: none; animation: superFlashAlert 0.3s infinite alternate; backdrop-filter: blur(5px); }
+        #start-flash-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(255, 0, 0, 0.9); z-index: 8000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; pointer-events: none; animation: superFlashAlert 0.3s infinite alternate; backdrop-filter: blur(5px); }
         @keyframes superFlashAlert { 0% { opacity: 0.4; background: rgba(255, 0, 0, 0.7); } 100% { opacity: 1; background: rgba(255, 204, 0, 0.95); } }
 
         #replay-countdown-alert { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: rgba(243, 156, 18, 0.95); color: white; padding: 6px 20px; border-radius: 15px; font-size: 18px; font-weight: bold; z-index: 9000; display: none; box-shadow: 0 2px 10px rgba(0,0,0,0.5); border: 2px solid white; text-align: center; pointer-events: none; animation: pulseAlert 0.5s infinite alternate; }
@@ -332,9 +332,8 @@
     <div id="header-replay-time" style="font-size:10px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
 
     <div style="display:flex; align-items:center; gap:6px;">
-        
-        <button class="header-btn" id="header-admin-mode-btn" style="background:#555;" onclick="toggleAdminMode()">🛡️ 管理OFF</button>
         <button class="header-btn" style="background:#27ae60;" onclick="promptCourseCreate()">コース作成</button>
+        <button class="header-btn" id="header-admin-mode-btn" style="background:#555;" onclick="toggleAdminMode()">🛡️ 管理OFF</button>
         <button class="header-btn" style="background:#f1c40f; color:#000;" onclick="openCoordListModal()">座標</button>
         <button class="header-btn" style="background:#007AFF;" onclick="authAndToggleSettings()">設定</button>
         <button class="header-btn" style="background:#e67e22;" onclick="triggerSetup()">👤 ログイン</button>
@@ -342,9 +341,6 @@
     </div>
 </div>
 
-
-
-    
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
 <div id="map-watermark">虎キング v3.9.4 by Popolo App.com</div>
@@ -471,8 +467,6 @@
     let myParticipantType = localStorage.getItem('tora_king_part_type') || 'normal';
     let isObjectDeletedLocally = (myParticipantType === 'normal');
 
-
-// ▼ ここから追加
     let isAdminMode = localStorage.getItem('tora_king_admin') === 'true';
 
     window.toggleAdminMode = () => {
@@ -506,10 +500,8 @@
             }
         }
     }
-    // ▲ ここまで追加
 
-
-function checkAdminAuth() {
+    function checkAdminAuth() {
         if (isAdminMode) return true;
         const pass = prompt("パスワードを入力してください:");
         if (pass === null) return false;
@@ -520,8 +512,6 @@ function checkAdminAuth() {
         return true;
     }
 
-
-    
     let speedUnitMode = parseInt(localStorage.getItem('tora_king_unit') !== null ? localStorage.getItem('tora_king_unit') : "1");
     const units = ["kt", "km/h", "m/s"];
     const colorPresets = {"赤":"#ff0000","青":"#0000ff","ピンク":"#ff66cc","紫":"#800080","橙":"#ff9900","黄":"#ffff00","緑":"#32cd32","黒":"#222222","白":"#ffffff"};
@@ -608,12 +598,10 @@ function checkAdminAuth() {
         if (window.toastTimeout) clearTimeout(window.toastTimeout);
     };
 
- window.authAndToggleSettings = () => {
+    window.authAndToggleSettings = () => {
         if (!checkAdminAuth()) return;
         toggleSettingsPanel();
     };
-
-    
 
     window.toggleSettingsPanel = () => {
         const panel = document.getElementById('pointSettingsPanel');
@@ -628,13 +616,9 @@ function checkAdminAuth() {
         document.getElementById('manual-modal').style.display = 'none';
     }
 
-   window.promptCourseCreate = () => {
+    window.promptCourseCreate = () => {
         if (isMenuOpen) toggleMenu();
         if (!checkAdminAuth()) return;
-        ...
-
-
-
         
         isCourseBuilderActive = true;
         document.getElementById('course-builder-bar').style.display = 'flex';
@@ -793,11 +777,9 @@ function checkAdminAuth() {
         });
     };
 
-  window.openAdminUsersModal = () => {
+    window.openAdminUsersModal = () => {
         toggleMenu();
-        if (!checkAdminAuth()) return; // ← ここに置き換え
-
-        
+        if (!checkAdminAuth()) return;
 
         const listDiv = document.getElementById('admin-users-list');
         listDiv.innerHTML = "読み込み中...";
@@ -823,7 +805,7 @@ function checkAdminAuth() {
         });
     };
 
-   window.executeSelectedUsersDelete = () => {
+    window.executeSelectedUsersDelete = () => {
         const checkboxes = document.querySelectorAll('.target-user-chk:checked');
         if (checkboxes.length === 0) {
             alert("削除するユーザーが選択されていません");
@@ -859,11 +841,9 @@ function checkAdminAuth() {
         }
     };
 
- window.startRaceRecording = () => {
+    window.startRaceRecording = () => {
         toggleMenu();
         if (!checkAdminAuth()) return;
-        ...
-     
 
         if (confirm("パスワード認証成功。全参加者のレース記録を開始しますか？（前回の未保存一時履歴はリセットされます）")) {
             db.ref('temp_history').remove().then(() => {
@@ -1002,18 +982,18 @@ function checkAdminAuth() {
         });
     };
 
-   window.authAndTrim = (id) => {
+    window.authAndTrim = (id) => {
         if (!checkAdminAuth()) return;
         trimAndSaveCourse(id);
     };
 
-   window.authAndRename = (id, currentTitle) => {
-        if (!checkAdminAuth()) return; // ← ここに置き換え
+    window.authAndRename = (id, currentTitle) => {
+        if (!checkAdminAuth()) return;
         renameCourse(id, currentTitle);
     };
 
- window.authAndDelete = (id) => {
-        if (!checkAdminAuth()) return; // ← ここに置き換え
+    window.authAndDelete = (id) => {
+        if (!checkAdminAuth()) return;
         deleteCourse(id);
     };
 
@@ -1284,21 +1264,13 @@ function checkAdminAuth() {
                     const alertBox = document.getElementById('replay-countdown-alert');
                     alertBox.innerText = secInt;
                     alertBox.style.display = 'block';
-              
-                
-                
-             } else if (diffSec <= 0 && diffSec > -1.5) {
+                } else if (diffSec <= 0 && diffSec > -1.5) {
                     statusText = `🚨 スタート！`;
-                    // ★修正: リプレイ再生時のスタート表示を大きく目立たせる
                     const alertBox = document.getElementById('replay-countdown-alert');
                     alertBox.innerText = "🚨 競技スタート！ 🚨";
                     alertBox.style.background = "rgba(255, 0, 0, 0.95)";
                     alertBox.style.fontSize = "22px";
                     alertBox.style.display = 'block';
-
-
-
-                    
                 } else {
                     const elapsedAfterStartMs = currentTs - replayStartTimeMs;
                     statusText = `⏱️ スタートから ${formatClockStyle(elapsedAfterStartMs)} 経過`;
@@ -2118,18 +2090,19 @@ function checkAdminAuth() {
     function closeSetup() {
         const nameInp = document.getElementById('setup-name').value;
         
-      if (myParticipantType === 'ship' || myParticipantType === 'buoy') {
+        if (myParticipantType === 'ship' || myParticipantType === 'buoy') {
             if (!checkAdminAuth()) return;
-        }
-
-        
         } else {
             if (!nameInp) return alert("名前を入力してください");
         }
 
-// ★修正: 選手に切り替えた際、オブジェクトを削除し、以後GPSで自動復元されないようにフラグを立てる
         if (myParticipantType === 'normal') {
             db.ref('objects/' + myId).remove();
+            db.ref('objects').orderByChild('ownerId').equalTo(myId).once('value', snap => {
+                snap.forEach(child => {
+                    child.ref.remove();
+                });
+            });
             isObjectDeletedLocally = true;
         } else {
             isObjectDeletedLocally = false;
@@ -2138,8 +2111,6 @@ function checkAdminAuth() {
         saveProfile(myColor || "#ff9900");
     }
 
-
-    
     function saveProfile(color) {
         const nameInp = document.getElementById('setup-name').value;
         if (myParticipantType === 'normal' && !nameInp) return alert("名前を入力してください");
@@ -2163,10 +2134,13 @@ function checkAdminAuth() {
         myColor = null;
         isObjectDeletedLocally = false;
 
-// ★修正: 観戦モードに切り替えた際、自分が置いていたフネ・ブイのオブジェクトがあれば削除する
         db.ref('objects/' + myId).remove();
         db.ref('users/' + myId).remove();
-
+        db.ref('objects').orderByChild('ownerId').equalTo(myId).once('value', snap => {
+            snap.forEach(child => {
+                child.ref.remove();
+            });
+        });
         
         localStorage.setItem('tora_king_viewer', 'true');
         localStorage.removeItem('tora_king_name');
@@ -2539,13 +2513,9 @@ function checkAdminAuth() {
     
     map.on('movestart', () => isFollowing = false);
 
-
-    
     window.addEventListener('load', () => {
         document.getElementById('user-list-title').innerText = `参加者 (${units[speedUnitMode]})`;
-      
-updateAdminModeUI(); // ← ここに追加
-        
+        updateAdminModeUI();
         setTimeout(() => { map.invalidateSize(); }, 300);
         setTimeout(checkIncomingCourse, 1000);
     });
