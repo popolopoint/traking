@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.8.3e4 by Popolo App.com</title>
+    <title>虎キング v3.8.3e5 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         #header-course-btn { transition: height 0.3s ease, padding 0.3s ease; }
@@ -217,16 +217,16 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.3e4 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.3e5 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
         
         <div style="font-size:0.9rem; color:#ff9900; font-weight:bold; margin-bottom:6px; text-align:left;">参加スタイル:</div>
         <div style="display:flex; gap:6px; margin-bottom:14px;">
-            <button type="button" id="style-btn-normal" onclick="selectStyleMode('normal')" style="flex:1; padding:16px 4px; font-size:14px; font-weight:bold; border-radius:6px; border:1px solid #ff9900; background:#ff9900; color:#000; cursor:pointer;">通常(選手)</button>
-            <button type="button" id="style-btn-ship" onclick="selectStyleMode('ship')" style="flex:1; padding:16px 4px; font-size:14px; font-weight:bold; border-radius:6px; border:1px solid #ff9900; background:rgba(0,0,0,0.5); color:#fff; cursor:pointer;">🚤 フネ</button>
-            <button type="button" id="style-btn-buoy" onclick="selectStyleMode('buoy')" style="flex:1; padding:16px 4px; font-size:14px; font-weight:bold; border-radius:6px; border:1px solid #ff9900; background:rgba(0,0,0,0.5); color:#fff; cursor:pointer;">🚩 ブイ</button>
+            <button type="button" id="style-btn-normal" onclick="selectStyleMode('normal')" style="flex:1; padding:8px 4px; font-size:12px; font-weight:bold; border-radius:6px; border:1px solid #ff9900; background:#ff9900; color:#000; cursor:pointer;">通常(選手)</button>
+            <button type="button" id="style-btn-ship" onclick="selectStyleMode('ship')" style="flex:1; padding:8px 4px; font-size:12px; font-weight:bold; border-radius:6px; border:1px solid #ff9900; background:rgba(0,0,0,0.5); color:#fff; cursor:pointer;">🚤 フネ</button>
+            <button type="button" id="style-btn-buoy" onclick="selectStyleMode('buoy')" style="flex:1; padding:8px 4px; font-size:12px; font-weight:bold; border-radius:6px; border:1px solid #ff9900; background:rgba(0,0,0,0.5); color:#fff; cursor:pointer;">🚩 ブイ</button>
         </div>
 
         <div style="font-size:0.9rem; color:#ff9900; font-weight:bold; margin-bottom:6px; text-align:left;">マーカーカラー:</div>
@@ -234,7 +234,7 @@
 
         <button onclick="closeSetup()" style="width:100%; margin-top:16px; background:#ff9900; color:#000; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">決定して参加</button>
         <button onclick="saveProfileAsViewer()" style="width:100%; margin-top:8px; background:#2980b9; color:#fff; border:none; padding:10px; border-radius:8px; font-size:1rem; font-weight:bold; cursor:pointer;">👀 ログインせずに見る</button>
-        <button onclick="triggerLogout()" style="width:100%; margin-top:8px; background:#e74c3c; color:#fff; border:none; padding:10px; border-radius:8px; font-size:1rem; font-weight:bold; cursor:pointer;">🚪 ログアウト（観戦モードへ）</button>
+        <button onclick="triggerLogout()" style="width:100%; margin-top:8px; background:#e74c3c; color:#fff; border:none; padding:10px; border-radius:8px; font-size:1rem; font-weight:bold; cursor:pointer;">🚪 ログアウト（データ消去）</button>
         <button onclick="cancelSetup()" style="width:100%; margin-top:8px; background:#555; color:#fff; border:none; padding:8px; border-radius:8px; font-size:0.9rem; cursor:pointer;">キャンセル</button>
     </div>
 </div>
@@ -249,7 +249,6 @@
 
 <div id="recording-banner">🔴 【録画中・記録中】全参加者の航跡を蓄積しています</div>
 <button id="floating-stop-btn" onclick="stopRaceRecording()">⏹️ 記録ストップ＆保存</button>
-<button id="floating-register-btn" onclick="triggerRegisterMode()">📍 位置登録モード</button>
 
 <div id="course-builder-bar">
     <div style="display:flex; justify-content:space-between; width:100%; align-items:center; border-bottom:2px solid #555; padding-bottom:10px; margin-bottom:4px;">
@@ -325,15 +324,14 @@
 <button id="replay-minimized-btn" onclick="expandReplayBar()">📊 <span id="minimized-title">再生中</span> (表示)</button>
 
 <div id="header">
-    <div style="display:flex; align-items:center; gap:6px;">
-        <button id="admin-mode-btn" class="header-btn" style="background:#8e44ad;" onclick="toggleAdminMode()">🔐 管理者モード: OFF</button>
+    <div style="display:flex; align-items:center;">
+        <button class="header-btn" style="background:#27ae60;" onclick="promptCourseCreate()">コース作成</button>
     </div>
     
     <div id="header-replay-status" style="font-size:11px; color:#ffcc00; font-weight:bold; font-family:monospace; display:none;"></div>
     <div id="header-replay-time" style="font-size:10px; color:#00ffcc; font-weight:bold; font-family:monospace; display:none;"></div>
 
     <div style="display:flex; align-items:center; gap:6px;">
-        <button id="header-course-btn" class="header-btn" style="background:#27ae60;" onclick="promptCourseCreate()">コース作成</button>
         <button class="header-btn" style="background:#f1c40f; color:#000;" onclick="openCoordListModal()">座標</button>
         <button class="header-btn" style="background:#007AFF;" onclick="authAndToggleSettings()">設定</button>
         <button class="header-btn" style="background:#e67e22;" onclick="triggerSetup()">👤 ログイン</button>
@@ -342,7 +340,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.8.3e4 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.8.3e5 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -398,7 +396,7 @@
             <p>・<b>右上参加者リスト:</b> タップすると速度単位（kt / km/h / m/s）が切り替わります。</p>
 
             <h4>🛠️ コース作成・編集</h4>
-            <p>・<b>🔐 管理者モード:</b> 事前にパスワードを認証すると、コース作成・設定・録画・切り出し・削除などの管理者機能がパスワード不要で実行できます。</p>
+            <p>・<b>上部「コース作成」:</b> パスワード認証後、フネやブイの配置、線（実線・点線）の結びつけ、角度・距離データ計測が行えます。</p>
             <p>・<b>🚩（マーク追加）:</b> 地図上の任意の場所をタップして、新規にマークやフネを設置できます。</p>
 
             <h4>📍 補正・GPS管理</h4>
@@ -406,13 +404,13 @@
             <p>・<b>🔄（GPS再接続）:</b> GPSシグナルを強制リセットし、再測位を行います。</p>
 
             <h4>▶️ レース記録・リプレイ</h4>
-            <p>・<b>🔴（記録スタート）:</b> 全参加者の航跡・ブイ配置の記録を開始します。</p>
+            <p>・<b>🔴（記録スタート）:</b> 本部スタッフ用パスワードで、全参加者の航跡・ブイ配置の記録を開始します。</p>
             <p>・<b>▶️（リプレイ再生）:</b> 保存されたヒート記録を選択して再生・一時停止・倍速変更・切り出しが行えます。</p>
 
             <h4>🛡️ 管理者・アカウント</h4>
             <p>・<b>🛡️（参加者管理）:</b> 参加中のメンバーを一覧確認し、強制退出させることができます。</p>
             <p>・<b>👤（再設定）:</b> 自分の表示名、カラー、参加スタイル（通常 / フネ / ブイ）を変更できます。</p>
-            <p>・<b>🏃（ログアウト）:</b> 参加情報を消去して観戦モードに移行します。</p>
+            <p>・<b>🏃（ログアウト）:</b> 参加情報を消去して退出します。※船でログインした場合は2回連続で押すと船を消去できます。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:16px; background:#3498db; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -457,8 +455,6 @@
     const db = firebase.database();
     const RECORD_PASSWORD = "1234";
 
-    let isAdminMode = localStorage.getItem('tora_king_admin_mode') === 'true';
-
     let myId = localStorage.getItem('tora_king_id') || "tiger_" + Math.floor(Math.random()*10000);
     localStorage.setItem('tora_king_id', myId);
 
@@ -467,8 +463,6 @@
     let isViewerMode = localStorage.getItem('tora_king_viewer') === 'true';
     let myParticipantType = localStorage.getItem('tora_king_part_type') || 'normal';
     let isObjectDeletedLocally = false;
-    let isKicked = false;
-    let isRegisterModeActive = false;
 
     let speedUnitMode = parseInt(localStorage.getItem('tora_king_unit') !== null ? localStorage.getItem('tora_king_unit') : "1");
     const units = ["kt", "km/h", "m/s"];
@@ -556,70 +550,7 @@
         if (window.toastTimeout) clearTimeout(window.toastTimeout);
     };
 
-    window.toggleAdminMode = () => {
-        if (!isAdminMode) {
-            const inputPass = prompt("管理者モードを有効にするためのパスワードを入力してください:");
-            if (inputPass === null) return;
-            if (inputPass !== RECORD_PASSWORD) {
-                alert("❌ パスワードが違います！");
-                return;
-            }
-            isAdminMode = true;
-            localStorage.setItem('tora_king_admin_mode', 'true');
-            const btn = document.getElementById('admin-mode-btn');
-            btn.innerText = "🔐 管理者モード: ON";
-            btn.style.background = "#27ae60";
-            showToast("🔐 管理者モードを有効化しました（以降パスワード不要）");
-        } else {
-            isAdminMode = false;
-            localStorage.removeItem('tora_king_admin_mode');
-            const btn = document.getElementById('admin-mode-btn');
-            btn.innerText = "🔐 管理者モード: OFF";
-            btn.style.background = "#8e44ad";
-            if (isRegisterModeActive) toggleRegisterMode();
-            showToast("🔒 管理者モードを無効化しました");
-        }
-        updateAdminUIVisibility();
-    };
-
-    function updateAdminUIVisibility() {
-        const courseBtn = document.getElementById('header-course-btn');
-        const regBtn = document.getElementById('floating-register-btn');
-        if (isAdminMode) {
-            courseBtn.style.height = "75px";
-            if ((myParticipantType === 'ship' || myParticipantType === 'buoy') && !isViewerMode && myParticipantType !== 'normal') {
-                regBtn.style.display = 'block';
-            } else {
-                regBtn.style.display = 'none';
-            }
-        } else {
-            courseBtn.style.height = "34px";
-            regBtn.style.display = 'none';
-            if (isRegisterModeActive) toggleRegisterMode();
-        }
-    }
-
-    window.toggleRegisterMode = () => {
-        isRegisterModeActive = !isRegisterModeActive;
-        const btn = document.getElementById('floating-register-btn');
-        if (isRegisterModeActive) {
-            btn.style.background = "#e67e22";
-            showToast("📍 位置登録モード：ON (地図上をタップして登録)");
-        } else {
-            btn.style.background = "#27ae60";
-            showToast("📍 位置登録モード：OFF");
-        }
-    };
-
-    window.triggerRegisterMode = () => {
-        toggleRegisterMode();
-    };
-
     window.authAndToggleSettings = () => {
-        if (isAdminMode) {
-            toggleSettingsPanel();
-            return;
-        }
         const inputPass = prompt("設定を開くためのパスワードを入力してください:");
         if (inputPass === null) return;
         if (inputPass !== RECORD_PASSWORD) {
@@ -644,26 +575,18 @@
 
     window.promptCourseCreate = () => {
         if (isMenuOpen) toggleMenu();
-        if (isAdminMode) {
-            startCourseCreateSession();
-            return;
-        }
         const inputPass = prompt("コース作成用のパスワードを入力してください:");
         if (inputPass === null) return;
         if (inputPass !== RECORD_PASSWORD) {
             alert("❌ パスワードが違います！");
             return;
         }
-        startCourseCreateSession();
-    };
-
-    function startCourseCreateSession() {
         isCourseBuilderActive = true;
         document.getElementById('course-builder-bar').style.display = 'flex';
         document.getElementById('course-builder-minimized').style.display = 'none';
         setCourseBuilderMode('ship');
         showToast("🛠️ コース作成モードを起動しました");
-    }
+    };
 
     window.minimizeCourseBuilderBar = () => {
         document.getElementById('course-builder-bar').style.display = 'none';
@@ -817,10 +740,6 @@
 
     window.openAdminUsersModal = () => {
         toggleMenu();
-        if (isAdminMode) {
-            showAdminUsersModalProcess();
-            return;
-        }
         const inputPass = prompt("管理者用パスワードを入力してください:");
         if (inputPass === null) return;
 
@@ -828,10 +747,7 @@
             alert("❌ パスワードが違います！");
             return;
         }
-        showAdminUsersModalProcess();
-    };
 
-    function showAdminUsersModalProcess() {
         const listDiv = document.getElementById('admin-users-list');
         listDiv.innerHTML = "読み込み中...";
         document.getElementById('admin-users-modal').style.display = 'flex';
@@ -846,7 +762,6 @@
             let html = "";
             for (let id in users) {
                 const u = users[id];
-                if (u.isViewer) continue;
                 const displayName = u.name || (u.partType === 'ship' ? '🚤 フネ' : '🚩 ブイ');
                 html += `<div style="padding:8px 0; border-bottom:1px solid #eee; display:flex; align-items:center; gap:10px; font-size:1.1rem;">
                     <input type="checkbox" class="target-user-chk" value="${id}" id="chk_${id}" style="transform:scale(1.4);">
@@ -855,7 +770,7 @@
             }
             listDiv.innerHTML = html || "<p style='color:#666;'>有効なユーザーがいません</p>";
         });
-    }
+    };
 
    window.executeSelectedUsersDelete = () => {
         const checkboxes = document.querySelectorAll('.target-user-chk:checked');
@@ -869,7 +784,6 @@
             checkboxes.forEach(chk => {
                 const userId = chk.value;
                 updates['users/' + userId] = null;
-                updates['kicked_users/' + userId] = true;
             });
 
             db.ref().update(updates, (err) => {
@@ -896,10 +810,6 @@
 
     window.startRaceRecording = () => {
         toggleMenu();
-        if (isAdminMode) {
-            executeStartRaceRecording();
-            return;
-        }
         const inputPass = prompt("本部スタッフ用パスワードを入力してください:");
         if (inputPass === null) return;
 
@@ -907,10 +817,7 @@
             alert("❌ パスワードが違います！記録を開始できません。");
             return;
         }
-        executeStartRaceRecording();
-    };
 
-    function executeStartRaceRecording() {
         if (confirm("パスワード認証成功。全参加者のレース記録を開始しますか？（前回の未保存一時履歴はリセットされます）")) {
             db.ref('temp_history').remove().then(() => {
                 isRecordingActive = true;
@@ -936,7 +843,7 @@
                 showToast("🔴 レース記録をスタートしました！(ローカル)");
             });
         }
-    }
+    };
 
     function startGlobalRecordingLoop() {
         if (recordingInterval) clearInterval(recordingInterval);
@@ -1049,10 +956,6 @@
     };
 
     window.authAndTrim = (id) => {
-        if (isAdminMode) {
-            trimAndSaveCourse(id);
-            return;
-        }
         const pass = prompt("管理者パスワードを入力してください:");
         if (pass === null) return;
         if (pass !== RECORD_PASSWORD) {
@@ -1063,10 +966,6 @@
     };
 
     window.authAndRename = (id, currentTitle) => {
-        if (isAdminMode) {
-            renameCourse(id, currentTitle);
-            return;
-        }
         const pass = prompt("管理者パスワードを入力してください:");
         if (pass === null) return;
         if (pass !== RECORD_PASSWORD) {
@@ -1077,10 +976,6 @@
     };
 
     window.authAndDelete = (id) => {
-        if (isAdminMode) {
-            deleteCourse(id);
-            return;
-        }
         const pass = prompt("管理者パスワードを入力してください:");
         if (pass === null) return;
         if (pass !== RECORD_PASSWORD) {
@@ -1498,66 +1393,50 @@
         setTimeout(() => { location.reload(); }, 500);
     };
 
-    function updateUserTrailAndMarker(identifier, lat, lng, color, heading, timestamp, partType = 'normal', isLoggedOut = false) {
-        if (!isLoggedOut) {
-            if (!userTrails[identifier]) userTrails[identifier] = [];
-            userTrails[identifier].push({ lat: lat, lng: lng, ts: timestamp });
-            userTrails[identifier] = userTrails[identifier].filter(p => timestamp - p.ts <= 10000);
+    function updateUserTrailAndMarker(identifier, lat, lng, color, heading, timestamp, partType = 'normal') {
+        if (!userTrails[identifier]) userTrails[identifier] = [];
+        userTrails[identifier].push({ lat: lat, lng: lng, ts: timestamp });
+        userTrails[identifier] = userTrails[identifier].filter(p => timestamp - p.ts <= 10000);
 
-            if (userPolylineLines[identifier]) {
-                userPolylineLines[identifier].forEach(seg => map.removeLayer(seg));
-            }
-            userPolylineLines[identifier] = [];
+        if (userPolylineLines[identifier]) {
+            userPolylineLines[identifier].forEach(seg => map.removeLayer(seg));
+        }
+        userPolylineLines[identifier] = [];
 
-            const points = userTrails[identifier];
-            if (points.length > 1) {
-                for (let i = 0; i < points.length - 1; i++) {
-                    const p1 = points[i];
-                    const p2 = points[i+1];
-                    const age = timestamp - p2.ts;
-                    let opacity = 0.8;
-                    if (age > 8000) {
-                        opacity = 0.8 * (1.0 - (age - 8000) / 2000);
-                        if (opacity < 0) opacity = 0;
-                    }
-                    if (opacity > 0) {
-                        const segLine = L.polyline([[p1.lat, p1.lng], [p2.lat, p2.lng]], {
-                            color: color || '#ff9900',
-                            weight: 2,
-                            opacity: opacity
-                        }).addTo(map);
-                        userPolylineLines[identifier].push(segLine);
-                    }
+        const points = userTrails[identifier];
+        if (points.length > 1) {
+            for (let i = 0; i < points.length - 1; i++) {
+                const p1 = points[i];
+                const p2 = points[i+1];
+                const age = timestamp - p2.ts;
+                let opacity = 0.8;
+                if (age > 8000) {
+                    opacity = 0.8 * (1.0 - (age - 8000) / 2000);
+                    if (opacity < 0) opacity = 0;
+                }
+                if (opacity > 0) {
+                    const segLine = L.polyline([[p1.lat, p1.lng], [p2.lat, p2.lng]], {
+                        color: color || '#ff9900',
+                        weight: 2,
+                        opacity: opacity
+                    }).addTo(map);
+                    userPolylineLines[identifier].push(segLine);
                 }
             }
-        } else {
-            if (userPolylineLines[identifier]) {
-                userPolylineLines[identifier].forEach(seg => map.removeLayer(seg));
-                delete userPolylineLines[identifier];
-            }
-            delete userTrails[identifier];
         }
 
         if (userMarkers[identifier]) {
-            userMarkers[identifier].setLatLng([lat, lng]).setIcon(createUserIcon(partType, color, heading, isLoggedOut));
+            userMarkers[identifier].setLatLng([lat, lng]).setIcon(createUserIcon(partType, color, heading));
         } else {
-            userMarkers[identifier] = L.marker([lat, lng], { icon: createUserIcon(partType, color, heading, isLoggedOut) }).addTo(map);
+            userMarkers[identifier] = L.marker([lat, lng], { icon: createUserIcon(partType, color, heading) }).addTo(map);
         }
     }
 
-    function createUserIcon(partType, color, heading, isLoggedOut = false) {
-        if (isLoggedOut) {
-            return L.divIcon({
-                html: `<div style="width: 16px; height: 16px; background: #007AFF; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>`,
-                className: '',
-                iconSize: [22, 22],
-                iconAnchor: [11, 11]
-            });
-        }
+    function createUserIcon(partType, color, heading) {
         if (partType === 'ship') {
-            return L.divIcon({ html: `<div class="blinking-marker" style="font-size:26px; filter: drop-shadow(0 0 3px rgba(0,0,0,0.8)); text-align:center; line-height:26px;" title="フネ">🚤</div>`, className: '', iconSize: [26, 26], iconAnchor: [13, 13] });
+            return L.divIcon({ html: `<div style="font-size:26px; filter: drop-shadow(0 0 3px rgba(0,0,0,0.8)); text-align:center; line-height:26px;" title="フネ">🚤</div>`, className: '', iconSize: [26, 26], iconAnchor: [13, 13] });
         } else if (partType === 'buoy') {
-            return L.divIcon({ html: `<div class="blinking-marker"><svg width="18" height="26" viewBox="0 0 100 133"><path d="M50 5 L95 125 Q95 128 50 128 Q5 128 5 125 Z" fill="${color || '#ff3b30'}" stroke="white" stroke-width="8" /></svg></div>`, className: '', iconSize: [24, 28], iconAnchor: [12, 14] });
+            return L.divIcon({ html: `<svg width="18" height="26" viewBox="0 0 100 133"><path d="M50 5 L95 125 Q95 128 50 128 Q5 128 5 125 Z" fill="${color || '#ff3b30'}" stroke="white" stroke-width="8" /></svg>`, className: '', iconSize: [24, 28], iconAnchor: [12, 14] });
         } else {
             const html = `<div class="arrow-icon-wrapper" style="transform: rotate(${heading||0}deg);"><svg viewBox="0 0 100 100" width="30" height="30"><path d="M50 5 L90 90 L50 75 L10 90 Z" fill="${color || '#ff9900'}" stroke="white" stroke-width="5" /></svg></div>`;
             return L.divIcon({ html: html, className: '', iconSize: [30, 30], iconAnchor: [15, 15] });
@@ -2059,30 +1938,6 @@
     map.on('click', e => {
         const { lat, lng } = e.latlng;
         
-        if (isRegisterModeActive && isAdminMode) {
-            const type = (myParticipantType === 'ship') ? 'ship' : 'buoy';
-            const commentText = type === 'ship' ? 'フネ' : 'マーク';
-            const initialLabel = type === 'ship' ? 'フネ' : 'ブイ';
-            const randomKey = "C" + Math.floor(Math.random() * 10000);
-            db.ref('objects/' + randomKey).set({ 
-                type: type, 
-                shape: 'triangle',
-                color: myColor || '#ff3b30', 
-                lat: lat, 
-                lng: lng, 
-                comment: commentText,
-                assignedLabel: initialLabel,
-                ownerId: myId,
-                ts: Date.now() 
-            }, err => {
-                if (!err) {
-                    showToast(`📍 位置登録モードで${commentText}を登録しました！`);
-                    toggleRegisterMode();
-                }
-            });
-            return;
-        }
-
         if (isCourseBuilderActive) {
             if (cbMode === 'ship' || cbMode === 'buoy') {
                 const commentText = cbMode === 'ship' ? 'フネ' : 'マーク';
@@ -2240,17 +2095,12 @@
         myColor = color; 
         isViewerMode = false;
         isObjectDeletedLocally = false;
-        isKicked = false;
         
-        db.ref('kicked_users/' + myId).remove();
-
         localStorage.setItem('tora_king_name', myName); 
         localStorage.setItem('tora_king_color', myColor);
         localStorage.setItem('tora_king_part_type', myParticipantType);
         localStorage.removeItem('tora_king_viewer');
-        localStorage.removeItem('tora_king_logout_count');
         document.getElementById('setup-overlay').style.display = 'none'; 
-        updateAdminUIVisibility();
         startTracking();
     }
 
@@ -2259,13 +2109,11 @@
         myName = null;
         myColor = null;
         isObjectDeletedLocally = false;
-        isKicked = false;
         localStorage.setItem('tora_king_viewer', 'true');
         localStorage.removeItem('tora_king_name');
         localStorage.removeItem('tora_king_part_type');
         document.getElementById('setup-overlay').style.display = 'none';
         showToast("👀 観戦モードで開始しました");
-        updateAdminUIVisibility();
         startTracking();
     };
 
@@ -2282,7 +2130,7 @@
     }
 
     function updateLocation(pos) {
-        if (isReplaying || isKicked) return;
+        if (isReplaying) return;
 
         const latitude = pos.coords.latitude + offsetLat;
         const longitude = pos.coords.longitude + offsetLng;
@@ -2292,57 +2140,69 @@
         
         currentLatestPos = { lat: latitude, lng: longitude };
         
-        const userData = {
-            lat: latitude, 
-            lng: longitude, 
-            name: isViewerMode ? "👀 観戦者" : (myName || (myParticipantType === 'ship' ? 'フネ' : 'ブイ')), 
-            color: myColor || '#007AFF', 
-            speed: speed, 
-            heading: heading, 
-            partType: myParticipantType, 
-            ts: now, 
-            isViewer: isViewerMode
-        };
-        db.ref('users/'+myId).set(userData);
+        if (!isViewerMode && (myName || myParticipantType !== 'normal')) {
+            const displayName = myName || (myParticipantType === 'ship' ? 'フネ' : 'ブイ');
+            const userData = {
+                lat: latitude, 
+                lng: longitude, 
+                name: displayName, 
+                color: myColor, 
+                speed: speed, 
+                heading: heading, 
+                partType: myParticipantType, 
+                ts: now, 
+                isViewer: false
+            };
+            db.ref('users/'+myId).set(userData);
+            
+            if ((myParticipantType === 'ship' || myParticipantType === 'buoy') && !isObjectDeletedLocally) {
+                db.ref('objects/' + myId).update({
+                    type: myParticipantType,
+                    shape: 'triangle',
+                    color: myColor || '#ff3b30',
+                    lat: latitude,
+                    lng: longitude,
+                    comment: displayName,
+                    assignedLabel: displayName,
+                    ownerId: myId,
+                    isParticipantUser: true,
+                    ts: now
+                });
+            }
 
-        if (isRecordingActive && !isViewerMode) {
-            db.ref('temp_history/' + myId).push(userData);
+            if (isRecordingActive) {
+                db.ref('temp_history/' + myId).push(userData);
+            }
         }
         
         if (isViewerMode) {
             document.getElementById('status').style.background = "rgba(0,128,0,0.8)";
             document.getElementById('status').innerText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)} (GPS測位中/観戦中)`;
+            return;
         }
 
         const latlng = [latitude, longitude];
-        const iconObj = createUserIcon(myParticipantType, myColor || '#7f8c8d', heading, isViewerMode);
-        const tooltipName = isViewerMode ? '' : (myName || (myParticipantType === 'ship' ? 'フネ' : 'ブイ'));
+        const iconObj = createUserIcon(myParticipantType, myColor || '#7f8c8d', heading);
+        const tooltipName = myName || (myParticipantType === 'ship' ? 'フネ' : 'ブイ');
 
         if (!myMarker) {
             myMarker = L.marker(latlng, { icon: iconObj }).addTo(map);
-            if(tooltipName) myMarker.bindTooltip(tooltipName, { permanent: true, direction: 'top', className: 'user-label' });
+            myMarker.bindTooltip(tooltipName, { permanent: true, direction: 'top', className: 'user-label' });
             map.setView(latlng, 16);
         } else {
             myMarker.setLatLng(latlng).setIcon(iconObj);
-            if (tooltipName && !myMarker.getTooltip()) {
-                myMarker.bindTooltip(tooltipName, { permanent: true, direction: 'top', className: 'user-label' });
-            } else if (!tooltipName && myMarker.getTooltip()) {
-                myMarker.unbindTooltip();
-            }
         }
         
         if (isFollowing) map.panTo(latlng);
         
-        if (!isViewerMode) {
-            let statusText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)} (GPS良好)`;
-            if (isRecordingActive) {
-                statusText = `🔴 [記録中] ${statusText}`;
-                document.getElementById('status').style.background = "rgba(192, 57, 43, 0.9)";
-            } else {
-                document.getElementById('status').style.background = "rgba(0,128,0,0.8)";
-            }
-            document.getElementById('status').innerText = statusText;
+        let statusText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)} (GPS良好)`;
+        if (isRecordingActive) {
+            statusText = `🔴 [記録中] ${statusText}`;
+            document.getElementById('status').style.background = "rgba(192, 57, 43, 0.9)";
+        } else {
+            document.getElementById('status').style.background = "rgba(0,128,0,0.8)";
         }
+        document.getElementById('status').innerText = statusText;
     }
 
     function stopTracking() {
@@ -2444,141 +2304,134 @@
     window.triggerLogout = () => {
         if (isMenuOpen) toggleMenu();
 
+        let logoutCount = parseInt(localStorage.getItem('tora_king_logout_count') || "0") + 1;
+        const isShipUser = (myParticipantType === 'ship');
+
+        if (isShipUser && logoutCount < 2) {
+            localStorage.setItem('tora_king_logout_count', logoutCount);
+            if (confirm("船（フネ）でログイン中です。\nもう一度ログアウトボタンを押すと、マップ上の船オブジェクトが完全に消去されます。\n\nログアウトを実行しますか？")) {
+                let cleanupPromises = [db.ref('users/'+myId).remove()];
+                Promise.all(cleanupPromises).then(() => {
+                    localStorage.removeItem('tora_king_name');
+                    localStorage.removeItem('tora_king_color');
+                    localStorage.removeItem('tora_king_viewer');
+                    localStorage.removeItem('tora_king_part_type');
+                    location.reload();
+                }).catch(() => {
+                    location.reload();
+                });
+            }
+            return;
+        }
+
+        let confirmMsg = "ログアウトしますか？（登録情報がリセットされます）";
+        if (isShipUser && logoutCount >= 2) {
+            confirmMsg = "⚠️ 2回目のログアウトです。\nマップ上に配置されている「船」のオブジェクトを完全に消去してログアウトしますか？";
+        }
+
         showToast("🏃 ログアウト処理中...");
         setTimeout(() => {
-            if(confirm("ログアウトして観戦モードに切り替えますか？")) { 
-                isViewerMode = true;
-                myName = null;
-                myColor = null;
-                myParticipantType = 'normal';
+            if(confirm(confirmMsg)) { 
+                let cleanupPromises = [db.ref('users/'+myId).remove()];
                 
-                localStorage.removeItem('tora_king_name');
-                localStorage.removeItem('tora_king_color');
-                localStorage.setItem('tora_king_viewer', 'true');
-                localStorage.removeItem('tora_king_part_type');
-                
-                updateAdminUIVisibility();
-                document.getElementById('setup-overlay').style.display = 'none';
+                db.ref('objects').orderByChild('ownerId').equalTo(myId).once('value', snapshot => {
+                    snapshot.forEach(childSnapshot => {
+                        cleanupPromises.push(childSnapshot.ref.remove());
+                    });
 
-                if (currentLatestPos) {
-                    const userData = {
-                        lat: currentLatestPos.lat, 
-                        lng: currentLatestPos.lng, 
-                        name: "👀 観戦者", 
-                        color: "#007AFF", 
-                        speed: 0, 
-                        heading: 0, 
-                        partType: 'normal', 
-                        ts: Date.now(), 
-                        isViewer: true
-                    };
-                    db.ref('users/'+myId).set(userData);
-                }
-                showToast("観戦モード（青い丸）に切り替えました");
+                    if (myParticipantType === 'ship' || myParticipantType === 'buoy' || (isShipUser && logoutCount >= 2)) {
+                        cleanupPromises.push(db.ref('objects/'+myId).remove());
+                    }
+
+                    Promise.all(cleanupPromises).then(() => {
+                        localStorage.removeItem('tora_king_name');
+                        localStorage.removeItem('tora_king_color');
+                        localStorage.removeItem('tora_king_viewer');
+                        localStorage.removeItem('tora_king_part_type');
+                        localStorage.removeItem('tora_king_logout_count');
+                        location.reload();
+                    }).catch(() => {
+                        localStorage.removeItem('tora_king_name');
+                        localStorage.removeItem('tora_king_color');
+                        localStorage.removeItem('tora_king_viewer');
+                        localStorage.removeItem('tora_king_part_type');
+                        localStorage.removeItem('tora_king_logout_count');
+                        location.reload();
+                    });
+                });
             }
         }, 300);
     };
 
-    db.ref('kicked_users/' + myId).on('value', snap => {
-        if (snap.exists() && snap.val() === true) {
-            isKicked = true;
-            document.getElementById('status').style.background = "rgba(192, 57, 43, 0.9)";
-            document.getElementById('status').innerText = "⚠️ 管理者により強制退場させられました（画面はそのまま維持されています）";
-        }
-    });
-
     initSetupUI();
-
-    window.addEventListener('DOMContentLoaded', () => {
-        const btn = document.getElementById('admin-mode-btn');
-        if (btn && isAdminMode) {
-            btn.innerText = "🔐 管理者モード: ON";
-            btn.style.background = "#27ae60";
-        }
-        updateAdminUIVisibility();
-    });
-
     if (!myName && !isViewerMode && myParticipantType === 'normal') openSetup(); else startTracking();
 
     db.ref('users').on('value', snap => {
         if (isReplaying) return;
 
-        const users = snap.val();
+        const users = snap.val() || {};
         let listHtml = "";
         const now = Date.now();
         const activeIdentifiers = {};
         let activeUsersObj = {};
 
-        db.ref('kicked_users').once('value', kickedSnap => {
-            const kickedList = kickedSnap.val() || {};
-
-            for (let id in users) {
-                if (kickedList[id]) {
-                    if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
-                    continue;
-                }
-
-                const u = users[id];
-                if (!u || (now - (u.ts || 0) > 600000)) {
-                    if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
-                    continue;
-                }
-
-                const isLoggedOutUser = (u.isViewer || u.name === "👀 観戦者");
-
-                // 自分自身も他ユーザーと同様にリストやマーカーとして表示・更新するよう統合
-                const displayName = isLoggedOutUser ? (id === myId ? "👀 観戦者" : "観戦者") : (u.name || (u.partType === 'ship' ? '🚤 フネ' : (u.partType === 'buoy' ? '🚩 ブイ' : '参加者')));
-                
-                // 識別キーとしてユニークなIDを利用してマーカーを独立管理
-                activeIdentifiers[id] = true;
-                
-                if (id !== myId && !isLoggedOutUser) {
-                    activeUsersObj[displayName] = { id: id, u: u };
-                }
-                
-                updateUserTrailAndMarker(id, u.lat, u.lng, u.color || '#ff9900', u.heading, now, u.partType || 'normal', isLoggedOutUser);
-                
-                if (userMarkers[id]) {
-                    const tooltipText = isLoggedOutUser ? '' : displayName;
-                    if (tooltipText && !userMarkers[id].getTooltip()) {
-                        userMarkers[id].bindTooltip(tooltipText, { permanent: true, direction: 'top', className: 'user-label' });
-                    } else if (!tooltipText && userMarkers[id].getTooltip()) {
-                        userMarkers[id].unbindTooltip();
-                    }
-                }
+        for (let id in users) {
+            const u = users[id];
+            if (!u || (!u.name && u.partType === 'normal') || (now - (u.ts || 0) > 600000)) {
+                if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
+                continue;
             }
 
-            const sortedNames = Object.keys(activeUsersObj).sort();
-            sortedNames.forEach(name => {
-                const item = activeUsersObj[name];
-                const u = item.u;
-                if (u.isViewer || u.name === "👀 観戦者") return;
-
-                const rawSpeed = u.speed || 0;
-                let s = 0;
-                if (speedUnitMode === 0) s = rawSpeed * 1.94384;
-                else if (speedUnitMode === 1) s = rawSpeed * 3.6;
-                else s = rawSpeed;
-
-                listHtml += `<div class="user-item"><span style="color:${u.color || '#ff9900'}">●</span> ${name} ${s.toFixed(1)}${units[speedUnitMode]}</div>`;
-            });
-
-            for (let id in userMarkers) {
-                if (!activeIdentifiers[id] && id !== myId) {
-                    if (userPolylineLines[id]) {
-                        userPolylineLines[id].forEach(seg => map.removeLayer(seg));
-                        delete userPolylineLines[id];
-                    }
-                    delete userTrails[id];
-                    if (userMarkers[id]) {
-                        map.removeLayer(userMarkers[id]);
-                        delete userMarkers[id];
-                    }
-                }
+            if (id !== myId && (u.isViewer || u.name === "👀 観戦者")) {
+                if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
+                continue;
             }
 
-            document.getElementById('list-content').innerHTML = listHtml;
+            const displayName = u.name || (u.partType === 'ship' ? '🚤 フネ' : '🚩 ブイ');
+            activeIdentifiers[id] = true;
+            activeUsersObj[displayName] = { id: id, u: u };
+            
+            updateUserTrailAndMarker(id, u.lat, u.lng, u.color || '#ff9900', u.heading, now, u.partType || 'normal');
+            
+            if (userMarkers[id]) {
+                const tooltipText = displayName;
+                if (tooltipText && !userMarkers[id].getTooltip()) {
+                    userMarkers[id].bindTooltip(tooltipText, { permanent: true, direction: 'top', className: 'user-label' });
+                }
+            }
+        }
+
+        const sortedNames = Object.keys(activeUsersObj).sort();
+        sortedNames.forEach(name => {
+            const item = activeUsersObj[name];
+            const u = item.u;
+            if (item.id !== myId && (u.isViewer || u.name === "👀 観戦者")) return;
+
+            const isMe = (item.id === myId);
+            const rawSpeed = u.speed || 0;
+            let s = 0;
+            if (speedUnitMode === 0) s = rawSpeed * 1.94384;
+            else if (speedUnitMode === 1) s = rawSpeed * 3.6;
+            else s = rawSpeed;
+
+            listHtml += `<div class="user-item ${isMe ? 'me' : ''}"><span style="color:${u.color || '#ff9900'}">●</span> ${name} ${s.toFixed(1)}${units[speedUnitMode]}</div>`;
         });
+
+        for (let id in userMarkers) {
+            if (!activeIdentifiers[id]) {
+                if (userPolylineLines[id]) {
+                    userPolylineLines[id].forEach(seg => map.removeLayer(seg));
+                    delete userPolylineLines[id];
+                }
+                delete userTrails[id];
+                if (userMarkers[id]) {
+                    map.removeLayer(userMarkers[id]);
+                    delete userMarkers[id];
+                }
+            }
+        }
+
+        document.getElementById('list-content').innerHTML = listHtml;
     });
 
     window.toggleSpeedUnit = () => {
@@ -2588,28 +2441,28 @@
         showToast(`速度単位を [${units[speedUnitMode]}] に切り替えました`);
         
         db.ref('users').once('value', snap => {
-            const users = snap.val();
-            if (!users) return;
+            const users = snap.val() || {};
             let listHtml = "";
             const now = Date.now();
             let activeUsersObj = {};
             for (let id in users) {
-                if (id === myId) continue;
                 const u = users[id];
-                if (!u || u.isViewer || u.name === "👀 観戦者" || (now - u.ts > 600000)) continue;
-                const displayName = u.name || (u.partType === 'ship' ? 'フネ' : 'ブイ');
+                if (!u || (!u.name && u.partType === 'normal') || (now - (u.ts || 0) > 600000)) continue;
+                if (id !== myId && (u.isViewer || u.name === "👀 観戦者")) continue;
+                const displayName = u.name || (u.partType === 'ship' ? '🚤 フネ' : '🚩 ブイ');
                 activeUsersObj[displayName] = { id: id, u: u };
             }
             const sortedNames = Object.keys(activeUsersObj).sort();
             sortedNames.forEach(name => {
                 const item = activeUsersObj[name];
                 const u = item.u;
+                const isMe = (item.id === myId);
                 const rawSpeed = u.speed || 0;
                 let s = 0;
                 if (speedUnitMode === 0) s = rawSpeed * 1.94384;
                 else if (speedUnitMode === 1) s = rawSpeed * 3.6;
                 else s = rawSpeed;
-                listHtml += `<div class="user-item"><span style="color:${u.color || '#ff9900'}">●</span> ${name} ${s.toFixed(1)}${units[speedUnitMode]}</div>`;
+                listHtml += `<div class="user-item ${isMe ? 'me' : ''}"><span style="color:${u.color || '#ff9900'}">●</span> ${name} ${s.toFixed(1)}${units[speedUnitMode]}</div>`;
             });
             document.getElementById('list-content').innerHTML = listHtml;
         });
@@ -2656,7 +2509,6 @@
         document.getElementById('user-list-title').innerText = `参加者 (${units[speedUnitMode]})`;
         setTimeout(() => { map.invalidateSize(); }, 300);
         setTimeout(checkIncomingCourse, 1000);
-        updateAdminUIVisibility();
     });
 </script>
 </body>
