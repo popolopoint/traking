@@ -1252,9 +1252,21 @@
                     const alertBox = document.getElementById('replay-countdown-alert');
                     alertBox.innerText = secInt;
                     alertBox.style.display = 'block';
-                } else if (diffSec <= 0 && diffSec > -1.5) {
+              
+                
+                
+             } else if (diffSec <= 0 && diffSec > -1.5) {
                     statusText = `🚨 スタート！`;
-                    document.getElementById('replay-countdown-alert').style.display = 'none';
+                    // ★修正: リプレイ再生時のスタート表示を大きく目立たせる
+                    const alertBox = document.getElementById('replay-countdown-alert');
+                    alertBox.innerText = "🚨 競技スタート！ 🚨";
+                    alertBox.style.background = "rgba(255, 0, 0, 0.95)";
+                    alertBox.style.fontSize = "22px";
+                    alertBox.style.display = 'block';
+
+
+
+                    
                 } else {
                     const elapsedAfterStartMs = currentTs - replayStartTimeMs;
                     statusText = `⏱️ スタートから ${formatClockStyle(elapsedAfterStartMs)} 経過`;
