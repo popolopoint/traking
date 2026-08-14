@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.8.3e3 by Popolo App.com</title>
+    <title>虎キング v3.8.3e4 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         #header-course-btn { transition: height 0.3s ease, padding 0.3s ease; }
@@ -217,7 +217,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.3e3 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.3e4 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -342,7 +342,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.8.3e3 by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.8.3e4 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1498,18 +1498,18 @@
         setTimeout(() => { location.reload(); }, 500);
     };
 
-    function updateUserTrailAndMarker(name, lat, lng, color, heading, timestamp, partType = 'normal', isLoggedOut = false) {
+    function updateUserTrailAndMarker(identifier, lat, lng, color, heading, timestamp, partType = 'normal', isLoggedOut = false) {
         if (!isLoggedOut) {
-            if (!userTrails[name]) userTrails[name] = [];
-            userTrails[name].push({ lat: lat, lng: lng, ts: timestamp });
-            userTrails[name] = userTrails[name].filter(p => timestamp - p.ts <= 10000);
+            if (!userTrails[identifier]) userTrails[identifier] = [];
+            userTrails[identifier].push({ lat: lat, lng: lng, ts: timestamp });
+            userTrails[identifier] = userTrails[identifier].filter(p => timestamp - p.ts <= 10000);
 
-            if (userPolylineLines[name]) {
-                userPolylineLines[name].forEach(seg => map.removeLayer(seg));
+            if (userPolylineLines[identifier]) {
+                userPolylineLines[identifier].forEach(seg => map.removeLayer(seg));
             }
-            userPolylineLines[name] = [];
+            userPolylineLines[identifier] = [];
 
-            const points = userTrails[name];
+            const points = userTrails[identifier];
             if (points.length > 1) {
                 for (let i = 0; i < points.length - 1; i++) {
                     const p1 = points[i];
@@ -1526,23 +1526,22 @@
                             weight: 2,
                             opacity: opacity
                         }).addTo(map);
-                        userPolylineLines[name].push(segLine);
+                        userPolylineLines[identifier].push(segLine);
                     }
                 }
             }
         } else {
-            if (userPolylineLines[name]) {
-                userPolylineLines[name].forEach(seg => map.removeLayer(seg));
-                delete userPolylineLines[name];
+            if (userPolylineLines[identifier]) {
+                userPolylineLines[identifier].forEach(seg => map.removeLayer(seg));
+                delete userPolylineLines[identifier];
             }
-            delete userTrails[name];
+            delete userTrails[identifier];
         }
 
-        if (userMarkers[name]) {
-            userMarkers[name].setLatLng([lat, lng]).setIcon(createUserIcon(partType, color, heading, isLoggedOut));
+        if (userMarkers[identifier]) {
+            userMarkers[identifier].setLatLng([lat, lng]).setIcon(createUserIcon(partType, color, heading, isLoggedOut));
         } else {
-            userMarkers[name] = L.marker([lat, lng], { icon: createUserIcon(partType, color, heading, isLoggedOut) }).addTo(map);
-            userMarkers[name].bindTooltip(isLoggedOut ? '' : name, { permanent: true, direction: 'top', className: 'user-label' });
+            userMarkers[identifier] = L.marker([lat, lng], { icon: createUserIcon(partType, color, heading, isLoggedOut) }).addTo(map);
         }
     }
 
@@ -2507,7 +2506,7 @@
         const users = snap.val();
         let listHtml = "";
         const now = Date.now();
-        const activeUserNames = {};
+        const activeIdentifiers = {};
         let activeUsersObj = {};
 
         db.ref('kicked_users').once('value', kickedSnap => {
@@ -2527,14 +2526,26 @@
 
                 const isLoggedOutUser = (u.isViewer || u.name === "👀 観戦者");
 
-                // 自分自身のマーカーは updateLocation で管理するため、ここでは他ユーザーのみをレンダリング対象にする
-                if (id === myId) continue;
-
-                const displayName = u.name || (u.partType === 'ship' ? '🚤 フネ' : (u.partType === 'buoy' ? '🚩 ブイ' : '参加者'));
-                activeUserNames[displayName] = true;
-                activeUsersObj[displayName] = { id: id, u: u };
+                // 自分自身も他ユーザーと同様にリストやマーカーとして表示・更新するよう統合
+                const displayName = isLoggedOutUser ? (id === myId ? "👀 観戦者" : "観戦者") : (u.name || (u.partType === 'ship' ? '🚤 フネ' : (u.partType === 'buoy' ? '🚩 ブイ' : '参加者')));
                 
-                updateUserTrailAndMarker(displayName, u.lat, u.lng, u.color || '#ff9900', u.heading, now, u.partType || 'normal', isLoggedOutUser);
+                // 識別キーとしてユニークなIDを利用してマーカーを独立管理
+                activeIdentifiers[id] = true;
+                
+                if (id !== myId && !isLoggedOutUser) {
+                    activeUsersObj[displayName] = { id: id, u: u };
+                }
+                
+                updateUserTrailAndMarker(id, u.lat, u.lng, u.color || '#ff9900', u.heading, now, u.partType || 'normal', isLoggedOutUser);
+                
+                if (userMarkers[id]) {
+                    const tooltipText = isLoggedOutUser ? '' : displayName;
+                    if (tooltipText && !userMarkers[id].getTooltip()) {
+                        userMarkers[id].bindTooltip(tooltipText, { permanent: true, direction: 'top', className: 'user-label' });
+                    } else if (!tooltipText && userMarkers[id].getTooltip()) {
+                        userMarkers[id].unbindTooltip();
+                    }
+                }
             }
 
             const sortedNames = Object.keys(activeUsersObj).sort();
@@ -2552,16 +2563,16 @@
                 listHtml += `<div class="user-item"><span style="color:${u.color || '#ff9900'}">●</span> ${name} ${s.toFixed(1)}${units[speedUnitMode]}</div>`;
             });
 
-            for (let name in userTrails) {
-                if (!activeUserNames[name]) {
-                    if (userPolylineLines[name]) {
-                        userPolylineLines[name].forEach(seg => map.removeLayer(seg));
-                        delete userPolylineLines[name];
+            for (let id in userMarkers) {
+                if (!activeIdentifiers[id] && id !== myId) {
+                    if (userPolylineLines[id]) {
+                        userPolylineLines[id].forEach(seg => map.removeLayer(seg));
+                        delete userPolylineLines[id];
                     }
-                    delete userTrails[name];
-                    if (userMarkers[name]) {
-                        map.removeLayer(userMarkers[name]);
-                        delete userMarkers[name];
+                    delete userTrails[id];
+                    if (userMarkers[id]) {
+                        map.removeLayer(userMarkers[id]);
+                        delete userMarkers[id];
                     }
                 }
             }
