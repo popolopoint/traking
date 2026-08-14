@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.8.3n by Popolo App.com</title>
+    <title>虎キング v3.8.3p by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         #header-course-btn { transition: height 0.3s ease, padding 0.3s ease; }
@@ -23,8 +23,8 @@
         @keyframes blinkIcon { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
         .blinking-marker { animation: blinkIcon 1s infinite; }
 
-        #start-flash-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(231, 76, 60, 0.85); z-index: 8000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; pointer-events: none; animation: flashAlert 0.8s infinite alternate; }
-        @keyframes flashAlert { from { opacity: 0.6; } to { opacity: 1; } }
+       #start-flash-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(255, 0, 0, 0.9); z-index: 8000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; pointer-events: none; animation: superFlashAlert 0.3s infinite alternate; backdrop-filter: blur(5px); }
+        @keyframes superFlashAlert { 0% { opacity: 0.4; background: rgba(255, 0, 0, 0.7); } 100% { opacity: 1; background: rgba(255, 204, 0, 0.95); } }
 
         #replay-countdown-alert { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: rgba(243, 156, 18, 0.95); color: white; padding: 6px 20px; border-radius: 15px; font-size: 18px; font-weight: bold; z-index: 9000; display: none; box-shadow: 0 2px 10px rgba(0,0,0,0.5); border: 2px solid white; text-align: center; pointer-events: none; animation: pulseAlert 0.5s infinite alternate; }
         @keyframes pulseAlert { from { transform: translateX(-50%) scale(1); } to { transform: translateX(-50%) scale(1.05); } }
@@ -217,7 +217,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.3n 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.3p 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -243,8 +243,8 @@
 <div id="replay-countdown-alert">10</div>
 
 <div id="start-flash-overlay">
-    <div style="font-size: 40px; font-weight: bold; text-shadow: 2px 2px 10px rgba(0,0,0,0.5);">🚨 競技スタート！ 🚨</div>
-    <div style="font-size: 18px; margin-top: 10px; font-weight: bold;">レースの記録を開始しました</div>
+    <div style="font-size: 55px; font-weight: 900; text-shadow: 0 0 20px #000, 0 0 40px #fff; letter-spacing: 2px; color: #fff; transform: scale(1.1);">🚨 競技スタート！ 🚨</div>
+    <div style="font-size: 22px; margin-top: 15px; font-weight: bold; background: rgba(0,0,0,0.6); padding: 8px 24px; border-radius: 30px; border: 2px solid #fff;">🏁 レースの記録を開始しました 🏁</div>
 </div>
 
 <div id="recording-banner">🔴 【録画中・記録中】全参加者の航跡を蓄積しています</div>
@@ -340,7 +340,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.8.3n by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.8.3p by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
