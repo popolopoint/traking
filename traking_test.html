@@ -3,16 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v3.8.3c by Popolo App.com</title>
+    <title>虎キング v3.8.3e by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-
-#header-course-btn {
-            transition: height 0.3s ease, padding 0.3s ease;
-        }
-
-
-        
+        #header-course-btn { transition: height 0.3s ease, padding 0.3s ease; }
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
         
         #header { background: #1a1a1a; color: #ff9900; padding: 6px 10px; text-align: center; font-weight: bold; position: fixed; top: 0; left: 0; width: 100%; height: 50px; z-index: 3000; border-bottom: 2px solid #ff9900; display: flex; align-items: center; justify-content: space-between; box-sizing: border-box; transition: transform 0.3s ease; }
@@ -223,8 +217,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.3c
-        参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 3.8.3e 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -349,7 +342,7 @@
 </div>
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v3.8.3c by Popolo App.com</div>
+<div id="map-watermark">虎キング v3.8.3e by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -419,7 +412,7 @@
             <h4>🛡️ 管理者・アカウント</h4>
             <p>・<b>🛡️（参加者管理）:</b> 参加中のメンバーを一覧確認し、強制退出させることができます。</p>
             <p>・<b>👤（再設定）:</b> 自分の表示名、カラー、参加スタイル（通常 / フネ / ブイ）を変更できます。</p>
-            <p>・<b>🏃（ログアウト）:</b> 参加情報を消去して退出します。※船でログインした場合は2回連続で押すと船のオブジェクトを消去できます。</p>
+            <p>・<b>🏃（ログアウト）:</b> 参加情報を消去して退出します。</p>
         </div>
         <button onclick="closeManualModal()" style="width:100%; margin-top:16px; background:#3498db; color:white; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">閉じる</button>
     </div>
@@ -464,7 +457,7 @@
     const db = firebase.database();
     const RECORD_PASSWORD = "1234";
 
-    let isAdminMode = false; // 管理者モードの状態
+    let isAdminMode = localStorage.getItem('tora_king_admin_mode') === 'true';
 
     let myId = localStorage.getItem('tora_king_id') || "tiger_" + Math.floor(Math.random()*10000);
     localStorage.setItem('tora_king_id', myId);
@@ -563,7 +556,6 @@
         if (window.toastTimeout) clearTimeout(window.toastTimeout);
     };
 
-    // 管理者モードの切り替え・認証
     window.toggleAdminMode = () => {
         if (!isAdminMode) {
             const inputPass = prompt("管理者モードを有効にするためのパスワードを入力してください:");
@@ -573,12 +565,14 @@
                 return;
             }
             isAdminMode = true;
+            localStorage.setItem('tora_king_admin_mode', 'true');
             const btn = document.getElementById('admin-mode-btn');
             btn.innerText = "🔐 管理者モード: ON";
             btn.style.background = "#27ae60";
             showToast("🔐 管理者モードを有効化しました（以降パスワード不要）");
         } else {
             isAdminMode = false;
+            localStorage.removeItem('tora_king_admin_mode');
             const btn = document.getElementById('admin-mode-btn');
             btn.innerText = "🔐 管理者モード: OFF";
             btn.style.background = "#8e44ad";
@@ -592,7 +586,6 @@
         const courseBtn = document.getElementById('header-course-btn');
         const regBtn = document.getElementById('floating-register-btn');
         if (isAdminMode) {
-            // 縦長にする代わりに高さを変更して文字がつぶれないようにする
             courseBtn.style.height = "75px";
             if ((myParticipantType === 'ship' || myParticipantType === 'buoy') && !isViewerMode && myParticipantType !== 'normal') {
                 regBtn.style.display = 'block';
@@ -1505,31 +1498,55 @@
         setTimeout(() => { location.reload(); }, 500);
     };
 
-    function createUserIcon(partType, color, heading, isLoggedOut = false) {
-        if (isLoggedOut) {
-            return L.divIcon({
-                html: `<div style="width: 16px; height: 16px; background: #007AFF; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>`,
-                className: '',
-                iconSize: [22, 22],
-                iconAnchor: [11, 11]
-            });
-        }
-        if (partType === 'ship') {
-            return L.divIcon({ html: `<div class="blinking-marker" style="font-size:26px; filter: drop-shadow(0 0 3px rgba(0,0,0,0.8)); text-align:center; line-height:26px;" title="フネ">🚤</div>`, className: '', iconSize: [26, 26], iconAnchor: [13, 13] });
-        } else if (partType === 'buoy') {
-            return L.divIcon({ html: `<div class="blinking-marker"><svg width="18" height="26" viewBox="0 0 100 133"><path d="M50 5 L95 125 Q95 128 50 128 Q5 128 5 125 Z" fill="${color || '#ff3b30'}" stroke="white" stroke-width="8" /></svg></div>`, className: '', iconSize: [24, 28], iconAnchor: [12, 14] });
+    function updateUserTrailAndMarker(name, lat, lng, color, heading, timestamp, partType = 'normal', isLoggedOut = false) {
+        if (!isLoggedOut) {
+            if (!userTrails[name]) userTrails[name] = [];
+            userTrails[name].push({ lat: lat, lng: lng, ts: timestamp });
+            userTrails[name] = userTrails[name].filter(p => timestamp - p.ts <= 10000);
+
+            if (userPolylineLines[name]) {
+                userPolylineLines[name].forEach(seg => map.removeLayer(seg));
+            }
+            userPolylineLines[name] = [];
+
+            const points = userTrails[name];
+            if (points.length > 1) {
+                for (let i = 0; i < points.length - 1; i++) {
+                    const p1 = points[i];
+                    const p2 = points[i+1];
+                    const age = timestamp - p2.ts;
+                    let opacity = 0.8;
+                    if (age > 8000) {
+                        opacity = 0.8 * (1.0 - (age - 8000) / 2000);
+                        if (opacity < 0) opacity = 0;
+                    }
+                    if (opacity > 0) {
+                        const segLine = L.polyline([[p1.lat, p1.lng], [p2.lat, p2.lng]], {
+                            color: color || '#ff9900',
+                            weight: 2,
+                            opacity: opacity
+                        }).addTo(map);
+                        userPolylineLines[name].push(segLine);
+                    }
+                }
+            }
         } else {
-            const html = `<div class="arrow-icon-wrapper" style="transform: rotate(${heading||0}deg);"><svg viewBox="0 0 100 100" width="30" height="30"><path d="M50 5 L90 90 L50 75 L10 90 Z" fill="${color}" stroke="white" stroke-width="5" /></svg></div>`;
-            return L.divIcon({ html: html, className: '', iconSize: [30, 30], iconAnchor: [15, 15] });
+            if (userPolylineLines[name]) {
+                userPolylineLines[name].forEach(seg => map.removeLayer(seg));
+                delete userPolylineLines[name];
+            }
+            delete userTrails[name];
+        }
+
+        if (userMarkers[name]) {
+            userMarkers[name].setLatLng([lat, lng]).setIcon(createUserIcon(partType, color, heading, isLoggedOut));
+        } else {
+            userMarkers[name] = L.marker([lat, lng], { icon: createUserIcon(partType, color, heading, isLoggedOut) }).addTo(map);
+            userMarkers[name].bindTooltip(isLoggedOut ? '' : name, { permanent: true, direction: 'top', className: 'user-label' });
         }
     }
 
-
-
-
-
-
-    
+    // 重複を解消した唯一の createUserIcon 関数
     function createUserIcon(partType, color, heading, isLoggedOut = false) {
         if (isLoggedOut) {
             return L.divIcon({
@@ -2438,7 +2455,6 @@
                     localStorage.removeItem('tora_king_part_type');
                     localStorage.removeItem('tora_king_logout_count');
                     
-                    // 内部状態をリセット（観戦モードや名前なし状態にする）
                     isViewerMode = true;
                     myName = null;
                     myColor = null;
@@ -2446,7 +2462,8 @@
                     
                     updateAdminUIVisibility();
                     
-                    // 自分の現在地を中心にマップを移動して追従ONにする
+                    document.getElementById('setup-overlay').style.display = 'none';
+
                     if (currentLatestPos) {
                         map.setView([currentLatestPos.lat, currentLatestPos.lng], 16);
                         isFollowing = true;
@@ -2468,6 +2485,16 @@
     });
 
     initSetupUI();
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('admin-mode-btn');
+        if (btn && isAdminMode) {
+            btn.innerText = "🔐 管理者モード: ON";
+            btn.style.background = "#27ae60";
+        }
+        updateAdminUIVisibility();
+    });
+
     if (!myName && !isViewerMode && myParticipantType === 'normal') openSetup(); else startTracking();
 
     db.ref('users').on('value', snap => {
@@ -2489,16 +2516,13 @@
                 }
 
                 const u = users[id];
-                // 10分以上更新がない場合は除外
                 if (now - (u.ts || 0) > 600000) {
                     if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
                     continue;
                 }
 
-                // 完全にログアウトしているユーザー（観戦者など）の判定
-                const isLoggedOutUser = (u.isViewer || u.name === "👀 観戦者");
+                const isLoggedOutUser = (u.isViewer || u.name === "👀 観戦者" || (!u.name && u.partType !== 'normal'));
 
-                // 自分の名前と重複する他人のマーカーは非表示
                 if (u.name === myName && id !== myId && !isViewerMode) {
                     if(userMarkers[id]) { map.removeLayer(userMarkers[id]); delete userMarkers[id]; }
                     continue;
@@ -2508,7 +2532,6 @@
                 activeUserNames[displayName] = true;
                 activeUsersObj[displayName] = { id: id, u: u };
                 
-                // ログインしている人は通常アイコン（isLoggedOut = false）、ログアウトしている人は青い〇（isLoggedOut = true）で全員に描画
                 updateUserTrailAndMarker(displayName, u.lat, u.lng, u.color, u.heading, now, u.partType || 'normal', isLoggedOutUser);
             }
 
@@ -2516,7 +2539,7 @@
             sortedNames.forEach(name => {
                 const item = activeUsersObj[name];
                 const u = item.u;
-                if (u.isViewer || u.name === "👀 観戦者") return; // 観戦者はリストに載せない
+                if (u.isViewer || u.name === "👀 観戦者" || (!u.name && u.partType !== 'normal')) return;
 
                 const isMe = (item.id === myId);
                 const rawSpeed = u.speed || 0;
@@ -2546,12 +2569,6 @@
         });
     });
 
-
-
-
-
-
-    
     window.toggleSpeedUnit = () => {
         speedUnitMode = (speedUnitMode + 1) % 3;
         localStorage.setItem('tora_king_unit', speedUnitMode);
@@ -2567,7 +2584,7 @@
             for (let id in users) {
                 const u = users[id];
                 if ((!u.name && u.partType === 'normal') || now - u.ts > 600000) continue;
-                if (id !== myId && (u.isViewer || u.name === "👀 観戦者")) continue;
+                if (u.isViewer || u.name === "👀 観戦者" || (!u.name && u.partType !== 'normal')) continue;
                 if (u.name === myName && id !== myId && !isViewerMode) continue;
                 const displayName = u.name || (u.partType === 'ship' ? 'フネ' : 'ブイ');
                 activeUsersObj[displayName] = { id: id, u: u };
