@@ -2047,6 +2047,11 @@
         }
     });
 
+   
+    
+   const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzFnum0bMKhWQ4evisG1Mqs9St3_3nVuscGDFejZc1Zc0XH3idECbdCzYO5sND_c5ywYw/exec"; // ★ご自身のGASのURLに書き換えてください
+    const ADMIN_SECRET = "popolo2026";
+
     window.manualSave = (lat, lng) => {
         const type = document.getElementById('new_type').value;
         const shape = type === 'ship' ? 'triangle' : document.getElementById('new_shape').value;
@@ -2055,7 +2060,7 @@
         const initialLabel = type === 'ship' ? 'フネ' : 'ブイ';
         const randomKey = "M" + Math.floor(Math.random() * 1000);
         
-        db.ref('objects/' + randomKey).set({ 
+        const saveData = {
             type: type, 
             shape: shape,
             color: color, 
@@ -2065,7 +2070,24 @@
             assignedLabel: initialLabel,
             ownerId: myId,
             ts: Date.now() 
-        });
+        };
+
+        // 1. Firebaseへ保存
+        db.ref('objects/' + randomKey).set(saveData);
+
+        // 2. 水深スプレッドシート（GAS）へも同時に保存
+        fetch(WEB_APP_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({
+                method: "SAVE_BOAT",
+                password: ADMIN_SECRET,
+                name: initialLabel,
+                lat: lat,
+                lng: lng
+            })
+        }).catch(err => console.log("GAS sync error", err));
+
         map.closePopup();
         document.getElementById('pointSettingsPanel').style.display = 'block';
     };
