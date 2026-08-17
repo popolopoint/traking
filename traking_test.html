@@ -3,9 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.0.3 by Popolo App.com</title>
+    <title>虎キング v5.1.1 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
+
+
+/* クラス一括選択用スタイル */
+.class-filter-box { background: rgba(20,20,20,0.9); border: 1px solid #ff9900; padding: 6px; border-radius: 8px; margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; font-size: 11px; }
+.class-filter-chip { background: #333; color: white; padding: 4px 8px; border-radius: 12px; cursor: pointer; border: 1px solid #555; display: inline-flex; align-items: center; gap: 4px; font-weight: bold; }
+.class-filter-chip.active { background: #ff9900; color: #000; border-color: #ff9900; }
+
+        
         #header-course-btn { transition: height 0.3s ease, padding 0.3s ease; }
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
         
@@ -217,7 +225,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.0.3 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.1.1 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -311,6 +319,10 @@
         </div>
     </div>
     <input type="range" id="replay-seekbar" min="0" max="100" value="0" oninput="onSeekbarInput(this.value)">
+    
+    <!-- ⬇️ ここに差し込みます -->
+    <div id="replay-class-filter" class="class-filter-box"></div>
+
     <div class="replay-bottom-row">
         <button class="replay-ctrl-btn" id="btn-pause" onclick="toggleReplayPause()">一時停止</button>
         <button class="replay-ctrl-btn" onclick="setReplaySpeed(1)">1x</button>
@@ -345,7 +357,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.0.3 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.1.1 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -541,6 +553,9 @@
     let watchIdHigh = null, watchIdLow = null;
     let currentLatestPos = null;
 
+// 👇 このあたり（グローバル変数がまとめて宣言されている場所）に追加します
+let replayColorFilters = {};
+    
     let offsetLat = parseFloat(localStorage.getItem('tora_king_offset_lat') || "0");
     let offsetLng = parseFloat(localStorage.getItem('tora_king_offset_lng') || "0");
     let isHoseiMode = false; 
@@ -888,17 +903,18 @@
                 const now = Date.now();
                 for (let uid in users) {
                     const u = users[uid];
-                    if (u && !u.isViewer && (now - (u.ts || 0) <= 600000)) {
-                        db.ref('temp_history/' + uid).push({
-                            lat: u.lat,
-                            lng: u.lng,
-                            name: u.name || (u.partType === 'ship' ? 'フネ' : 'ブイ'),
-                            color: u.color || '#ff9900',
-                            speed: u.speed || 0,
-                            heading: u.heading || 0,
-                            ts: now
-                        });
-                    }
+                  // 【変更】選手（partType === 'normal'）のみ録画対象にする
+if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)) {
+    db.ref('temp_history/' + uid).push({
+        lat: u.lat,
+        lng: u.lng,
+        name: u.name || '選手',
+        color: u.color || '#ff9900',
+        speed: u.speed || 0,
+        heading: u.heading || 0,
+        ts: now
+    });
+}
                 }
             });
         }, 1000);
@@ -1124,6 +1140,11 @@
             const startStr = data.startTime ? ` (${data.startTime} スタート)` : '';
             document.getElementById('replay-title-label').innerText = heatTitle + startStr;
             document.getElementById('minimized-title').innerText = heatTitle;
+
+
+setupReplayClassFilters(data.history);
+
+
             
             document.getElementById('header-replay-status').style.display = 'block';
             document.getElementById('header-replay-time').style.display = 'block';
@@ -1175,6 +1196,61 @@
         });
     };
 
+
+
+
+// クラス（色）ごとの一括選択フィルターを生成
+function setupReplayClassFilters(historyObj) {
+    replayColorFilters = {};
+    let uniqueColors = new Set();
+    
+    for (let uid in historyObj) {
+        for (let pushId in historyObj[uid]) {
+            const log = historyObj[uid][pushId];
+            if (log && log.color) {
+                uniqueColors.add(log.color);
+            }
+        }
+    }
+
+    // 初期状態はすべての色を「表示（true）」にする
+    uniqueColors.forEach(hex => {
+        replayColorFilters[hex] = true;
+    });
+
+    const filterContainer = document.getElementById('replay-class-filter');
+    let html = '<span style="font-size:10px; color:#ff9900; margin-right:4px;">クラス(色)表示:</span>';
+    
+    uniqueColors.forEach(hex => {
+        let colorName = hex;
+        for (let name in colorPresets) {
+            if (colorPresets[name].toLowerCase() === hex.toLowerCase()) {
+                colorName = name;
+                break;
+            }
+        }
+        html += `<span class="class-filter-chip active" id="chip_${hex.replace('#','')}" onclick="toggleReplayColorFilter('${hex}')"><span style="color:${hex}">●</span> ${colorName}</span>`;
+    });
+
+    filterContainer.innerHTML = html;
+}
+
+window.toggleReplayColorFilter = (hex) => {
+    replayColorFilters[hex] = !replayColorFilters[hex];
+    const chip = document.getElementById('chip_' + hex.replace('#',''));
+    if (chip) {
+        chip.classList.toggle('active', replayColorFilters[hex]);
+    }
+};
+
+
+
+
+
+
+
+
+    
     function prepareHistoryTimeline(historyObj) {
         replayLogsAll = [];
         for (let userId in historyObj) {
@@ -1317,6 +1393,10 @@
         let userLatestLogs = {};
         replayLogsAll.forEach(log => {
             if (log.ts <= currentTs && currentTs - log.ts <= 10000) {
+
+if (log.color && replayColorFilters[log.color] === false) return;
+
+       
                 if (!userLatestLogs[log.name] || log.ts > userLatestLogs[log.name].ts) {
                     userLatestLogs[log.name] = log;
                 }
@@ -1333,6 +1413,9 @@
         let activeUsers = {};
         replayLogsAll.forEach(log => {
             if (currentTs - log.ts >= 0 && currentTs - log.ts <= 10000) {
+
+if (log.color && replayColorFilters[log.color] === false) return;
+                
                 activeUsers[log.name] = log;
             }
         });
@@ -2231,7 +2314,15 @@
                 ts: now, 
                 isViewer: false
             };
-            db.ref('users/'+myId).set(userData);
+
+
+            
+            // 変更①：フネ・ブイでなければ users/ に書き込む
+            if (myParticipantType !== 'ship' && myParticipantType !== 'buoy') {
+                db.ref('users/' + myId).set(userData);
+            } else {
+                db.ref('users/' + myId).remove(); // フネ・ブイなら選手一覧から削除
+            }
             
             if ((myParticipantType === 'ship' || myParticipantType === 'buoy') && !isObjectDeletedLocally) {
                 db.ref('objects/' + myId).update({
@@ -2248,7 +2339,8 @@
                 });
             }
 
-            if (isRecordingActive) {
+            // 変更②：録画中は「通常の選手（normal）」のみ履歴に残す
+            if (isRecordingActive && myParticipantType === 'normal') {
                 db.ref('temp_history/' + myId).push(userData);
             }
         }
