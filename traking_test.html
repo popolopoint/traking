@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.1.3 by Popolo App.com</title>
+    <title>虎キング v5.1.5 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
 
@@ -225,7 +225,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.1.3 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.1.5 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -357,7 +357,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.1.3 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.1.5 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1015,12 +1015,19 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
             }
 
             // ▼ 上部に「すべて選択」と「一括削除ボタン」を追加
-            let html = `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:0 5px;">
-                    <label style="cursor:pointer; font-size:0.9rem;"><input type="checkbox" id="select-all-replays" onclick="toggleSelectAllReplays(this)" style="transform:scale(1.2);"> すべて選択</label>
-                    <button onclick="deleteSelectedReplays()" style="background:#e74c3c; color:white; border:none; padding:6px 12px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:bold;">🗑️ 選択した記録を削除</button>
-                </div>
-            `;
+     let html = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:0 5px; flex-wrap:wrap; gap:6px;">
+        <label style="cursor:pointer; font-size:0.9rem;">
+            <input type="checkbox" id="select-all-replays" onclick="toggleSelectAllReplays(this)" style="transform:scale(1.2);"> すべて選択
+        </label>
+        <div style="display:flex; gap:4px;">
+            <label style="background:#27ae60; color:white; padding:6px 10px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:bold; display:inline-block;">
+                📤 読み込み<input type="file" accept=".json" onchange="importCourseFromJson(this)" style="display:none;">
+            </label>
+            <button onclick="deleteSelectedReplays()" style="background:#e74c3c; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:bold;">🗑️ 削除</button>
+        </div>
+    </div>
+`;
 
             for (let id in saved) {
                 const c = saved[id];
@@ -1036,6 +1043,7 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
                     </div>
                     <div class="replay-item-btns">
                         <button class="replay-item-btn replay-btn-play" onclick="startReplay('${id}')">再生</button>
+                        <button class="replay-item-btn" onclick="exportSingleCourse('${id}')" title="外部保存(JSON)" style="background:#8e44ad; color:white; border:none; padding:4px 6px; border-radius:4px; cursor:pointer;">📥</button>
                         <button class="replay-item-btn replay-btn-trim" onclick="authAndTrim('${id}')" title="切り出し">✂️</button>
                         <button class="replay-item-btn replay-btn-edit" onclick="authAndRename('${id}', '${c.title}')" title="編集">✏️</button>
                         <button class="replay-item-btn replay-btn-del" onclick="authAndDelete('${id}')" title="削除">🗑️</button>
@@ -1138,6 +1146,92 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
         });
     };
 
+
+    // 外部からJSONファイルを読み込んでアプリに復元する
+window.importCourseFromJson = (inputElement) => {
+    const file = inputElement.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const importedData = JSON.parse(e.target.result);
+            
+            // 最低限必要なデータ（history等）が入っているか簡易チェック
+            if (!importedData || !importedData.history) {
+                alert("❌ 無効なレースデータファイルです。");
+                return;
+            }
+
+            // 読み込み時にタイトルの重複がわかるよう「(インポート)」を付与してFirebaseへ追加
+            const newTitle = (importedData.title || 'インポートデータ') + " (読込)";
+            
+            const payload = {
+                title: newTitle,
+                startTime: importedData.startTime || '10:30',
+                objects: importedData.objects || {},
+                history: importedData.history,
+                createdAt: Date.now()
+            };
+
+            db.ref('saved_courses').push(payload, err => {
+                if (!err) {
+                    showToast("📤 レースデータを正常に読み込みました！");
+                    openReplayMenu(); // リストを更新
+                } else {
+                    alert("データの保存に失敗しました: " + err.message);
+                }
+            });
+
+        } catch (err) {
+            alert("❌ JSONファイルの解析に失敗しました:\n" + err.message);
+        } finally {
+            // ファイル選択をリセット（同じファイルを再度選べるようにする）
+            inputElement.value = "";
+        }
+    };
+    reader.readAsText(file);
+};
+
+
+// 選択した1件のレースデータをJSONファイルとしてダウンロード
+window.exportSingleCourse = (id) => {
+    db.ref('saved_courses/' + id).once('value', snap => {
+        const data = snap.val();
+        if (!data) {
+            alert("エクスポートするデータが見つかりませんでした");
+            return;
+        }
+
+        // ファイル名に使用するタイトル（使えない記号などは置換）
+        const safeTitle = (data.title || 'race_data').replace(/[\/\\?%*:|"<>]/g, '_');
+        const fileName = `${safeTitle}_${id}.json`;
+
+        // JSON文字列に変換
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        // ダウンロード用のリンクを自動生成してクリックさせる
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showToast("📥 レースデータをダウンロードしました！");
+    });
+};
+
+
+
+
+
+
+
+    
     window.deleteCourse = (id) => {
         if (confirm("このレース記録を削除しますか？（元に戻せません）")) {
             db.ref('saved_courses/' + id).remove(err => {
