@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.1.5 by Popolo App.com</title>
+    <title>虎キング v5.1.5b by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
 
@@ -225,7 +225,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.1.5 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.1.5b 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -357,7 +357,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.1.5 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.1.5b by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1009,10 +1009,28 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
 
         db.ref('saved_courses').once('value', snap => {
             const saved = snap.val();
+           // 変更後
+            // ▼ 先に上部のボタン類（すべて選択・読み込み・削除）のHTMLを作る
+            let html = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:0 5px; flex-wrap:wrap; gap:6px;">
+                    <label style="cursor:pointer; font-size:0.9rem;">
+                        <input type="checkbox" id="select-all-replays" onclick="toggleSelectAllReplays(this)" style="transform:scale(1.2);"> すべて選択
+                    </label>
+                    <div style="display:flex; gap:4px;">
+                        <label style="background:#27ae60; color:white; padding:6px 10px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:bold; display:inline-block;">
+                            📤 読み込み<input type="file" accept=".json" onchange="importCourseFromJson(this)" style="display:none;">
+                        </label>
+                        <button onclick="deleteSelectedReplays()" style="background:#e74c3c; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:bold;">🗑️ 削除</button>
+                    </div>
+                </div>
+            `;
+
+            // ▼ データがない場合はメッセージを追加、あればリストを生成
             if (!saved) {
-                listDiv.innerHTML = "<p style='color:#666; padding:20px;'>保存されたヒート記録はありません</p>";
-                return;
-            }
+                html += "<p style='color:#666; padding:20px;'>保存されたヒート記録はありません</p>";
+            } else {
+                for (let id in saved) {
+                    // (※ここに従来の for let id in saved のループの中身をそのまま入れます)
 
             // ▼ 上部に「すべて選択」と「一括削除ボタン」を追加
      let html = `
