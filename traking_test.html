@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.2.0 by Popolo App.com</title>
+    <title>虎キング v5.2.1 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
 
@@ -69,13 +69,14 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.4); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
             width: 300px; max-width: 90vw; box-sizing: border-box;
             transition: all 0.3s ease;
+            pointer-events: auto; /* ★ここを追加（または確認） */
         }
-        .replay-top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-        .replay-bottom-row { display: flex; align-items: center; gap: 6px; width: 100%; justify-content: center; }
+        .replay-top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; pointer-events: auto; }
+        .replay-bottom-row { display: flex; align-items: center; gap: 6px; width: 100%; justify-content: center; pointer-events: auto; }
         
-        #replay-seekbar { width: 100%; accent-color: #ff9900; cursor: pointer; height: 5px; }
+        #replay-seekbar { width: 100%; accent-color: #ff9900; cursor: pointer; height: 5px; pointer-events: auto; }
 
-        .replay-ctrl-btn { background: rgba(50, 50, 50, 0.6); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 4px 7px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 10px; }
+        .replay-ctrl-btn { background: rgba(50, 50, 50, 0.6); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11px; pointer-events: auto; -webkit-tap-highlight-color: transparent; }
         .replay-ctrl-btn.active { background: #ff9900; color: #000; border-color: #ff9900; }
 
         #replay-minimized-btn {
@@ -235,7 +236,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.2.0 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.2.1 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -367,7 +368,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.2.0 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.2.1 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
