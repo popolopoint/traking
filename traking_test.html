@@ -339,7 +339,7 @@
         <button class="replay-ctrl-btn active" onclick="setReplaySpeed(5)">5x</button>
         <button class="replay-ctrl-btn" onclick="setReplaySpeed(10)">10x</button>
         <button class="replay-ctrl-btn" onclick="setReplaySpeed(20)">20x</button>
-        <button class="replay-ctrl-btn" onclick="exitReplay()" style="background:#e74c3c; border-color:#ff6b6b;">終了</button>
+        <button class="replay-ctrl-btn" ontouchend="event.preventDefault(); exitReplay();" onclick="exitReplay()" style="background:rgba(231,76,60,0.8);">終了</button>
     </div>
 </div>
 
