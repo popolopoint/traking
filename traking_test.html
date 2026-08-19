@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.2.1 by Popolo App.com</title>
+    <title>虎キング v5.2.2 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
 
@@ -62,21 +62,21 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
         }
 
-        #replay-control-bar { 
+      #replay-control-bar { 
             position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%); z-index: 3500; 
             background: rgba(30, 39, 46, 0.85); border: 1.5px solid rgba(255, 255, 255, 0.3); 
             padding: 10px 15px; border-radius: 18px; display: none; flex-direction: column; gap: 8px; color: white; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.4); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
             width: 300px; max-width: 90vw; box-sizing: border-box;
             transition: all 0.3s ease;
-            pointer-events: auto; /* ★ここを追加（または確認） */
+            pointer-events: auto !important; /* 強制的に有効化 */
         }
-        .replay-top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; pointer-events: auto; }
-        .replay-bottom-row { display: flex; align-items: center; gap: 6px; width: 100%; justify-content: center; pointer-events: auto; }
+        .replay-top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; pointer-events: auto !important; }
+        .replay-bottom-row { display: flex; align-items: center; gap: 6px; width: 100%; justify-content: center; pointer-events: auto !important; position: relative; z-index: 3502; }
         
-        #replay-seekbar { width: 100%; accent-color: #ff9900; cursor: pointer; height: 5px; pointer-events: auto; }
+        #replay-seekbar { width: 100%; accent-color: #ff9900; cursor: pointer; height: 5px; pointer-events: auto !important; }
 
-        .replay-ctrl-btn { background: rgba(50, 50, 50, 0.6); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11px; pointer-events: auto; -webkit-tap-highlight-color: transparent; }
+        .replay-ctrl-btn { background: rgba(50, 50, 50, 0.6); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11px; pointer-events: auto !important; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
         .replay-ctrl-btn.active { background: #ff9900; color: #000; border-color: #ff9900; }
 
         #replay-minimized-btn {
@@ -236,7 +236,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.2.1 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.2.2 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -326,12 +326,11 @@
         <span id="replay-title-label" style="font-size:13px; font-weight:bold; color:#ff9900;">名称</span>
         <div style="display:flex; align-items:center; gap:6px;">
             <span id="replay-time-label" style="font-size:11px; font-weight:bold; color:#ccc;">00:00.00 / 00:00.00</span>
-            <button onclick="minimizeReplayBar()" style="background:rgba(255,255,255,0.2); border:none; color:white; border-radius:4px; padding:2px 6px; font-size:11px; cursor:pointer;" title="折りたたむ">収納</button>
+            <button onclick="minimizeReplayBar()" style="background:rgba(255,255,255,0.2); border:none; color:white; border-radius:4px; padding:4px 8px; font-size:11px; cursor:pointer;" title="折りたたむ">収納</button>
         </div>
     </div>
     <input type="range" id="replay-seekbar" min="0" max="100" value="0" oninput="onSeekbarInput(this.value)">
-    
-    <!-- ⬇️ ここに差し込みます -->
+  
     <div id="replay-class-filter" class="class-filter-box"></div>
 
     <div class="replay-bottom-row">
@@ -340,7 +339,7 @@
         <button class="replay-ctrl-btn active" onclick="setReplaySpeed(5)">5x</button>
         <button class="replay-ctrl-btn" onclick="setReplaySpeed(10)">10x</button>
         <button class="replay-ctrl-btn" onclick="setReplaySpeed(20)">20x</button>
-        <button class="replay-ctrl-btn" onclick="exitReplay()" style="background:rgba(231,76,60,0.8);">終了</button>
+        <button class="replay-ctrl-btn" onclick="exitReplay()" style="background:#e74c3c; border-color:#ff6b6b;">終了</button>
     </div>
 </div>
 
@@ -368,7 +367,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.2.1 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.2.2 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
