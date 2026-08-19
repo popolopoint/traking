@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.1.8 by Popolo App.com</title>
+    <title>虎キング v5.2.0 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
 
@@ -235,7 +235,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.1.8 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.2.0 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -367,7 +367,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.1.8 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.2.0 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1557,11 +1557,15 @@ window.toggleReplayColorFilter = (hex) => {
 
    function updateAllActiveUsersAtTimestamp(currentTs) {
         let userLatestLogs = {};
+        let filteredIdentifiers = new Set(); // フィルターで除外されたユーザーを記録
+
         replayLogsAll.forEach(log => {
             if (log.ts <= currentTs && currentTs - log.ts <= 10000) {
-
-                // ▼ ここを修正：カラーフィルターのチェックを安全に行う
-                if (log.color && replayColorFilters[log.color] === false) return;
+                // カラーフィルターがオフなら除外対象として記録し、スキップ
+                if (log.color && replayColorFilters[log.color] === false) {
+                    filteredIdentifiers.add(log.name);
+                    return;
+                }
 
                 if (!userLatestLogs[log.name] || log.ts > userLatestLogs[log.name].ts) {
                     userLatestLogs[log.name] = log;
@@ -1569,6 +1573,20 @@ window.toggleReplayColorFilter = (hex) => {
             }
         });
 
+        // フィルターで非表示になったユーザーのマーカーと軌跡を地図上から消去
+        filteredIdentifiers.forEach(name => {
+            if (userMarkers[name]) {
+                map.removeLayer(userMarkers[name]);
+                delete userMarkers[name];
+            }
+            if (userPolylineLines[name]) {
+                userPolylineLines[name].forEach(seg => map.removeLayer(seg));
+                delete userPolylineLines[name];
+            }
+            delete userTrails[name];
+        });
+
+        // 表示対象のユーザーを描画
         for (let name in userLatestLogs) {
             const u = userLatestLogs[name];
             updateUserTrailAndMarker(u.name, u.lat, u.lng, u.color, u.heading, currentTs, u.partType);
