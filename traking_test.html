@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.2.2 by Popolo App.com</title>
+    <title>虎キング v5.2.3 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
 
@@ -236,7 +236,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.2.2 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.2.3 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -367,7 +367,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.2.2 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.2.3 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -472,6 +472,27 @@
 <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@latest/dist/Leaflet.GoogleMutant.js"></script>
 
 <script>
+
+let wakeLock = null;
+
+async function requestWakeLock() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Screen Wake Lock is active.');
+        }
+    } catch (err) {
+        console.error(`${err.name}, ${err.message}`);
+    }
+}
+
+// 画面の表示状態が戻ったとき（バックグラウンドから復帰時など）に再取得する
+document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible') {
+        await requestWakeLock();
+    }
+});
+    
    
     // すべてのチェックボックスを一括ON/OFF
 window.toggleSelectAllReplays = (masterChk) => {
@@ -635,6 +656,52 @@ let replayColorFilters = {};
     let isSeeking = false;
     let replayStartTimeMs = null;
 
+
+
+
+    
+let wakeLock = null;
+
+async function requestWakeLock() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Screen Wake Lock is active.');
+        }
+    } catch (err) {
+        console.error(`${err.name}, ${err.message}`);
+    }
+}
+
+// 画面の表示状態が戻ったときに再取得する
+document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible') {
+        await requestWakeLock();
+    }
+});
+
+// 初回タッチ時にも念のため有効化（ブラウザの仕様対策）
+document.addEventListener('pointerdown', () => {
+    if (!wakeLock && document.visibilityState === 'visible') {
+        requestWakeLock();
+    }
+}, { once: true });
+
+
+// 初回タップ時にもWake Lockを有効化（ブラウザの制限対策）
+    document.addEventListener('pointerdown', () => {
+        if (!wakeLock && document.visibilityState === 'visible') {
+            requestWakeLock();
+        }
+    }, { once: true });
+
+
+    
+
+
+
+
+    
     const COLOR_OPTIONS = [
         { name: '赤', hex: '#ff3b30' },
         { name: 'オレンジ', hex: '#ff9500' },
@@ -2837,12 +2904,16 @@ window.toggleReplayColorFilter = (hex) => {
     
     map.on('movestart', () => isFollowing = false);
 
-    window.addEventListener('load', () => {
+ window.addEventListener('load', () => {
         document.getElementById('user-list-title').innerText = `参加者 (${units[speedUnitMode]})`;
         updateAdminModeUI();
         setTimeout(() => { map.invalidateSize(); }, 300);
         setTimeout(checkIncomingCourse, 1000);
+        
+        // ▼ ここでWake Lockを呼び出すのがベストです！
+        requestWakeLock();
     });
+    
 </script>
 </body>
 </html>
