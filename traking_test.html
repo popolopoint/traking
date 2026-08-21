@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.2.5e by Popolo App.com</title>
+    <title>虎キング v5.2.5f by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
 
@@ -236,7 +236,7 @@
     top: 0;
     left: 0;
     width: 100vw;
-    height: 100vw; /* 確実に画面全体をカバー */
+    
     height: 100vh;
     z-index: 99999; /* 全てのボタンやメニューより手前に持ってくる */
     display: none;
@@ -283,7 +283,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.2.5e 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.2.5f 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -414,7 +414,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.2.5e by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.2.5f by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -523,7 +523,7 @@
 
 let isTouchLocked = false;
 
-let isTouchLocked = false;
+
 
 window.toggleTouchLock = () => {
     isTouchLocked = !isTouchLocked;
