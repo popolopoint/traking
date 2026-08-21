@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.2.5d by Popolo App.com</title>
+    <title>虎キング v5.2.5e by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
 
@@ -230,36 +230,41 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.4); animation: flashBanner 1.5s infinite;
         }
 
-/* 画面タッチロック中のオーバーレイ */
+/* 画面タッチロック中のオーバーレイ（全面をカバーしてすべての操作をブロック） */
 #touch-lock-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
+    height: 100vw; /* 確実に画面全体をカバー */
     height: 100vh;
-    z-index: 9998; /* 地図やメニューの上、モーダルより下 */
+    z-index: 99999; /* 全てのボタンやメニューより手前に持ってくる */
     display: none;
-    background: rgba(0, 0, 0, 0.05); /* ほとんど透明で画面は見えたままにする場合 */
-    pointer-events: auto; /* タッチをここですべてブロックする */
+    background: rgba(0, 0, 0, 0.02); /* ほぼ透明 */
+    pointer-events: auto; /* タッチイベントを確実にキャッチする */
+    touch-action: none; /* ピンチイン・アウトやスクロール操作を完全に禁止する */
 }
-/* ロック解除用のフローティングボタン（ロック中だけ画面のどこかに表示） */
+
+/* ロック解除用のボタンは、このカバーよりもさらに手前に表示する */
 #unlock-btn {
     position: fixed;
-    top: 80px;
-    left: 20px;
-    z-index: 10001;
-    background: rgba(231, 76, 60, 0.9);
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100000; /* カバーよりさらに上に配置して押せるようにする */
+    background: rgba(231, 76, 60, 0.95);
     color: white;
     border: 2px solid white;
-    padding: 10px 16px;
-    border-radius: 25px;
-    font-size: 14px;
+    padding: 12px 30px;
+    border-radius: 30px;
+    font-size: 16px;
     font-weight: bold;
     cursor: pointer;
     display: none;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    text-align: center;
+    white-space: nowrap;
 }
-
 
 
         
@@ -278,7 +283,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.2.5d 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.2.5e 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -409,7 +414,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.2.5d by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.2.5e by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -518,6 +523,8 @@
 
 let isTouchLocked = false;
 
+let isTouchLocked = false;
+
 window.toggleTouchLock = () => {
     isTouchLocked = !isTouchLocked;
     const overlay = document.getElementById('touch-lock-overlay');
@@ -526,17 +533,30 @@ window.toggleTouchLock = () => {
     if (isTouchLocked) {
         overlay.style.display = 'block';
         unlockBtn.style.display = 'block';
-        showToast("🔒 画面タッチロックをONしました（誤作動防止）");
         
         // メニューが開いていれば閉じる
-        if (isMenuOpen) toggleMenu();
+        if (typeof isMenuOpen !== 'undefined' && isMenuOpen && typeof toggleMenu === 'function') {
+            toggleMenu();
+        }
     } else {
         overlay.style.display = 'none';
         unlockBtn.style.display = 'none';
-        showToast("🔓 画面タッチロックを解除しました");
     }
 };
 
+// オーバーレイ要素に対してスマホのタッチ・スクロールイベントが後ろに漏れないようにブロックする
+document.addEventListener('DOMContentLoaded', () => {
+    const overlay = document.getElementById('touch-lock-overlay');
+    if (overlay) {
+        ['touchstart', 'touchmove', 'touchend', 'click', 'pointerdown', 'pointermove', 'pointerup'].forEach(eventType => {
+            overlay.addEventListener(eventType, (e) => {
+                if (isTouchLocked) {
+                    e.stopPropagation(); // イベントの背後への伝播を止める
+                }
+            }, { passive: false });
+        });
+    }
+});
 
 
 
