@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.2.6 by Popolo App.com</title>
+    <title>虎キング v5.2.7 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-
+<!-- <head> の中（<title>の直下など）に追加 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="虎キング">
 
 /* 3点タップ解除ボタンを並べるコンテナ */
 #unlock-container {
@@ -317,7 +320,15 @@
     </style>
 </head>
 <body>
+<body>
+<!-- <body>の直下に追加 -->
+<video id="no-sleep-video" loop playsinline muted style="display:none; width:1px; height:1px;">
+    <source src="data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAA1tZGF0AAAAAAAAAAU=" type="video/mp4">
+</video>
 
+<!-- ここから下は元のHTML（<div id="touch-lock-overlay">...） -->
+
+    
 <!-- タッチロック用の透明カバー -->
 <div id="touch-lock-overlay"></div>
 <!-- ロック中に解除するためのボタン -->
@@ -340,7 +351,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.2.6 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.2.7 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -471,7 +482,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.2.6 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.2.7 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -582,6 +593,22 @@ let isTouchLocked = false;
 let unlockStepSequence = []; // タップされた順番を記録する配列
 const correctSequence = [1, 2, 3]; // 正しい順番
 
+
+    
+    
+    
+  // スリープ防止用のダミー動画再生処理（iOSスリープ対策）
+function enableNoSleepVideo() {
+    const video = document.getElementById('no-sleep-video');
+    if (video && video.paused) {
+        video.play().then(() => {
+            console.log("NoSleep video active.");
+        }).catch(err => {
+            console.log("Video play rejected:", err);
+        });
+    }
+}
+
 window.toggleTouchLock = () => {
     isTouchLocked = !isTouchLocked;
     const overlay = document.getElementById('touch-lock-overlay');
@@ -590,6 +617,7 @@ window.toggleTouchLock = () => {
     unlockStepSequence = []; // リセット
 
     if (isTouchLocked) {
+        enableNoSleepVideo(); // ロックオン時に無音動画を再生開始してスリープ阻止
         if (overlay) overlay.style.display = 'block';
         if (unlockContainer) unlockContainer.style.display = 'flex';
         
@@ -635,9 +663,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });    
+
 let wakeLock = null;
 
 async function requestWakeLock() {
+    // 画面タッチ・操作時に無音動画も確実にキック
+    enableNoSleepVideo();
+
     try {
         if ('wakeLock' in navigator) {
             wakeLock = await navigator.wakeLock.request('screen');
@@ -651,9 +683,22 @@ async function requestWakeLock() {
 // 画面の表示状態が戻ったとき（バックグラウンドから復帰時など）に再取得する
 document.addEventListener('visibilitychange', async () => {
     if (document.visibilityState === 'visible') {
+        enableNoSleepVideo();
         await requestWakeLock();
     }
 });
+
+
+
+
+
+
+
+
+
+
+
+
     
    
     // すべてのチェックボックスを一括ON/OFF
