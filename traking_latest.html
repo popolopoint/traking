@@ -3,9 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.0.3 by Popolo App.com</title>
+    <title>虎キング v5.2.7e by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <style>
+   
+    
+    <!-- <head> の中（<title>の直上など）に追加 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="虎キング">
+    
+
+    
+<style>
+
+
+/* 3点タップ解除ボタンコンテナ */
+#unlock-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 100000;
+    display: none;
+    pointer-events: none; /* コンテナ自体はタップを透過 */
+}
+
+/* 離して配置する解除用ボタン */
+.unlock-step-btn {
+    position: absolute;
+    pointer-events: auto; /* ボタン本体のみタップ受付 */
+    background: #e74c3c;
+    color: white;
+    border: 3px solid white;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    font-size: 22px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+}
+
+/* ①左上 / ②中央 / ③右下に配置 */
+#unlock-btn-1 { top: 70px; left: 20px; }
+#unlock-btn-2 { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+#unlock-btn-3 { top: 20%; left: 30%; transform: translate(-50%, -50%); }
+
+.unlock-step-btn:active {
+    background: #c0392b;
+    transform: scale(0.95);
+}
+        
+
+/* クラス一括選択用スタイル */
+.class-filter-box { background: rgba(20,20,20,0.9); border: 1px solid #ff9900; padding: 6px; border-radius: 8px; margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; font-size: 11px; }
+.class-filter-chip { background: #333; color: white; padding: 4px 8px; border-radius: 12px; cursor: pointer; border: 1px solid #555; display: inline-flex; align-items: center; gap: 4px; font-weight: bold; }
+.class-filter-chip.active { background: #ff9900; color: #000; border-color: #ff9900; }
+
+        
         #header-course-btn { transition: height 0.3s ease, padding 0.3s ease; }
         body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
         
@@ -54,20 +110,21 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
         }
 
-        #replay-control-bar { 
+      #replay-control-bar { 
             position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%); z-index: 3500; 
             background: rgba(30, 39, 46, 0.85); border: 1.5px solid rgba(255, 255, 255, 0.3); 
             padding: 10px 15px; border-radius: 18px; display: none; flex-direction: column; gap: 8px; color: white; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.4); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
             width: 300px; max-width: 90vw; box-sizing: border-box;
             transition: all 0.3s ease;
+            pointer-events: auto !important; /* 強制的に有効化 */
         }
-        .replay-top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-        .replay-bottom-row { display: flex; align-items: center; gap: 6px; width: 100%; justify-content: center; }
+        .replay-top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; pointer-events: auto !important; }
+        .replay-bottom-row { display: flex; align-items: center; gap: 6px; width: 100%; justify-content: center; pointer-events: auto !important; position: relative; z-index: 3502; }
         
-        #replay-seekbar { width: 100%; accent-color: #ff9900; cursor: pointer; height: 5px; }
+        #replay-seekbar { width: 100%; accent-color: #ff9900; cursor: pointer; height: 5px; pointer-events: auto !important; }
 
-        .replay-ctrl-btn { background: rgba(50, 50, 50, 0.6); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 4px 7px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 10px; }
+        .replay-ctrl-btn { background: rgba(50, 50, 50, 0.6); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11px; pointer-events: auto !important; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
         .replay-ctrl-btn.active { background: #ff9900; color: #000; border-color: #ff9900; }
 
         #replay-minimized-btn {
@@ -77,9 +134,16 @@
             display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
         }
 
-        #button-container {
-            position: fixed; right: 10px; bottom: 15px; z-index: 3000;
-            display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+    #button-container {
+            position: fixed;
+            right: 10px;
+            bottom: 20px; /* 少しだけ上げる */
+            z-index: 9999; /* 最前面に固定 */
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+            pointer-events: auto; /* タップを受け付ける */
         }
 
         .action-btn { 
@@ -94,7 +158,10 @@
         .action-btn:active { background: rgba(52, 152, 219, 0.6); }
         
         #recenter-btn { font-size: 20px; background: rgba(41, 128, 185, 0.6); }
-        #menu-toggle-btn { background: rgba(44, 62, 80, 0.6); font-weight: bold; }
+        #menu-toggle-btn {
+            z-index: 10000; /* ボタン自体を一番上にする */
+            pointer-events: auto;
+        }
         
         #menu-grid {
             display: grid;
@@ -210,14 +277,78 @@
             border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; display: none;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4); animation: flashBanner 1.5s infinite;
         }
+
+/* 画面タッチロック中のオーバーレイ（全面をカバーしてすべての操作をブロック） */
+#touch-lock-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    
+    height: 100vh;
+    z-index: 99999; /* 全てのボタンやメニューより手前に持ってくる */
+    display: none;
+    background: rgba(0, 0, 0, 0.02); /* ほぼ透明 */
+    pointer-events: auto; /* タッチイベントを確実にキャッチする */
+    touch-action: none; /* ピンチイン・アウトやスクロール操作を完全に禁止する */
+}
+
+/* ロック解除用のボタンは、このカバーよりもさらに手前に表示する */
+#unlock-btn {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100000; /* カバーよりさらに上に配置して押せるようにする */
+    background: rgba(231, 76, 60, 0.95);
+    color: white;
+    border: 2px solid white;
+    padding: 12px 30px;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    display: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    text-align: center;
+    white-space: nowrap;
+}
+
+
+        
     </style>
 </head>
-<body>
 
+<body>
+<!-- <body>の直下に追加 -->
+<video id="no-sleep-video" loop playsinline muted style="display:none; width:1px; height:1px;">
+    <source src="data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAA1tZGF0AAAAAAAAAAU=" type="video/mp4">
+</video>
+
+<!-- ここから下は元のHTML（<div id="touch-lock-overlay">...） -->
+
+    
+<!-- タッチロック用の透明カバー -->
+<div id="touch-lock-overlay"></div>
+<!-- ロック中に解除するためのボタン -->
+
+<!-- タッチロック中の3点タップ解除エリア -->
+<div id="unlock-container">
+    <button id="unlock-btn-1" class="unlock-step-btn" onclick="inputUnlockStep(1)">①</button>
+    <button id="unlock-btn-2" class="unlock-step-btn" onclick="inputUnlockStep(2)">②</button>
+    <button id="unlock-btn-3" class="unlock-step-btn" onclick="inputUnlockStep(3)">③</button>
+</div>
+    
+
+
+
+
+
+    
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.0.3 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.2.7e 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -307,17 +438,20 @@
         <span id="replay-title-label" style="font-size:13px; font-weight:bold; color:#ff9900;">名称</span>
         <div style="display:flex; align-items:center; gap:6px;">
             <span id="replay-time-label" style="font-size:11px; font-weight:bold; color:#ccc;">00:00.00 / 00:00.00</span>
-            <button onclick="minimizeReplayBar()" style="background:rgba(255,255,255,0.2); border:none; color:white; border-radius:4px; padding:2px 6px; font-size:11px; cursor:pointer;" title="折りたたむ">収納</button>
+            <button onclick="minimizeReplayBar()" style="background:rgba(255,255,255,0.2); border:none; color:white; border-radius:4px; padding:4px 8px; font-size:11px; cursor:pointer;" title="折りたたむ">収納</button>
         </div>
     </div>
     <input type="range" id="replay-seekbar" min="0" max="100" value="0" oninput="onSeekbarInput(this.value)">
+  
+    <div id="replay-class-filter" class="class-filter-box"></div>
+
     <div class="replay-bottom-row">
         <button class="replay-ctrl-btn" id="btn-pause" onclick="toggleReplayPause()">一時停止</button>
         <button class="replay-ctrl-btn" onclick="setReplaySpeed(1)">1x</button>
         <button class="replay-ctrl-btn active" onclick="setReplaySpeed(5)">5x</button>
         <button class="replay-ctrl-btn" onclick="setReplaySpeed(10)">10x</button>
         <button class="replay-ctrl-btn" onclick="setReplaySpeed(20)">20x</button>
-        <button class="replay-ctrl-btn" onclick="exitReplay()" style="background:rgba(231,76,60,0.8);">終了</button>
+        <button class="replay-ctrl-btn" ontouchend="event.preventDefault(); exitReplay();" onclick="exitReplay()" style="background:rgba(231,76,60,0.8);">終了</button>
     </div>
 </div>
 
@@ -345,7 +479,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.0.3 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.2.7e by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -374,6 +508,7 @@
 
 <div id="button-container">
     <div id="menu-grid">
+     <button class="action-btn" id="lock-btn" onclick="toggleTouchLock()" title="画面タッチロック">🔒</button>
         <button class="action-btn" id="logout-btn" onclick="triggerLogout()" title="ログアウト">🏃</button>
         <button class="action-btn" id="name-btn" onclick="triggerSetup()" title="再設定">👤</button>
         <button class="action-btn" id="manual-btn" onclick="openManualModal()" title="使い方・ヘルプ">❓</button>
@@ -446,10 +581,173 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAHhxSJK-IhYiT9XBRwE1MX7DHhghBQQQk"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAHhxSJK-IhYiT9XBRwE1MX7DHhghBQQQk&loading=async"></script>
 <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@latest/dist/Leaflet.GoogleMutant.js"></script>
 
 <script>
+
+let isTouchLocked = false;
+let unlockStepSequence = []; // タップされた順番を記録する配列
+const correctSequence = [1, 2, 3]; // 正しい順番
+
+
+    
+    
+    
+// スリープ防止用のダミー動画再生処理
+function enableNoSleepVideo() {
+    const video = document.getElementById('no-sleep-video');
+    if (video) {
+        video.play().catch(err => {
+            console.log("Video play pending interaction:", err);
+        });
+    }
+}
+
+// 10秒ごとに動画再生状態をチェックしてスリープを強制阻止
+setInterval(() => {
+    if (document.visibilityState === 'visible') {
+        enableNoSleepVideo();
+        if (typeof requestWakeLock === 'function' && !wakeLock) {
+            requestWakeLock();
+        }
+    }
+}, 10000);
+
+
+
+    
+
+window.toggleTouchLock = () => {
+    isTouchLocked = !isTouchLocked;
+    const overlay = document.getElementById('touch-lock-overlay');
+    const unlockContainer = document.getElementById('unlock-container');
+
+    unlockStepSequence = []; // リセット
+
+    if (isTouchLocked) {
+        enableNoSleepVideo(); // ロックオン時に無音動画を再生開始してスリープ阻止
+        if (overlay) overlay.style.display = 'block';
+        if (unlockContainer) unlockContainer.style.display = 'flex';
+        
+        // メニューが開いていれば閉じる
+        if (typeof isMenuOpen !== 'undefined' && isMenuOpen && typeof toggleMenu === 'function') {
+            toggleMenu();
+        }
+    } else {
+        if (overlay) overlay.style.display = 'none';
+        if (unlockContainer) unlockContainer.style.display = 'none';
+        showToast("🔓 画面タッチロックを解除しました");
+    }
+};
+
+// 3点タップのボタンが押されたときの処理
+window.inputUnlockStep = (stepNum) => {
+    unlockStepSequence.push(stepNum);
+
+    const currentIndex = unlockStepSequence.length - 1;
+    if (unlockStepSequence[currentIndex] !== correctSequence[currentIndex]) {
+        showToast("❌ 順番が違います（やり直し）");
+        unlockStepSequence = []; // リセット
+        return;
+    }
+
+    if (unlockStepSequence.length === correctSequence.length) {
+        toggleTouchLock(); // ロック解除を実行
+    } else {
+        showToast(`✔ 入力中... (${unlockStepSequence.length}/3)`);
+    }
+};
+
+// オーバーレイ要素に対してスマホのタッチ・スクロールイベントが後ろに漏れないようにブロックする
+document.addEventListener('DOMContentLoaded', () => {
+    const overlay = document.getElementById('touch-lock-overlay');
+    if (overlay) {
+        ['touchstart', 'touchmove', 'touchend', 'click', 'pointerdown', 'pointermove', 'pointerup'].forEach(eventType => {
+            overlay.addEventListener(eventType, (e) => {
+                if (isTouchLocked) {
+                    e.stopPropagation(); // イベントの背後への伝播を止める
+                }
+            }, { passive: false });
+        });
+    }
+});    
+
+let wakeLock = null;
+
+async function requestWakeLock() {
+    // 画面タッチ・操作時に無音動画も確実にキック
+    enableNoSleepVideo();
+
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Screen Wake Lock is active.');
+        }
+    } catch (err) {
+        console.error(`${err.name}, ${err.message}`);
+    }
+}
+
+// 画面の表示状態が戻ったとき（バックグラウンドから復帰時など）に再取得する
+document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible') {
+        enableNoSleepVideo();
+        await requestWakeLock();
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+    
+   
+    // すべてのチェックボックスを一括ON/OFF
+window.toggleSelectAllReplays = (masterChk) => {
+    const checkboxes = document.querySelectorAll('.replay-del-chk');
+    checkboxes.forEach(chk => {
+        chk.checked = masterChk.checked;
+    });
+};
+
+// 選択した複数のレースを一括削除
+window.deleteSelectedReplays = () => {
+    if (!checkAdminAuth()) return;
+    
+    const checkboxes = document.querySelectorAll('.replay-del-chk:checked');
+    if (checkboxes.length === 0) {
+        alert("削除するレース記録が選択されていません");
+        return;
+    }
+
+    if (confirm(`選択した ${checkboxes.length} 件のレース記録を削除しますか？（元に戻せません）`)) {
+        let updates = {};
+        checkboxes.forEach(chk => {
+            updates['saved_courses/' + chk.value] = null;
+        });
+
+        db.ref().update(updates, err => {
+            if (!err) {
+                showToast("🗑️ 選択した記録を削除しました");
+                openReplayMenu(); // リストを再読み込み
+            } else {
+                alert("削除に失敗しました: " + (err.message || ''));
+            }
+        });
+    }
+};
+    
+    
+    
+    
     const firebaseConfig = { 
         apiKey: "AIzaSyB_OOgXiE1YkFzQK0Nujhnx3lNM_7dp66U", 
         authDomain: "tra-king.firebaseapp.com", 
@@ -541,6 +839,9 @@
     let watchIdHigh = null, watchIdLow = null;
     let currentLatestPos = null;
 
+// 👇 このあたり（グローバル変数がまとめて宣言されている場所）に追加します
+let replayColorFilters = {};
+    
     let offsetLat = parseFloat(localStorage.getItem('tora_king_offset_lat') || "0");
     let offsetLng = parseFloat(localStorage.getItem('tora_king_offset_lng') || "0");
     let isHoseiMode = false; 
@@ -571,6 +872,29 @@
     let isSeeking = false;
     let replayStartTimeMs = null;
 
+
+
+
+    
+
+
+
+// 初回タッチ時にも念のため有効化（ブラウザの仕様対策）
+document.addEventListener('pointerdown', () => {
+    if (!wakeLock && document.visibilityState === 'visible') {
+        requestWakeLock();
+    }
+}, { once: true });
+
+
+
+
+    
+
+
+
+
+    
     const COLOR_OPTIONS = [
         { name: '赤', hex: '#ff3b30' },
         { name: 'オレンジ', hex: '#ff9500' },
@@ -858,22 +1182,18 @@
                 document.getElementById('recording-banner').style.display = 'block';
                 document.getElementById('floating-stop-btn').style.display = 'block';
                 
-                const flashOverlay = document.getElementById('start-flash-overlay');
-                flashOverlay.style.display = 'flex';
-                setTimeout(() => { flashOverlay.style.display = 'none'; }, 3000);
+                // 修正後（フラッシュを削除してトーストのみ）
+showToast("🔴 レース記録をスタートしました（全参加者対象）！");
 
-                showToast("🔴 レース記録をスタートしました（全参加者対象）！");
+                
             }).catch(() => {
                 isRecordingActive = true;
                 startGlobalRecordingLoop();
                 document.getElementById('recording-banner').style.display = 'block';
                 document.getElementById('floating-stop-btn').style.display = 'block';
                 
-                const flashOverlay = document.getElementById('start-flash-overlay');
-                flashOverlay.style.display = 'flex';
-                setTimeout(() => { flashOverlay.style.display = 'none'; }, 3000);
-
-                showToast("🔴 レース記録をスタートしました！(ローカル)");
+             
+showToast("🔴 レース記録をスタートしました！(ローカル)");
             });
         }
     };
@@ -888,17 +1208,18 @@
                 const now = Date.now();
                 for (let uid in users) {
                     const u = users[uid];
-                    if (u && !u.isViewer && (now - (u.ts || 0) <= 600000)) {
-                        db.ref('temp_history/' + uid).push({
-                            lat: u.lat,
-                            lng: u.lng,
-                            name: u.name || (u.partType === 'ship' ? 'フネ' : 'ブイ'),
-                            color: u.color || '#ff9900',
-                            speed: u.speed || 0,
-                            heading: u.heading || 0,
-                            ts: now
-                        });
-                    }
+                  // 【変更】選手（partType === 'normal'）のみ録画対象にする
+if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)) {
+    db.ref('temp_history/' + uid).push({
+        lat: u.lat,
+        lng: u.lng,
+        name: u.name || '選手',
+        color: u.color || '#ff9900',
+        speed: u.speed || 0,
+        heading: u.heading || 0,
+        ts: now
+    });
+}
                 }
             });
         }, 1000);
@@ -950,7 +1271,7 @@
         });
     };
 
-    window.openReplayMenu = () => {
+  window.openReplayMenu = () => {
         toggleMenu();
         const listDiv = document.getElementById('saved-courses-list');
         listDiv.innerHTML = "読み込み中...";
@@ -958,35 +1279,54 @@
 
         db.ref('saved_courses').once('value', snap => {
             const saved = snap.val();
-            if (!saved) {
-                listDiv.innerHTML = "<p style='color:#666; padding:20px;'>保存されたヒート記録はありません</p>";
-                return;
-            }
-            let html = "";
-            for (let id in saved) {
-                const c = saved[id];
-                const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '';
-                const startInfo = c.startTime ? `スタート: ${c.startTime}` : '';
+            
+            // 上部のボタン類（すべて選択・読み込み・削除）のHTML
+            let html = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:0 5px; flex-wrap:wrap; gap:6px;">
+                    <label style="cursor:pointer; font-size:0.9rem;">
+                        <input type="checkbox" id="select-all-replays" onclick="toggleSelectAllReplays(this)" style="transform:scale(1.2);"> すべて選択
+                    </label>
+                    <div style="display:flex; gap:4px;">
+                        <label style="background:#27ae60; color:white; padding:6px 10px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:bold; display:inline-block;">
+                            📤 読み込み<input type="file" accept=".json" onchange="importCourseFromJson(this)" style="display:none;">
+                        </label>
+                        <button onclick="deleteSelectedReplays()" style="background:#e74c3c; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:bold;">🗑️ 削除</button>
+                    </div>
+                </div>
+            `;
 
-                html += `
-                <div class="replay-item-card">
-                    <div class="replay-item-info">
-                        <div class="replay-item-title">🏁 ${c.title || '無題'}</div>
-                        <div class="replay-item-sub">${startInfo} ${dateStr ? ' (' + dateStr + ')' : ''}</div>
-                    </div>
-                    <div class="replay-item-btns">
-                        <button class="replay-item-btn replay-btn-play" onclick="startReplay('${id}')">再生</button>
-                        <button class="replay-item-btn replay-btn-trim" onclick="authAndTrim('${id}')" title="切り出し">✂️</button>
-                        <button class="replay-item-btn replay-btn-edit" onclick="authAndRename('${id}', '${c.title}')" title="編集">✏️</button>
-                        <button class="replay-item-btn replay-btn-del" onclick="authAndDelete('${id}')" title="削除">🗑️</button>
-                    </div>
-                </div>`;
+            if (!saved) {
+                html += "<p style='color:#666; padding:20px;'>保存されたヒート記録はありません</p>";
+            } else {
+                for (let id in saved) {
+                    const c = saved[id];
+                    const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '';
+                    const startInfo = c.startTime ? `スタート: ${c.startTime}` : '';
+
+                    html += `
+                    <div class="replay-item-card" style="display:flex; align-items:center; gap:8px;">
+                        <input type="checkbox" class="replay-del-chk" value="${id}" style="transform:scale(1.3); cursor:pointer;">
+                        <div class="replay-item-info" style="flex-grow:1;">
+                            <div class="replay-item-title">🏁 ${c.title || '無題'}</div>
+                            <div class="replay-item-sub">${startInfo} ${dateStr ? ' (' + dateStr + ')' : ''}</div>
+                        </div>
+                        <div class="replay-item-btns">
+                            <button class="replay-item-btn replay-btn-play" onclick="startReplay('${id}')">再生</button>
+                            <button class="replay-item-btn" onclick="exportSingleCourse('${id}')" title="外部保存(JSON)" style="background:#8e44ad; color:white; border:none; padding:4px 6px; border-radius:4px; cursor:pointer;">📥</button>
+                            <button class="replay-item-btn replay-btn-trim" onclick="authAndTrim('${id}')" title="切り出し">✂️</button>
+                            <button class="replay-item-btn replay-btn-edit" onclick="authAndRename('${id}', '${c.title}')" title="編集">✏️</button>
+                            <button class="replay-item-btn replay-btn-del" onclick="authAndDelete('${id}')" title="削除">🗑️</button>
+                        </div>
+                    </div>`;
+                }
             }
             listDiv.innerHTML = html;
         }, (error) => {
             listDiv.innerHTML = `<p style='color:#e74c3c;'>取得失敗: ${error.message}</p>`;
         });
     };
+
+            
 
     window.authAndTrim = (id) => {
         if (!checkAdminAuth()) return;
@@ -1078,6 +1418,92 @@
         });
     };
 
+
+    // 外部からJSONファイルを読み込んでアプリに復元する
+window.importCourseFromJson = (inputElement) => {
+    const file = inputElement.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const importedData = JSON.parse(e.target.result);
+            
+            // 最低限必要なデータ（history等）が入っているか簡易チェック
+            if (!importedData || !importedData.history) {
+                alert("❌ 無効なレースデータファイルです。");
+                return;
+            }
+
+            // 読み込み時にタイトルの重複がわかるよう「(インポート)」を付与してFirebaseへ追加
+            const newTitle = (importedData.title || 'インポートデータ') + " (読込)";
+            
+            const payload = {
+                title: newTitle,
+                startTime: importedData.startTime || '10:30',
+                objects: importedData.objects || {},
+                history: importedData.history,
+                createdAt: Date.now()
+            };
+
+            db.ref('saved_courses').push(payload, err => {
+                if (!err) {
+                    showToast("📤 レースデータを正常に読み込みました！");
+                    openReplayMenu(); // リストを更新
+                } else {
+                    alert("データの保存に失敗しました: " + err.message);
+                }
+            });
+
+        } catch (err) {
+            alert("❌ JSONファイルの解析に失敗しました:\n" + err.message);
+        } finally {
+            // ファイル選択をリセット（同じファイルを再度選べるようにする）
+            inputElement.value = "";
+        }
+    };
+    reader.readAsText(file);
+};
+
+
+// 選択した1件のレースデータをJSONファイルとしてダウンロード
+window.exportSingleCourse = (id) => {
+    db.ref('saved_courses/' + id).once('value', snap => {
+        const data = snap.val();
+        if (!data) {
+            alert("エクスポートするデータが見つかりませんでした");
+            return;
+        }
+
+        // ファイル名に使用するタイトル（使えない記号などは置換）
+        const safeTitle = (data.title || 'race_data').replace(/[\/\\?%*:|"<>]/g, '_');
+        const fileName = `${safeTitle}_${id}.json`;
+
+        // JSON文字列に変換
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        // ダウンロード用のリンクを自動生成してクリックさせる
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showToast("📥 レースデータをダウンロードしました！");
+    });
+};
+
+
+
+
+
+
+
+    
     window.deleteCourse = (id) => {
         if (confirm("このレース記録を削除しますか？（元に戻せません）")) {
             db.ref('saved_courses/' + id).remove(err => {
@@ -1124,6 +1550,11 @@
             const startStr = data.startTime ? ` (${data.startTime} スタート)` : '';
             document.getElementById('replay-title-label').innerText = heatTitle + startStr;
             document.getElementById('minimized-title').innerText = heatTitle;
+
+
+setupReplayClassFilters(data.history);
+
+
             
             document.getElementById('header-replay-status').style.display = 'block';
             document.getElementById('header-replay-time').style.display = 'block';
@@ -1175,6 +1606,71 @@
         });
     };
 
+
+
+
+// クラス（色）ごとの一括選択フィルターを生成
+function setupReplayClassFilters(historyObj) {
+    replayColorFilters = {};
+    let uniqueColors = new Set();
+    
+    for (let uid in historyObj) {
+        for (let pushId in historyObj[uid]) {
+            const log = historyObj[uid][pushId];
+            if (log && log.color) {
+                uniqueColors.add(log.color);
+            }
+        }
+    }
+
+    // 初期状態はすべての色を「表示（true）」にする
+    uniqueColors.forEach(hex => {
+        replayColorFilters[hex] = true;
+    });
+
+    const filterContainer = document.getElementById('replay-class-filter');
+    let html = '<span style="font-size:10px; color:#ff9900; margin-right:4px;">クラス(色)表示:</span>';
+    
+    uniqueColors.forEach(hex => {
+        let colorName = hex;
+        for (let name in colorPresets) {
+            if (colorPresets[name].toLowerCase() === hex.toLowerCase()) {
+                colorName = name;
+                break;
+            }
+        }
+        html += `<span class="class-filter-chip active" id="chip_${hex.replace('#','')}" onclick="toggleReplayColorFilter('${hex}')"><span style="color:${hex}">●</span> ${colorName}</span>`;
+    });
+
+    filterContainer.innerHTML = html;
+}
+
+// 修正後（色フィルター変更時に即座に画面を再描画する）
+window.toggleReplayColorFilter = (hex) => {
+    replayColorFilters[hex] = !replayColorFilters[hex];
+    const chip = document.getElementById('chip_' + hex.replace('#',''));
+    if (chip) {
+        chip.classList.toggle('active', replayColorFilters[hex]);
+    }
+
+    // 現在の再生インデックスのログを基に、即座に画面を再描画
+    if (isReplaying && replayLogsAll.length > 0) {
+        const currentLog = replayLogsAll[replayCurrentIndex];
+        if (currentLog) {
+            updateAllActiveUsersAtTimestamp(currentLog.ts);
+            updateReplayUserList(currentLog.ts);
+        }
+    }
+};
+
+
+
+
+
+
+
+
+    
     function prepareHistoryTimeline(historyObj) {
         replayLogsAll = [];
         for (let userId in historyObj) {
@@ -1270,13 +1766,19 @@
                     const alertBox = document.getElementById('replay-countdown-alert');
                     alertBox.innerText = secInt;
                     alertBox.style.display = 'block';
+                // 変更後
                 } else if (diffSec <= 0 && diffSec > -1.5) {
-                    statusText = `🚨 スタート！`;
+                    statusText = `🏁 RACE START!`;
                     const alertBox = document.getElementById('replay-countdown-alert');
-                    alertBox.innerText = "🚨 競技スタート！ 🚨";
-                    alertBox.style.background = "rgba(255, 0, 0, 0.95)";
-                    alertBox.style.fontSize = "22px";
+                    alertBox.innerText = "🏁 RACE START 🏁";
+                    alertBox.style.background = "linear-gradient(135deg, #ff416c, #ff4b2b)";
+                    alertBox.style.fontSize = "32px";
+                    alertBox.style.padding = "20px 40px";
+                    alertBox.style.boxShadow = "0 10px 25px rgba(255,65,108,0.5)";
                     alertBox.style.display = 'block';
+
+
+                    
                 } else {
                     const elapsedAfterStartMs = currentTs - replayStartTimeMs;
                     statusText = `⏱️ スタートから ${formatClockStyle(elapsedAfterStartMs)} 経過`;
@@ -1313,26 +1815,54 @@
         }
     }
 
-    function updateAllActiveUsersAtTimestamp(currentTs) {
+   function updateAllActiveUsersAtTimestamp(currentTs) {
         let userLatestLogs = {};
+        let filteredIdentifiers = new Set(); // フィルターで除外されたユーザーを記録
+
         replayLogsAll.forEach(log => {
             if (log.ts <= currentTs && currentTs - log.ts <= 10000) {
+                // カラーフィルターがオフなら除外対象として記録し、スキップ
+                if (log.color && replayColorFilters[log.color] === false) {
+                    filteredIdentifiers.add(log.name);
+                    return;
+                }
+
                 if (!userLatestLogs[log.name] || log.ts > userLatestLogs[log.name].ts) {
                     userLatestLogs[log.name] = log;
                 }
             }
         });
 
+        // フィルターで非表示になったユーザーのマーカーと軌跡を地図上から消去
+        filteredIdentifiers.forEach(name => {
+            if (userMarkers[name]) {
+                map.removeLayer(userMarkers[name]);
+                delete userMarkers[name];
+            }
+            if (userPolylineLines[name]) {
+                userPolylineLines[name].forEach(seg => map.removeLayer(seg));
+                delete userPolylineLines[name];
+            }
+            delete userTrails[name];
+        });
+
+        // 表示対象のユーザーを描画
         for (let name in userLatestLogs) {
             const u = userLatestLogs[name];
             updateUserTrailAndMarker(u.name, u.lat, u.lng, u.color, u.heading, currentTs, u.partType);
         }
     }
 
+    
+    
     function updateReplayUserList(currentTs) {
         let activeUsers = {};
         replayLogsAll.forEach(log => {
             if (currentTs - log.ts >= 0 && currentTs - log.ts <= 10000) {
+
+                // ▼ ここを確認・修正：指定した色が「オフ（false）」に設定されている場合はリストから除外する
+                if (log.color && replayColorFilters[log.color] === false) return;
+                
                 activeUsers[log.name] = log;
             }
         });
@@ -2231,7 +2761,15 @@
                 ts: now, 
                 isViewer: false
             };
-            db.ref('users/'+myId).set(userData);
+
+
+            
+            // 変更①：フネ・ブイでなければ users/ に書き込む
+            if (myParticipantType !== 'ship' && myParticipantType !== 'buoy') {
+                db.ref('users/' + myId).set(userData);
+            } else {
+                db.ref('users/' + myId).remove(); // フネ・ブイなら選手一覧から削除
+            }
             
             if ((myParticipantType === 'ship' || myParticipantType === 'buoy') && !isObjectDeletedLocally) {
                 db.ref('objects/' + myId).update({
@@ -2248,7 +2786,8 @@
                 });
             }
 
-            if (isRecordingActive) {
+            // 変更②：録画中は「通常の選手（normal）」のみ履歴に残す
+            if (isRecordingActive && myParticipantType === 'normal') {
                 db.ref('temp_history/' + myId).push(userData);
             }
         }
@@ -2558,12 +3097,32 @@
     
     map.on('movestart', () => isFollowing = false);
 
-    window.addEventListener('load', () => {
+ window.addEventListener('load', () => {
         document.getElementById('user-list-title').innerText = `参加者 (${units[speedUnitMode]})`;
         updateAdminModeUI();
         setTimeout(() => { map.invalidateSize(); }, 300);
         setTimeout(checkIncomingCourse, 1000);
+        
+        // ▼ ここでWake Lockを呼び出すのがベストです！
+        requestWakeLock();
     });
+
+
+
+// 【追加】自動でスリープ（自動消灯）を防ぐための定期チート処理
+setInterval(() => {
+    if (document.visibilityState === 'visible') {
+        // 方法1: ごく小さな画面スクロールイベントを強制発生させる
+        window.scrollBy(0, 0);
+
+        // 方法2: Wake Lockの再取得もあわせて行う（念のため）
+        if (typeof requestWakeLock === 'function' && !wakeLock) {
+            requestWakeLock();
+        }
+    }
+}, 19000); // 19秒ごとに実行
+
+    
 </script>
 </body>
 </html>
