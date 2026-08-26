@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.2.7 by Popolo App.com</title>
+    <title>虎キング v5.2.7b by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
 <!-- <head> の中（<title>の直下など）に追加 -->
@@ -11,45 +11,38 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="虎キング">
 
-/* 3点タップ解除ボタンを並べるコンテナ */
+/* 3点タップ解除ボタンコンテナ */
 #unlock-container {
     position: fixed;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
     z-index: 100000;
     display: none;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    background: rgba(30, 39, 46, 0.95);
-    padding: 14px 20px;
-    border-radius: 20px;
-    border: 2px solid #ff9900;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    pointer-events: none; /* コンテナ自体はタップを透過 */
 }
 
-.unlock-btn-row {
-    display: flex;
-    gap: 12px;
-}
-
-/* 解除用の3つのボタン */
+/* 離して配置する解除用ボタン */
 .unlock-step-btn {
+    position: absolute;
+    pointer-events: auto; /* ボタン本体のみタップ受付 */
     background: #e74c3c;
     color: white;
-    border: 2px solid white;
-    width: 50px;
-    height: 50px;
+    border: 3px solid white;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
-    font-size: 18px;
+    font-size: 22px;
     font-weight: bold;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.6);
 }
+
+/* ①左上 / ②中央 / ③右下に配置 */
+#unlock-btn-1 { top: 70px; left: 20px; }
+#unlock-btn-2 { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+#unlock-btn-3 { bottom: 40px; right: 20px; }
 
 .unlock-step-btn:active {
     background: #c0392b;
@@ -335,14 +328,12 @@
 
 <!-- タッチロック中の3点タップ解除エリア -->
 <div id="unlock-container">
-    <div style="font-size: 12px; color: #ffcc00; font-weight: bold;">🔓 ロック解除: ①→②→③の順にタップ</div>
-    <div class="unlock-btn-row">
-        <button class="unlock-step-btn" onclick="inputUnlockStep(1)">①</button>
-        <button class="unlock-step-btn" onclick="inputUnlockStep(2)">②</button>
-        <button class="unlock-step-btn" onclick="inputUnlockStep(3)">③</button>
-    </div>
+    <button id="unlock-btn-1" class="unlock-step-btn" onclick="inputUnlockStep(1)">①</button>
+    <button id="unlock-btn-2" class="unlock-step-btn" onclick="inputUnlockStep(2)">②</button>
+    <button id="unlock-btn-3" class="unlock-step-btn" onclick="inputUnlockStep(3)">③</button>
 </div>
     
+
 
 
 
@@ -351,7 +342,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.2.7 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.2.7b 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -482,7 +473,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.2.7 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.2.7b by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -597,17 +588,29 @@ const correctSequence = [1, 2, 3]; // 正しい順番
     
     
     
-  // スリープ防止用のダミー動画再生処理（iOSスリープ対策）
+// スリープ防止用のダミー動画再生処理
 function enableNoSleepVideo() {
     const video = document.getElementById('no-sleep-video');
-    if (video && video.paused) {
-        video.play().then(() => {
-            console.log("NoSleep video active.");
-        }).catch(err => {
-            console.log("Video play rejected:", err);
+    if (video) {
+        video.play().catch(err => {
+            console.log("Video play pending interaction:", err);
         });
     }
 }
+
+// 10秒ごとに動画再生状態をチェックしてスリープを強制阻止
+setInterval(() => {
+    if (document.visibilityState === 'visible') {
+        enableNoSleepVideo();
+        if (typeof requestWakeLock === 'function' && !wakeLock) {
+            requestWakeLock();
+        }
+    }
+}, 10000);
+
+
+
+    
 
 window.toggleTouchLock = () => {
     isTouchLocked = !isTouchLocked;
