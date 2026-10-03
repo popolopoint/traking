@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.3.8 by Popolo App.com</title>
+    <title>虎キング v5.3.8a by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -360,7 +360,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.3.8 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.3.8a 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -493,7 +493,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.3.8 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.3.8a by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -599,7 +599,7 @@
         <button onclick="toggleMarkerManagementPanel()" style="background:rgba(255,255,255,0.2); border:none; color:white; border-radius:4px; padding:4px 8px; font-size:11px; cursor:pointer;">収納</button>
     </div>
     
-    <div style="margin-bottom:10px;">
+   <div style="margin-bottom:10px;">
         <label style="font-size:12px; color:#ccc;">設置する図形:</label><br>
         <select id="select-shape-type" style="width:100%; padding:6px; margin-top:4px; border-radius:6px; font-size:13px; background:#222; color:#fff; border:1px solid #555;">
             <option value="circle">◯</option>
@@ -607,8 +607,8 @@
             <option value="square">□</option>
             <option value="diamond">◇</option>
             <option value="star">☆</option>
-            <option value="boat">🚤</option>
-            <option value="buoy">🚩</option>
+            <option value="boat">🚤 フネ</option>
+            <option value="buoy">🚩 ブイ</option>
         </select>
     </div>
 
@@ -3262,15 +3262,23 @@ function createIndependentShapeMarker(latlng, shapeType) {
             case 'buoy': labelText = '🚩'; break;
         }
 
-        let markerColor = '#2c2c2e';
+        let markerColor = '#ff3b30';
         let currentLabel = labelText;
 
         const getIcon = (text, col) => {
+            if (text === '🚤' || text === '🚩') {
+                return L.divIcon({
+                    className: 'custom-shape-marker',
+                    html: `<div style="font-size:26px; filter: drop-shadow(0 0 3px rgba(0,0,0,0.8)); text-align:center; line-height:26px;">${text}</div>`,
+                    iconSize: [28, 28],
+                    iconAnchor: [14, 14]
+                });
+            }
             return L.divIcon({
                 className: 'custom-shape-marker',
-                html: `<div style="background:${col === '#ffffff' ? '#eee' : '#fff'}; border:2px solid ${col}; padding:2px 6px; border-radius:4px; font-weight:bold; font-size:16px; text-align:center; white-space:nowrap; box-shadow:0 2px 5px rgba(0,0,0,0.3); color:${col};">${text}</div>`,
-                iconSize: [40, 30],
-                iconAnchor: [20, 15]
+                html: `<div style="font-size:28px; font-weight:bold; color:${col}; filter: drop-shadow(0 0 3px rgba(255,255,255,0.8)); text-align:center; line-height:28px;">${text}</div>`,
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
             });
         };
 
@@ -3292,7 +3300,7 @@ function createIndependentShapeMarker(latlng, shapeType) {
 
                 const popupContent = `
                     <div class="popup-form" style="text-align:center;">
-                        <b>◇ 記号の編集</b><br>
+                        <b>◇ 記号の設定変更</b><br>
                         <input type="text" id="edit_shape_label" value="${currentLabel}" style="width:80px; text-align:center; font-size:16px; margin:6px 0;"><br>
                         <select id="edit_shape_color" style="width:100%; margin:4px 0;">${colorOpts}</select>
                         <button class="btn-save" onclick="updateShapeMarker('${marker._leaflet_id}')">更新</button>
