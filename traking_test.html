@@ -322,7 +322,12 @@
         align-items: center;
         justify-content: center;
     }
-        
+
+
+.delete-cursor {
+        cursor: not-allowed !important;
+    }
+    
     </style>
 </head>
 
@@ -396,19 +401,6 @@
     <div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center; width:100%;">
         <button class="cb-btn cb-btn-large" id="cb-mode-ship" onclick="setCourseBuilderMode('ship')">🚤 フネ</button>
         <button class="cb-btn cb-btn-large" id="cb-mode-buoy" onclick="setCourseBuilderMode('buoy')">🚩 ブイ</button>
-
-<!-- ▼ ここから追加：誤操作防止のための別ボタン群 -->
-        <button class="cb-btn" id="cb-mode-circle" onclick="setCourseBuilderMode('circle')">⭕ 〇</button>
-        <button class="cb-btn" id="cb-mode-triangle" onclick="setCourseBuilderMode('triangle')">△</button>
-        <button class="cb-btn" id="cb-mode-square" onclick="setCourseBuilderMode('square')">□</button>
-        <button class="cb-btn" id="cb-mode-star" onclick="setCourseBuilderMode('star')">⭐ ☆</button>
-        <!-- ▲ ここまで追加 -->
-
-
-
-
-
-        
         <button class="cb-btn" id="cb-mode-dashed" onclick="setCourseBuilderMode('dashed')">┈ 点線</button>
         <button class="cb-btn" id="cb-mode-solid" onclick="setCourseBuilderMode('solid')">━ 実線</button>
         <button class="cb-btn" id="cb-mode-data" onclick="setCourseBuilderMode('data')">📊 データ</button>
@@ -489,6 +481,8 @@
 
           <button class="header-btn" id="header-admin-mode-btn" style="background:#555;" onclick="toggleAdminMode()">🛡️ 管理OFF</button>
         <button class="header-btn" style="background:#27ae60;" onclick="promptCourseCreate()">コース作成</button>
+<button class="header-btn" id="btn-marker-panel-toggle" style="background:#8e44ad; display:none;" onclick="toggleMarkerManagementPanel()">◇</button>
+        
       
         <button class="header-btn" style="background:#f1c40f; color:#000;" onclick="openCoordListModal()">座標</button>
         <button class="header-btn" style="background:#007AFF;" onclick="authAndToggleSettings()">設定</button>
@@ -598,6 +592,33 @@
     </div>
 </div>
 
+
+<div id="marker-management-panel" style="display:none; position:fixed; top:75px; right:10px; background:rgba(30,39,46,0.98); border:2px solid #ff9900; padding:15px; border-radius:12px; z-index:7500; color:white; width:220px; box-shadow:0 4px 15px rgba(0,0,0,0.5);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #555; padding-bottom:6px;">
+        <span style="font-weight:bold; color:#ff9900; font-size:14px;">◇ 記号・図形配置パネル</span>
+        <button onclick="toggleMarkerManagementPanel()" style="background:rgba(255,255,255,0.2); border:none; color:white; border-radius:4px; padding:4px 8px; font-size:11px; cursor:pointer;">収納</button>
+    </div>
+    
+    <div style="margin-bottom:10px;">
+        <label style="font-size:12px; color:#ccc;">設置する図形:</label><br>
+        <select id="select-shape-type" style="width:100%; padding:6px; margin-top:4px; border-radius:6px; font-size:13px; background:#222; color:#fff; border:1px solid #555;">
+            <option value="circle">〇 (丸)</option>
+            <option value="triangle">△ (三角)</option>
+            <option value="square">□ (四角)</option>
+            <option value="diamond">◇ (ひし形)</option>
+            <option value="star">☆ (星)</option>
+            <option value="boat">🚤 フネ</option>
+            <option value="buoy">🚩 ブイ</option>
+        </select>
+    </div>
+
+    <div>
+        <button id="btn-delete-mode" onclick="toggleShapeDeleteMode()" style="background:#333; color:white; border:1px solid #555; width:100%; padding:8px; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer;">削除モード: OFF</button>
+    </div>
+</div>
+
+
+    
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -814,13 +835,19 @@ window.deleteSelectedReplays = () => {
 
     function updateAdminModeUI() {
         const btn = document.getElementById('header-admin-mode-btn');
+        const markerToggleBtn = document.getElementById('btn-marker-panel-toggle');
         if (btn) {
             if (isAdminMode) {
                 btn.style.background = '#c0392b';
                 btn.innerText = '🛡️ 管理ON';
+                if (markerToggleBtn) markerToggleBtn.style.display = 'inline-block';
             } else {
                 btn.style.background = '#555';
                 btn.innerText = '🛡️ 管理OFF';
+                if (markerToggleBtn) {
+                    markerToggleBtn.style.display = 'none';
+                    document.getElementById('marker-management-panel').style.display = 'none';
+                }
             }
         }
     }
@@ -993,10 +1020,6 @@ document.addEventListener('pointerdown', () => {
         document.querySelectorAll('.cb-btn').forEach(btn => btn.classList.remove('active'));
         if (mode === 'ship') document.getElementById('cb-mode-ship').classList.add('active');
         if (mode === 'buoy') document.getElementById('cb-mode-buoy').classList.add('active');
-        if (mode === 'circle') document.getElementById('cb-mode-circle').classList.add('active');
-        if (mode === 'triangle') document.getElementById('cb-mode-triangle').classList.add('active');
-        if (mode === 'square') document.getElementById('cb-mode-square').classList.add('active');
-        if (mode === 'star') document.getElementById('cb-mode-star').classList.add('active');
         if (mode === 'dashed') {
             document.getElementById('cb-mode-dashed').classList.add('active');
             showToast("┈ 点線モード：1つ目の点を選択してください（タップで消去）");
@@ -2042,21 +2065,12 @@ window.toggleReplayColorFilter = (hex) => {
         }
     }
 
-   function createObjectIcon(type, shape, color) {
+    function createObjectIcon(type, shape, color) {
         let iconHtml = '';
-        const hexColor = color || '#ff3b30';
-        
         if (type === 'ship') {
             iconHtml = `<div style="font-size:26px; filter: drop-shadow(0 0 3px rgba(0,0,0,0.8)); text-align:center; line-height:26px;" title="フネ">🚤</div>`;
-        } else if (type === 'circle') {
-            iconHtml = `<div style="width:24px; height:24px; border-radius:50%; background:${hexColor}; border:3px solid white; box-shadow:0 0 3px rgba(0,0,0,0.8);"></div>`;
-        } else if (type === 'triangle') {
-            iconHtml = `<svg width="24" height="24" viewBox="0 0 100 100"><polygon points="50,5 95,95 5,95" fill="${hexColor}" stroke="white" stroke-width="8" /></svg>`;
-        } else if (type === 'square') {
-            iconHtml = `<div style="width:22px; height:22px; background:${hexColor}; border:3px solid white; box-shadow:0 0 3px rgba(0,0,0,0.8);"></div>`;
-        } else if (type === 'star') {
-            iconHtml = `<div style="font-size:24px; filter: drop-shadow(0 0 3px rgba(0,0,0,0.8)); text-align:center; line-height:24px; color:${hexColor}; -webkit-text-stroke: 1px white;">⭐</div>`;
         } else {
+            const hexColor = color || '#ff3b30';
             if (shape === 'rect') {
                 iconHtml = `<svg width="18" height="24" viewBox="0 0 100 133"><rect x="15" y="5" width="70" height="123" rx="6" fill="${hexColor}" stroke="white" stroke-width="8" /></svg>`;
             } else {
@@ -2083,33 +2097,29 @@ window.toggleReplayColorFilter = (hex) => {
             colorOptionsHtml += `<option value="${c.hex}" ${currentColor === c.hex ? 'selected' : ''}>${c.name}</option>`;
         });
 
-        const disabledAttr = isAdminMode ? '' : 'disabled';
-
         const div = document.createElement('div');
         div.className = 'point-card';
         div.dataset.key = key; 
         div.innerHTML = `
-            <input type="text" class="label-input" value="${labelChar !== undefined && labelChar !== null ? labelChar : ''}" oninput="onLabelInputChanged('${key}', this)" ${disabledAttr} style="width:40px; text-align:center; font-weight:bold; font-size:13px; border:1px solid #ccc; border-radius:4px; padding:2px; color:${currentColor};">
+            <input type="checkbox" class="point-del-chk" value="${key}" style="transform:scale(1.3); cursor:pointer;">
+            <input type="text" class="label-input" value="${labelChar !== undefined && labelChar !== null ? labelChar : ''}" oninput="onLabelInputChanged('${key}', this)" style="width:40px; text-align:center; font-weight:bold; font-size:13px; border:1px solid #ccc; border-radius:4px; padding:2px; color:${currentColor};">
             <div style="display:flex; flex-direction:column; gap:3px; flex-grow:1;">
                 <div style="display:flex; gap:4px;">
-                    <select class="type-select" onchange="updateMarkerAppearance('${key}')" ${disabledAttr} style="padding:2px;border-radius:4px;font-size:10px; flex:1;">
-                        <option value="buoy" ${currentType==='buoy'?'selected':''}>マーク</option>
+                    <select class="type-select" onchange="updateMarkerAppearance('${key}')" style="padding:2px;border-radius:4px;font-size:10px; flex:1;">
+                        <option value="buoy" ${currentType!=='ship'?'selected':''}>マーク</option>
                         <option value="ship" ${currentType==='ship'?'selected':''}>フネ</option>
-                        <option value="circle" ${currentType==='circle'?'selected':''}>〇</option>
-                        <option value="triangle" ${currentType==='triangle'?'selected':''}>△</option>
-                        <option value="square" ${currentType==='square'?'selected':''}>□</option>
-                        <option value="star" ${currentType==='star'?'selected':''}>☆</option>
                     </select>
-                    <select class="shape-select" onchange="updateMarkerAppearance('${key}')" ${disabledAttr} style="padding:2px;border-radius:4px;font-size:10px; flex:1; ${(currentType==='ship'||['circle','triangle','square','star'].includes(currentType))?'display:none;':''}">
+                    <select class="shape-select" onchange="updateMarkerAppearance('${key}')" style="padding:2px;border-radius:4px;font-size:10px; flex:1; ${currentType==='ship'?'display:none;':''}">
                         <option value="triangle" ${currentShape==='triangle'?'selected':''}>三角</option>
                         <option value="rect" ${currentShape==='rect'?'selected':''}>長方形</option>
                     </select>
-                    <select class="color-select" onchange="updateMarkerAppearance('${key}')" ${disabledAttr} style="padding:2px;border-radius:4px;font-size:10px; flex:1;">
+                    <select class="color-select" onchange="updateMarkerAppearance('${key}')" style="padding:2px;border-radius:4px;font-size:10px; flex:1;">
                         ${colorOptionsHtml}
                     </select>
                 </div>
-                <input type="text" class="comment-input" value="${obj.comment||''}" placeholder="メモ" oninput="updateMarkerAppearance('${key}')" ${disabledAttr} style="padding:3px;border-radius:4px;font-size:11px;">
+                <input type="text" class="comment-input" value="${obj.comment||''}" placeholder="メモ" oninput="updateMarkerAppearance('${key}')" style="padding:3px;border-radius:4px;font-size:11px;">
             </div>
+            <button class="delete-btn" onclick="deleteObject('${key}')" style="background:#ff3b30;color:white;border:none;padding:6px 8px;border-radius:4px;font-size:11px;cursor:pointer;">削除</button>
         `;
         listContainer.appendChild(div);
     }
@@ -2566,17 +2576,22 @@ window.toggleReplayColorFilter = (hex) => {
 
     map.on('click', e => {
         const { lat, lng } = e.latlng;
-        
-      if (isCourseBuilderActive) {
-            if (['ship', 'buoy', 'circle', 'triangle', 'square', 'star'].includes(cbMode)) {
-                let commentText = 'マーク';
-                let initialLabel = 'ブイ';
-                if (cbMode === 'ship') { commentText = 'フネ'; initialLabel = 'フネ'; }
-                else if (cbMode === 'circle') { commentText = '〇'; initialLabel = '〇'; }
-                else if (cbMode === 'triangle') { commentText = '△'; initialLabel = '△'; }
-                else if (cbMode === 'square') { commentText = '□'; initialLabel = '□'; }
-                else if (cbMode === 'star') { commentText = '☆'; initialLabel = '☆'; }
 
+
+// 【追加ここから】管理者かつ管理パネルが開いていて、削除モードでない場合の独立記号配置処理
+        const panel = document.getElementById('marker-management-panel');
+        if (isAdminMode && panel && panel.style.display === 'block' && !isShapeDeleteMode) {
+            if (isCourseBuilderActive) return; // コース作成モードと競合しないようにする
+            
+            const shapeType = document.getElementById('select-shape-type').value;
+            createIndependentShapeMarker(latlng, shapeType);
+            return;
+        }
+        
+        if (isCourseBuilderActive) {
+            if (cbMode === 'ship' || cbMode === 'buoy') {
+                const commentText = cbMode === 'ship' ? 'フネ' : 'マーク';
+                const initialLabel = cbMode === 'ship' ? 'フネ' : 'ブイ';
                 const randomKey = "C" + Math.floor(Math.random() * 10000);
                 db.ref('objects/' + randomKey).set({ 
                     type: cbMode, 
@@ -3188,6 +3203,106 @@ setInterval(() => {
     }
 }, 19000); // 19秒ごとに実行
 
+
+// --- 【追加】独立記号・図形管理用の変数とロジック ---
+    let isShapeDeleteMode = false;
+
+    window.toggleMarkerManagementPanel = () => {
+        if (!isAdminMode) {
+            alert("管理者モードがONのときのみ使用できます");
+            return;
+        }
+        const panel = document.getElementById('marker-management-panel');
+        if (panel) {
+            panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
+        }
+    };
+
+    window.toggleShapeDeleteMode = () => {
+        isShapeDeleteMode = !isShapeDeleteMode;
+        const btn = document.getElementById('btn-delete-mode');
+        if (btn) {
+            if (isShapeDeleteMode) {
+                btn.textContent = "削除モード: ON";
+                btn.style.background = "#c0392b";
+                map.getContainer().classList.add('delete-cursor');
+                showToast("🗑️ 削除モードON：削除したい記号をタップしてください");
+            } else {
+                btn.textContent = "削除モード: OFF";
+                btn.style.background = "#333";
+                map.getContainer().classList.remove('delete-cursor');
+                showToast("削除モードOFF");
+            }
+        }
+    };
+
+    // 【追加】独立記号・図形マーカーを生成する関数
+    function createIndependentShapeMarker(latlng, shapeType) {
+        let labelText = '';
+        switch(shapeType) {
+            case 'circle': labelText = '〇'; break;
+            case 'triangle': labelText = '△'; break;
+            case 'square': labelText = '□'; break;
+            case 'diamond': labelText = '◇'; break;
+            case 'star': labelText = '☆'; break;
+            case 'boat': labelText = '🚤 フネ'; break;
+            case 'buoy': labelText = '🚩 ブイ'; break;
+        }
+
+        const customIcon = L.divIcon({
+            className: 'custom-shape-marker',
+            html: `<div style="background:white; border:2px solid black; padding:3px 8px; border-radius:4px; font-weight:bold; font-size:14px; text-align:center; white-space:nowrap; box-shadow:0 2px 5px rgba(0,0,0,0.3);">${labelText}</div>`,
+            iconSize: [44, 28],
+            iconAnchor: [22, 14]
+        });
+
+        const marker = L.marker(latlng, { icon: customIcon }).addTo(map);
+
+        marker.on('click', function(e) {
+            L.DomEvent.stopPropagation(e);
+
+            if (isAdminMode && isShapeDeleteMode) {
+                if (confirm("本当に削除しますか？")) {
+                    map.removeLayer(marker);
+                    showToast("🗑️ 記号を削除しました");
+                }
+            }
+        });
+    }
+
+function createIndependentShapeMarker(latlng, shapeType) {
+        let labelText = '';
+        switch(shapeType) {
+            case 'circle': labelText = '〇'; break;
+            case 'triangle': labelText = '△'; break;
+            case 'square': labelText = '□'; break;
+            case 'diamond': labelText = '◇'; break;
+            case 'star': labelText = '☆'; break;
+            case 'boat': labelText = '🚤 フネ'; break;
+            case 'buoy': labelText = '🚩 ブイ'; break;
+        }
+
+        const customIcon = L.divIcon({
+            className: 'custom-shape-marker',
+            html: `<div style="background:white; border:2px solid black; padding:3px 8px; border-radius:4px; font-weight:bold; font-size:14px; text-align:center; white-space:nowrap; box-shadow:0 2px 5px rgba(0,0,0,0.3);">${labelText}</div>`,
+            iconSize: [44, 28],
+            iconAnchor: [22, 14]
+        });
+
+        const marker = L.marker(latlng, { icon: customIcon }).addTo(map);
+
+        marker.on('click', function(e) {
+            L.DomEvent.stopPropagation(e);
+
+            if (isAdminMode && isShapeDeleteMode) {
+                if (confirm("本当に削除しますか？")) {
+                    map.removeLayer(marker);
+                    showToast("🗑️ 記号を削除しました");
+                }
+            }
+        });
+    }
+    // --- 【ここまで】 ---
     
 </script>
 </body>
