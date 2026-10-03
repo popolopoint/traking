@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.2.7e by Popolo App.com</title>
+    <title>虎キング v5.3.1a by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -314,7 +314,14 @@
     white-space: nowrap;
 }
 
-
+/* 小さくなった矢印アイコン用ラッパー */
+    .small-arrow-wrapper {
+        width: 15px !important;
+        height: 15px !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
         
     </style>
 </head>
@@ -348,7 +355,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.2.7e 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.3.1a 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -479,7 +486,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.2.7e by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.3.1a by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1225,7 +1232,7 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
         }, 1000);
     }
 
-    window.stopRaceRecording = () => {
+   window.stopRaceRecording = () => {
         if (!isRecordingActive) {
             alert("現在、記録はスタートしていません");
             document.getElementById('floating-stop-btn').style.display = 'none';
@@ -1240,7 +1247,7 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
 
         const heatName = prompt("記録するヒート名を入力してください\n（例: 第1ヒート、決勝など）", "第1ヒート");
         if (!heatName) {
-            showToast("⚠️ 保存がキャンセルされました（記録は停止しました）");
+            showToast("⚠️️ 保存がキャンセルされました（記録は停止しました）");
             return;
         }
 
@@ -1253,19 +1260,25 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
             db.ref('objects').once('value', objSnap => {
                 const currentObjects = objSnap.val() || {};
 
-                db.ref('saved_courses').push({
-                    title: heatName,
-                    startTime: startTimeInput || '時刻不明',
-                    objects: currentObjects,
-                    history: historyData,
-                    createdAt: Date.now()
-                }, err => {
-                    if (!err) {
-                        showToast(`💾 「${heatName} (スタート: ${startTimeInput || '不明'})」を保存しました！`);
-                        db.ref('temp_history').remove();
-                    } else {
-                        alert("サーバーへの保存に失敗しました");
-                    }
+                // ▼ ここで custom_lines（点線・実線）も同時に取得して保存する
+                db.ref('custom_lines').once('value', lineSnap => {
+                    const currentLines = lineSnap.val() || {};
+
+                    db.ref('saved_courses').push({
+                        title: heatName,
+                        startTime: startTimeInput || '時刻不明',
+                        objects: currentObjects,
+                        lines: currentLines, // ← 保存データに含める
+                        history: historyData,
+                        createdAt: Date.now()
+                    }, err => {
+                        if (!err) {
+                            showToast(`💾 「${heatName} (スタート: ${startTimeInput || '不明'})」を保存しました！`);
+                            db.ref('temp_history').remove();
+                        } else {
+                            alert("サーバーへの保存に失敗しました");
+                        }
+                    });
                 });
             });
         });
@@ -1534,7 +1547,7 @@ window.exportSingleCourse = (id) => {
             }
             replayObjectMarkers = {};
 
-            if (data.objects) {
+           if (data.objects) {
                 for (let key in data.objects) {
                     const obj = data.objects[key];
                     const letter = obj.assignedLabel || (obj.type === 'ship' ? 'フネ' : 'ブイ');
@@ -1543,6 +1556,23 @@ window.exportSingleCourse = (id) => {
                     }).addTo(map);
                     marker.bindTooltip(letter, { permanent: true, direction: 'top', className: 'object-label' });
                     replayObjectMarkers[key] = marker;
+                }
+            }
+
+            // ▼ 【追加】保存されている点線・実線をリプレイ画面に復元して描画する
+            if (data.lines && data.objects) {
+                for (let lineId in data.lines) {
+                    const l = data.lines[lineId];
+                    if (data.objects[l.from] && data.objects[l.to]) {
+                        const p1 = [data.objects[l.from].lat, data.objects[l.from].lng];
+                        const p2 = [data.objects[l.to].lat, data.objects[l.to].lng];
+                        const poly = L.polyline([p1, p2], {
+                            color: '#ffffff',
+                            weight: 3,
+                            dashArray: l.type === 'dashed' ? '5, 10' : null
+                        });
+                        customLinesGroup.addLayer(poly);
+                    }
                 }
             }
 
@@ -1820,7 +1850,7 @@ window.toggleReplayColorFilter = (hex) => {
         let filteredIdentifiers = new Set(); // フィルターで除外されたユーザーを記録
 
         replayLogsAll.forEach(log => {
-            if (log.ts <= currentTs && currentTs - log.ts <= 10000) {
+            if (log.ts <= currentTs && currentTs - log.ts <= 50000) {
                 // カラーフィルターがオフなら除外対象として記録し、スキップ
                 if (log.color && replayColorFilters[log.color] === false) {
                     filteredIdentifiers.add(log.name);
@@ -1858,7 +1888,7 @@ window.toggleReplayColorFilter = (hex) => {
     function updateReplayUserList(currentTs) {
         let activeUsers = {};
         replayLogsAll.forEach(log => {
-            if (currentTs - log.ts >= 0 && currentTs - log.ts <= 10000) {
+            if (currentTs - log.ts >= 0 && currentTs - log.ts <= 50000) {
 
                 // ▼ ここを確認・修正：指定した色が「オフ（false）」に設定されている場合はリストから除外する
                 if (log.color && replayColorFilters[log.color] === false) return;
@@ -1948,7 +1978,7 @@ window.toggleReplayColorFilter = (hex) => {
     function updateUserTrailAndMarker(identifier, lat, lng, color, heading, timestamp, partType = 'normal') {
         if (!userTrails[identifier]) userTrails[identifier] = [];
         userTrails[identifier].push({ lat: lat, lng: lng, ts: timestamp });
-        userTrails[identifier] = userTrails[identifier].filter(p => timestamp - p.ts <= 10000);
+        userTrails[identifier] = userTrails[identifier].filter(p => timestamp - p.ts <= 50000);
 
         if (userPolylineLines[identifier]) {
             userPolylineLines[identifier].forEach(seg => map.removeLayer(seg));
@@ -1960,10 +1990,10 @@ window.toggleReplayColorFilter = (hex) => {
             for (let i = 0; i < points.length - 1; i++) {
                 const p1 = points[i];
                 const p2 = points[i+1];
-                const age = timestamp - p2.ts;
+              const age = timestamp - p2.ts;
                 let opacity = 0.8;
-                if (age > 8000) {
-                    opacity = 0.8 * (1.0 - (age - 8000) / 2000);
+                if (age >40000 ) { // ← 24秒経過後からフェードアウト開始（割合を3倍に）
+                    opacity = 0.8 * (1.0 - (age - 40000) / 10000);
                     if (opacity < 0) opacity = 0;
                 }
                 if (opacity > 0) {
@@ -1989,9 +2019,9 @@ window.toggleReplayColorFilter = (hex) => {
             return L.divIcon({ html: `<div style="font-size:26px; filter: drop-shadow(0 0 3px rgba(0,0,0,0.8)); text-align:center; line-height:26px;" title="フネ">🚤</div>`, className: '', iconSize: [26, 26], iconAnchor: [13, 13] });
         } else if (partType === 'buoy') {
             return L.divIcon({ html: `<svg width="18" height="26" viewBox="0 0 100 133"><path d="M50 5 L95 125 Q95 128 50 128 Q5 128 5 125 Z" fill="${color || '#ff3b30'}" stroke="white" stroke-width="8" /></svg>`, className: '', iconSize: [24, 28], iconAnchor: [12, 14] });
-        } else {
-            const html = `<div class="arrow-icon-wrapper" style="transform: rotate(${heading||0}deg);"><svg viewBox="0 0 100 100" width="30" height="30"><path d="M50 5 L90 90 L50 75 L10 90 Z" fill="${color || '#ff9900'}" stroke="white" stroke-width="5" /></svg></div>`;
-            return L.divIcon({ html: html, className: '', iconSize: [30, 30], iconAnchor: [15, 15] });
+       } else {
+            const html = `<div class="small-arrow-wrapper"><div class="arrow-icon-wrapper" style="transform: rotate(${heading||0}deg); width:15px; height:15px;"><svg viewBox="0 0 100 100" width="15" height="15"><path d="M50 5 L90 90 L50 75 L10 90 Z" fill="${color || '#ff9900'}" stroke="white" stroke-width="5" /></svg></div></div>`;
+            return L.divIcon({ html: html, className: '', iconSize: [15, 15], iconAnchor: [7.5, 7.5] });
         }
     }
 
