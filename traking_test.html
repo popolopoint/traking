@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.3.0 by Popolo App.com</title>
+    <title>虎キング v5.3.1 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -355,7 +355,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.3.0 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.3.1 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -486,7 +486,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.3.0 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.3.1 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1850,7 +1850,7 @@ window.toggleReplayColorFilter = (hex) => {
         let filteredIdentifiers = new Set(); // フィルターで除外されたユーザーを記録
 
         replayLogsAll.forEach(log => {
-            if (log.ts <= currentTs && currentTs - log.ts <= 10000) {
+            if (log.ts <= currentTs && currentTs - log.ts <= 30000) {
                 // カラーフィルターがオフなら除外対象として記録し、スキップ
                 if (log.color && replayColorFilters[log.color] === false) {
                     filteredIdentifiers.add(log.name);
@@ -1888,7 +1888,7 @@ window.toggleReplayColorFilter = (hex) => {
     function updateReplayUserList(currentTs) {
         let activeUsers = {};
         replayLogsAll.forEach(log => {
-            if (currentTs - log.ts >= 0 && currentTs - log.ts <= 10000) {
+            if (currentTs - log.ts >= 0 && currentTs - log.ts <= 30000) {
 
                 // ▼ ここを確認・修正：指定した色が「オフ（false）」に設定されている場合はリストから除外する
                 if (log.color && replayColorFilters[log.color] === false) return;
@@ -1978,7 +1978,7 @@ window.toggleReplayColorFilter = (hex) => {
     function updateUserTrailAndMarker(identifier, lat, lng, color, heading, timestamp, partType = 'normal') {
         if (!userTrails[identifier]) userTrails[identifier] = [];
         userTrails[identifier].push({ lat: lat, lng: lng, ts: timestamp });
-        userTrails[identifier] = userTrails[identifier].filter(p => timestamp - p.ts <= 10000);
+        userTrails[identifier] = userTrails[identifier].filter(p => timestamp - p.ts <= 30000);
 
         if (userPolylineLines[identifier]) {
             userPolylineLines[identifier].forEach(seg => map.removeLayer(seg));
@@ -1990,10 +1990,10 @@ window.toggleReplayColorFilter = (hex) => {
             for (let i = 0; i < points.length - 1; i++) {
                 const p1 = points[i];
                 const p2 = points[i+1];
-                const age = timestamp - p2.ts;
+              const age = timestamp - p2.ts;
                 let opacity = 0.8;
-                if (age > 8000) {
-                    opacity = 0.8 * (1.0 - (age - 8000) / 2000);
+                if (age > 24000) { // ← 24秒経過後からフェードアウト開始（割合を3倍に）
+                    opacity = 0.8 * (1.0 - (age - 24000) / 6000);
                     if (opacity < 0) opacity = 0;
                 }
                 if (opacity > 0) {
