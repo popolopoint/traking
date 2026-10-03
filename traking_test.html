@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.2.8 by Popolo App.com</title>
+    <title>虎キング v5.2.9 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -348,7 +348,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.2.8 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.2.9 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -479,7 +479,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.2.8 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.2.9 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1225,7 +1225,7 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
         }, 1000);
     }
 
-    window.stopRaceRecording = () => {
+   window.stopRaceRecording = () => {
         if (!isRecordingActive) {
             alert("現在、記録はスタートしていません");
             document.getElementById('floating-stop-btn').style.display = 'none';
@@ -1240,7 +1240,7 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
 
         const heatName = prompt("記録するヒート名を入力してください\n（例: 第1ヒート、決勝など）", "第1ヒート");
         if (!heatName) {
-            showToast("⚠️ 保存がキャンセルされました（記録は停止しました）");
+            showToast("⚠️️ 保存がキャンセルされました（記録は停止しました）");
             return;
         }
 
@@ -1253,19 +1253,25 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
             db.ref('objects').once('value', objSnap => {
                 const currentObjects = objSnap.val() || {};
 
-                db.ref('saved_courses').push({
-                    title: heatName,
-                    startTime: startTimeInput || '時刻不明',
-                    objects: currentObjects,
-                    history: historyData,
-                    createdAt: Date.now()
-                }, err => {
-                    if (!err) {
-                        showToast(`💾 「${heatName} (スタート: ${startTimeInput || '不明'})」を保存しました！`);
-                        db.ref('temp_history').remove();
-                    } else {
-                        alert("サーバーへの保存に失敗しました");
-                    }
+                // ▼ ここで custom_lines（点線・実線）も同時に取得して保存する
+                db.ref('custom_lines').once('value', lineSnap => {
+                    const currentLines = lineSnap.val() || {};
+
+                    db.ref('saved_courses').push({
+                        title: heatName,
+                        startTime: startTimeInput || '時刻不明',
+                        objects: currentObjects,
+                        lines: currentLines, // ← 保存データに含める
+                        history: historyData,
+                        createdAt: Date.now()
+                    }, err => {
+                        if (!err) {
+                            showToast(`💾 「${heatName} (スタート: ${startTimeInput || '不明'})」を保存しました！`);
+                            db.ref('temp_history').remove();
+                        } else {
+                            alert("サーバーへの保存に失敗しました");
+                        }
+                    });
                 });
             });
         });
@@ -1534,7 +1540,7 @@ window.exportSingleCourse = (id) => {
             }
             replayObjectMarkers = {};
 
-            if (data.objects) {
+           if (data.objects) {
                 for (let key in data.objects) {
                     const obj = data.objects[key];
                     const letter = obj.assignedLabel || (obj.type === 'ship' ? 'フネ' : 'ブイ');
@@ -1543,6 +1549,23 @@ window.exportSingleCourse = (id) => {
                     }).addTo(map);
                     marker.bindTooltip(letter, { permanent: true, direction: 'top', className: 'object-label' });
                     replayObjectMarkers[key] = marker;
+                }
+            }
+
+            // ▼ 【追加】保存されている点線・実線をリプレイ画面に復元して描画する
+            if (data.lines && data.objects) {
+                for (let lineId in data.lines) {
+                    const l = data.lines[lineId];
+                    if (data.objects[l.from] && data.objects[l.to]) {
+                        const p1 = [data.objects[l.from].lat, data.objects[l.from].lng];
+                        const p2 = [data.objects[l.to].lat, data.objects[l.to].lng];
+                        const poly = L.polyline([p1, p2], {
+                            color: '#ffffff',
+                            weight: 3,
+                            dashArray: l.type === 'dashed' ? '5, 10' : null
+                        });
+                        customLinesGroup.addLayer(poly);
+                    }
                 }
             }
 
