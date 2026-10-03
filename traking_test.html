@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.3.6 by Popolo App.com</title>
+    <title>虎キング v5.3.7 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -360,7 +360,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.3.6 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.3.7 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -493,7 +493,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.3.6 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.3.7 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -602,13 +602,13 @@
     <div style="margin-bottom:10px;">
         <label style="font-size:12px; color:#ccc;">設置する図形:</label><br>
         <select id="select-shape-type" style="width:100%; padding:6px; margin-top:4px; border-radius:6px; font-size:13px; background:#222; color:#fff; border:1px solid #555;">
-            <option value="circle">〇 (丸)</option>
-            <option value="triangle">△ (三角)</option>
-            <option value="square">□ (四角)</option>
-            <option value="diamond">◇ (ひし形)</option>
-            <option value="star">☆ (星)</option>
-            <option value="boat">🚤 フネ</option>
-            <option value="buoy">🚩 ブイ</option>
+            <option value="circle">◯</option>
+            <option value="triangle">△</option>
+            <option value="square">□</option>
+            <option value="diamond">◇</option>
+            <option value="star">☆</option>
+            <option value="boat">🚤</option>
+            <option value="buoy">🚩</option>
         </select>
     </div>
 
@@ -3253,32 +3253,41 @@ setInterval(() => {
 function createIndependentShapeMarker(latlng, shapeType) {
         let labelText = '';
         switch(shapeType) {
-            case 'circle': labelText = '〇'; break;
+            case 'circle': labelText = '◯'; break;
             case 'triangle': labelText = '△'; break;
             case 'square': labelText = '□'; break;
             case 'diamond': labelText = '◇'; break;
             case 'star': labelText = '☆'; break;
-            case 'boat': labelText = '🚤 フネ'; break;
-            case 'buoy': labelText = '🚩 ブイ'; break;
+            case 'boat': labelText = '🚤'; break;
+            case 'buoy': labelText = '🚩'; break;
         }
 
         const customIcon = L.divIcon({
             className: 'custom-shape-marker',
-            html: `<div style="background:white; border:2px solid black; padding:3px 8px; border-radius:4px; font-weight:bold; font-size:14px; text-align:center; white-space:nowrap; box-shadow:0 2px 5px rgba(0,0,0,0.3);">${labelText}</div>`,
-            iconSize: [44, 28],
-            iconAnchor: [22, 14]
+            html: `<div style="font-size:24px; filter: drop-shadow(0 0 3px rgba(0,0,0,0.8)); text-align:center; line-height:24px;">${labelText}</div>`,
+            iconSize: [28, 28],
+            iconAnchor: [14, 14]
         });
 
-        const marker = L.marker(latlng, { icon: customIcon }).addTo(map);
+       const randomKey = "S" + Math.floor(Math.random() * 10000);
+        const initType = (shapeType === 'boat' || shapeType === 'buoy') ? (shapeType === 'boat' ? 'ship' : 'buoy') : 'buoy';
+        const initComment = shapeType;
 
-        marker.on('click', function(e) {
-            L.DomEvent.stopPropagation(e);
+        const saveData = {
+            type: initType,
+            shape: shapeType,
+            color: '#ff3b30',
+            lat: latlng.lat,
+            lng: latlng.lng,
+            comment: initComment,
+            assignedLabel: labelText,
+            ownerId: myId,
+            ts: Date.now()
+        };
 
-            if (isAdminMode && isShapeDeleteMode) {
-                if (confirm("本当に削除しますか？")) {
-                    map.removeLayer(marker);
-                    showToast("🗑️ 記号を削除しました");
-                }
+        db.ref('objects/' + randomKey).set(saveData, err => {
+            if (!err) {
+                showToast("📍 記号を配置しました");
             }
         });
     }
