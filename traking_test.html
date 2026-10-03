@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.3.4 by Popolo App.com</title>
+    <title>虎キング v5.3.5 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -360,7 +360,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.3.4 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.3.5 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -493,7 +493,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.3.4 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.3.5 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -3273,38 +3273,9 @@ setInterval(() => {
     };
 
     // 【追加】独立記号・図形マーカーを生成する関数
-    function createIndependentShapeMarker(latlng, shapeType) {
-        let labelText = '';
-        switch(shapeType) {
-            case 'circle': labelText = '〇'; break;
-            case 'triangle': labelText = '△'; break;
-            case 'square': labelText = '□'; break;
-            case 'diamond': labelText = '◇'; break;
-            case 'star': labelText = '☆'; break;
-            case 'boat': labelText = '🚤 フネ'; break;
-            case 'buoy': labelText = '🚩 ブイ'; break;
-        }
+  
 
-        const customIcon = L.divIcon({
-            className: 'custom-shape-marker',
-            html: `<div style="background:white; border:2px solid black; padding:3px 8px; border-radius:4px; font-weight:bold; font-size:14px; text-align:center; white-space:nowrap; box-shadow:0 2px 5px rgba(0,0,0,0.3);">${labelText}</div>`,
-            iconSize: [44, 28],
-            iconAnchor: [22, 14]
-        });
 
-        const marker = L.marker(latlng, { icon: customIcon }).addTo(map);
-
-        marker.on('click', function(e) {
-            L.DomEvent.stopPropagation(e);
-
-            if (isAdminMode && isShapeDeleteMode) {
-                if (confirm("本当に削除しますか？")) {
-                    map.removeLayer(marker);
-                    showToast("🗑️ 記号を削除しました");
-                }
-            }
-        });
-    }
 
 function createIndependentShapeMarker(latlng, shapeType) {
         let labelText = '';
