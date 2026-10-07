@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.4.1 by Popolo App.com</title>
+    <title>虎キング v5.4.2 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -16,6 +16,31 @@
     
 <style>
 
+/* 画面の小さいスマホでも1画面に収めるためのコンパクト化調整 */
+.setup-box { 
+    background: rgba(34, 34, 34, 0.95); 
+    padding: 12px; /* パディングを少し狭く */
+    border-radius: 12px; 
+    border: 2px solid #ff9900; 
+    text-align: center; 
+    width: 90%; 
+    max-width: 320px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
+    max-height: 90vh; /* 画面からはみ出さないように最大高さを制限 */
+    overflow-y: auto;  /* 万が一収まらない場合はスクロール可能に */
+}
+.setup-btn-grid { 
+    display: grid; 
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 6px; 
+    margin-top: 8px; 
+}
+.color-grid {
+    gap: 4px; /* カラーパレットの間隔を詰める */
+    margin-top: 4px;
+}
+
+    
 /* ログインモーダルのコンパクト化と2列レイアウト用 */
 .setup-box { background: rgba(34, 34, 34, 0.95); padding: 16px; border-radius: 15px; border: 2px solid #ff9900; text-align: center; width: 90%; max-width: 320px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
 .setup-btn-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
@@ -498,7 +523,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.4.1 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.4.2 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
