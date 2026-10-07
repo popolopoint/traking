@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.3.9a by Popolo App.com</title>
+    <title>虎キング v5.4.0 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -360,7 +360,7 @@
 <!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.3.9a 参加設定</h3>
+        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.4.0 参加設定</h3>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
         <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
@@ -493,7 +493,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.3.9a by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.4.0 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1367,7 +1367,7 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
                             <button class="replay-item-btn replay-btn-play" onclick="startReplay('${id}')">再生</button>
                             <button class="replay-item-btn" onclick="exportSingleCourse('${id}')" title="外部保存(JSON)" style="background:#8e44ad; color:white; border:none; padding:4px 6px; border-radius:4px; cursor:pointer;">📥</button>
                             <button class="replay-item-btn replay-btn-trim" onclick="authAndTrim('${id}')" title="切り出し">✂️</button>
-                            <button class="replay-item-btn replay-btn-edit" onclick="authAndRename('${id}', '${c.title}')" title="編集">✏️</button>
+                            <button class="replay-item-btn replay-btn-edit" onclick="authAndRename('${id}', '${c.title || ''}', '${c.startTime || '10:30'}')" title="編集">✏️</button>
                             <button class="replay-item-btn replay-btn-del" onclick="authAndDelete('${id}')" title="削除">🗑️</button>
                         </div>
                     </div>`;
@@ -1379,16 +1379,14 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
         });
     };
 
-            
-
     window.authAndTrim = (id) => {
         if (!checkAdminAuth()) return;
         trimAndSaveCourse(id);
     };
 
-    window.authAndRename = (id, currentTitle) => {
+    window.authAndRename = (id, currentTitle, currentStartTime) => {
         if (!checkAdminAuth()) return;
-        renameCourse(id, currentTitle);
+        renameCourse(id, currentTitle, currentStartTime);
     };
 
     window.authAndDelete = (id) => {
@@ -1458,15 +1456,22 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
         });
     };
 
-    window.renameCourse = (id, currentTitle) => {
+    window.renameCourse = (id, currentTitle, currentStartTime) => {
         const newTitle = prompt("新しいヒート名を入力してください", currentTitle);
-        if (!newTitle) return;
-        db.ref('saved_courses/' + id).update({ title: newTitle }, err => {
+        if (newTitle === null) return;
+
+        const newStartTime = prompt("新しいスタート時刻を入力してください\n（例: 10:30）", currentStartTime || "10:30");
+        if (newStartTime === null) return;
+
+        db.ref('saved_courses/' + id).update({ 
+            title: newTitle,
+            startTime: newStartTime 
+        }, err => {
             if (!err) {
-                showToast("✏️ ヒート名を変更しました");
+                showToast("✏️ 記録情報を更新しました");
                 openReplayMenu();
             } else {
-                alert("変更に失敗しました");
+                alert("変更に失敗しました: " + (err.message || ''));
             }
         });
     };
