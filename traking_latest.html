@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.3.1a by Popolo App.com</title>
+    <title>虎キング v5.4.2 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -16,7 +16,36 @@
     
 <style>
 
+/* 画面の小さいスマホでも1画面に収めるためのコンパクト化調整 */
+.setup-box { 
+    background: rgba(34, 34, 34, 0.95); 
+    padding: 12px; /* パディングを少し狭く */
+    border-radius: 12px; 
+    border: 2px solid #ff9900; 
+    text-align: center; 
+    width: 90%; 
+    max-width: 320px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
+    max-height: 90vh; /* 画面からはみ出さないように最大高さを制限 */
+    overflow-y: auto;  /* 万が一収まらない場合はスクロール可能に */
+}
+.setup-btn-grid { 
+    display: grid; 
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 6px; 
+    margin-top: 8px; 
+}
+.color-grid {
+    gap: 4px; /* カラーパレットの間隔を詰める */
+    margin-top: 4px;
+}
 
+    
+/* ログインモーダルのコンパクト化と2列レイアウト用 */
+.setup-box { background: rgba(34, 34, 34, 0.95); padding: 16px; border-radius: 15px; border: 2px solid #ff9900; text-align: center; width: 90%; max-width: 320px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+.setup-btn-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
+
+    
 /* 3点タップ解除ボタンコンテナ */
 #unlock-container {
     position: fixed;
@@ -322,7 +351,12 @@
         align-items: center;
         justify-content: center;
     }
-        
+
+
+.delete-cursor {
+        cursor: not-allowed !important;
+    }
+    
     </style>
 </head>
 
@@ -353,27 +387,28 @@
 
     
 <!-- プロフィール設定・ログインモーダル -->
+<!-- プロフィール設定・ログインモーダル -->
 <div id="setup-overlay" style="display:none;">
     <div class="setup-box">
-        <h3 style="margin-top:0; color:#ff9900; font-size:1.4rem;">👤 虎キング 5.3.1a 参加設定</h3>
-        <p style="font-size:0.9rem; color:#ccc; margin-bottom:12px;">名前を入力するか、参加スタイルを選んでください</p>
         
-        <input type="text" id="setup-name" placeholder="あなたの名前（例: ポポロ）" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:14px;">
+        <input type="text" id="setup-name" placeholder="あなたの名前orナンバー" style="width:100%; padding:10px; box-sizing:border-box; font-size:16px; border-radius:8px; border:1px solid #555; background:#222; color:#fff; text-align:center; margin-bottom:12px;">
         
         <div style="font-size:0.9rem; color:#ff9900; font-weight:bold; margin-bottom:6px; text-align:left;">参加スタイル:</div>
-        <div style="display:flex; gap:6px; margin-bottom:14px;">
-            <button type="button" id="style-btn-normal" onclick="selectStyleMode('normal')" style="flex:1; padding:8px 4px; font-size:12px; font-weight:bold; border-radius:6px; border:1px solid #ff9900; background:#ff9900; color:#000; cursor:pointer;">通常(選手)</button>
-            <button type="button" id="style-btn-ship" onclick="selectStyleMode('ship')" style="flex:1; padding:8px 4px; font-size:12px; font-weight:bold; border-radius:6px; border:1px solid #ff9900; background:rgba(0,0,0,0.5); color:#fff; cursor:pointer;">🚤 フネ</button>
-            <button type="button" id="style-btn-buoy" onclick="selectStyleMode('buoy')" style="flex:1; padding:8px 4px; font-size:12px; font-weight:bold; border-radius:6px; border:1px solid #ff9900; background:rgba(0,0,0,0.5); color:#fff; cursor:pointer;">🚩 ブイ</button>
+        <div style="display:flex; gap:6px; margin-bottom:12px;">
+            <button type="button" id="style-btn-normal" onclick="selectStyleMode('normal')" style="flex:1; padding:16px 4px; font-size:14px; font-weight:bold; border-radius:6px; border:1px solid #ff9900; background:#ff9900; color:#000; cursor:pointer;">通常(選手)</button>
+            <button type="button" id="style-btn-ship" onclick="selectStyleMode('ship')" style="flex:1; padding:16px 4px; font-size:14px; font-weight:bold; border-radius:6px; border:1px solid #ff9900; background:rgba(0,0,0,0.5); color:#fff; cursor:pointer;">🚤 フネ</button>
+            <button type="button" id="style-btn-buoy" onclick="selectStyleMode('buoy')" style="flex:1; padding:16px 4px; font-size:14px; font-weight:bold; border-radius:6px; border:1px solid #ff9900; background:rgba(0,0,0,0.5); color:#fff; cursor:pointer;">🚩 ブイ</button>
         </div>
 
         <div style="font-size:0.9rem; color:#ff9900; font-weight:bold; margin-bottom:6px; text-align:left;">マーカーカラー:</div>
         <div class="color-grid" id="color-grid"></div>
 
-        <button onclick="closeSetup()" style="width:100%; margin-top:16px; background:#ff9900; color:#000; border:none; padding:12px; border-radius:8px; font-size:1.1rem; font-weight:bold; cursor:pointer;">決定して参加</button>
-        <button onclick="saveProfileAsViewer()" style="width:100%; margin-top:8px; background:#2980b9; color:#fff; border:none; padding:10px; border-radius:8px; font-size:1rem; font-weight:bold; cursor:pointer;">👀 ログインせずに見る</button>
-        <button onclick="triggerLogout()" style="width:100%; margin-top:8px; background:#e74c3c; color:#fff; border:none; padding:10px; border-radius:8px; font-size:1rem; font-weight:bold; cursor:pointer;">🚪 ログアウト（データ消去）</button>
-        <button onclick="cancelSetup()" style="width:100%; margin-top:8px; background:#555; color:#fff; border:none; padding:8px; border-radius:8px; font-size:0.9rem; cursor:pointer;">キャンセル</button>
+        <div class="setup-btn-grid">
+            <button onclick="closeSetup()" style="background:#ff9900; color:#000; border:none; padding:10px; border-radius:8px; font-size:0.95rem; font-weight:bold; cursor:pointer;">決定して参加</button>
+            <button onclick="saveProfileAsViewer()" style="background:#2980b9; color:#fff; border:none; padding:10px; border-radius:8px; font-size:0.95rem; font-weight:bold; cursor:pointer;">👀 ログインせずに見る</button>
+            <button onclick="triggerLogout()" style="background:#e74c3c; color:#fff; border:none; padding:10px; border-radius:8px; font-size:0.95rem; font-weight:bold; cursor:pointer;">🚪 ログアウト</button>
+            <button onclick="cancelSetup()" style="background:#555; color:#fff; border:none; padding:10px; border-radius:8px; font-size:0.95rem; cursor:pointer;">キャンセル</button>
+        </div>
     </div>
 </div>
 
@@ -476,6 +511,8 @@
 
           <button class="header-btn" id="header-admin-mode-btn" style="background:#555;" onclick="toggleAdminMode()">🛡️ 管理OFF</button>
         <button class="header-btn" style="background:#27ae60;" onclick="promptCourseCreate()">コース作成</button>
+<button class="header-btn" id="btn-marker-panel-toggle" style="background:#8e44ad; display:none;" onclick="toggleMarkerManagementPanel()">◇</button>
+        
       
         <button class="header-btn" style="background:#f1c40f; color:#000;" onclick="openCoordListModal()">座標</button>
         <button class="header-btn" style="background:#007AFF;" onclick="authAndToggleSettings()">設定</button>
@@ -486,7 +523,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.3.1a by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.4.2 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -585,6 +622,33 @@
     </div>
 </div>
 
+
+<div id="marker-management-panel" style="display:none; position:fixed; top:75px; right:10px; background:rgba(30,39,46,0.98); border:2px solid #ff9900; padding:15px; border-radius:12px; z-index:7500; color:white; width:220px; box-shadow:0 4px 15px rgba(0,0,0,0.5);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #555; padding-bottom:6px;">
+        <span style="font-weight:bold; color:#ff9900; font-size:14px;">◇ 記号・図形配置パネル</span>
+        <button onclick="toggleMarkerManagementPanel()" style="background:rgba(255,255,255,0.2); border:none; color:white; border-radius:4px; padding:4px 8px; font-size:11px; cursor:pointer;">収納</button>
+    </div>
+    
+   <div style="margin-bottom:10px;">
+        <label style="font-size:12px; color:#ccc;">設置する図形:</label><br>
+        <select id="select-shape-type" style="width:100%; padding:6px; margin-top:4px; border-radius:6px; font-size:13px; background:#222; color:#fff; border:1px solid #555;">
+            <option value="circle">◯</option>
+            <option value="triangle">△</option>
+            <option value="square">□</option>
+            <option value="diamond">◇</option>
+            <option value="star">☆</option>
+            <option value="boat">🚤 フネ</option>
+            <option value="buoy">🚩 ブイ</option>
+        </select>
+    </div>
+
+    <div>
+        <button id="btn-delete-mode" onclick="toggleShapeDeleteMode()" style="background:#333; color:white; border:1px solid #555; width:100%; padding:8px; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer;">削除モード: OFF</button>
+    </div>
+</div>
+
+
+    
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -801,13 +865,19 @@ window.deleteSelectedReplays = () => {
 
     function updateAdminModeUI() {
         const btn = document.getElementById('header-admin-mode-btn');
+        const markerToggleBtn = document.getElementById('btn-marker-panel-toggle');
         if (btn) {
             if (isAdminMode) {
                 btn.style.background = '#c0392b';
                 btn.innerText = '🛡️ 管理ON';
+                if (markerToggleBtn) markerToggleBtn.style.display = 'inline-block';
             } else {
                 btn.style.background = '#555';
                 btn.innerText = '🛡️ 管理OFF';
+                if (markerToggleBtn) {
+                    markerToggleBtn.style.display = 'none';
+                    document.getElementById('marker-management-panel').style.display = 'none';
+                }
             }
         }
     }
@@ -1327,7 +1397,7 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
                             <button class="replay-item-btn replay-btn-play" onclick="startReplay('${id}')">再生</button>
                             <button class="replay-item-btn" onclick="exportSingleCourse('${id}')" title="外部保存(JSON)" style="background:#8e44ad; color:white; border:none; padding:4px 6px; border-radius:4px; cursor:pointer;">📥</button>
                             <button class="replay-item-btn replay-btn-trim" onclick="authAndTrim('${id}')" title="切り出し">✂️</button>
-                            <button class="replay-item-btn replay-btn-edit" onclick="authAndRename('${id}', '${c.title}')" title="編集">✏️</button>
+                            <button class="replay-item-btn replay-btn-edit" onclick="authAndRename('${id}', '${c.title || ''}', '${c.startTime || '10:30'}')" title="編集">✏️</button>
                             <button class="replay-item-btn replay-btn-del" onclick="authAndDelete('${id}')" title="削除">🗑️</button>
                         </div>
                     </div>`;
@@ -1339,16 +1409,14 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
         });
     };
 
-            
-
     window.authAndTrim = (id) => {
         if (!checkAdminAuth()) return;
         trimAndSaveCourse(id);
     };
 
-    window.authAndRename = (id, currentTitle) => {
+    window.authAndRename = (id, currentTitle, currentStartTime) => {
         if (!checkAdminAuth()) return;
-        renameCourse(id, currentTitle);
+        renameCourse(id, currentTitle, currentStartTime);
     };
 
     window.authAndDelete = (id) => {
@@ -1418,15 +1486,22 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
         });
     };
 
-    window.renameCourse = (id, currentTitle) => {
+    window.renameCourse = (id, currentTitle, currentStartTime) => {
         const newTitle = prompt("新しいヒート名を入力してください", currentTitle);
-        if (!newTitle) return;
-        db.ref('saved_courses/' + id).update({ title: newTitle }, err => {
+        if (newTitle === null) return;
+
+        const newStartTime = prompt("新しいスタート時刻を入力してください\n（例: 10:30）", currentStartTime || "10:30");
+        if (newStartTime === null) return;
+
+        db.ref('saved_courses/' + id).update({ 
+            title: newTitle,
+            startTime: newStartTime 
+        }, err => {
             if (!err) {
-                showToast("✏️ ヒート名を変更しました");
+                showToast("✏️ 記録情報を更新しました");
                 openReplayMenu();
             } else {
-                alert("変更に失敗しました");
+                alert("変更に失敗しました: " + (err.message || ''));
             }
         });
     };
@@ -2534,9 +2609,24 @@ window.toggleReplayColorFilter = (hex) => {
         }
     };
 
-    map.on('click', e => {
+  
+    
+    
+    
+   map.on('click', e => {
         const { lat, lng } = e.latlng;
+        const latlng = e.latlng;
+
+        // 1. 管理者かつ管理パネルが開いていて、削除モードでない場合の独立記号配置処理
+        const panel = document.getElementById('marker-management-panel');
+        if (isAdminMode && panel && panel.style.display === 'block' && !isShapeDeleteMode) {
+            if (isCourseBuilderActive) return;
+            const shapeType = document.getElementById('select-shape-type').value;
+            createIndependentShapeMarker(latlng, shapeType);
+            return;
+        }
         
+        // 2. コース作成モード中の処理
         if (isCourseBuilderActive) {
             if (cbMode === 'ship' || cbMode === 'buoy') {
                 const commentText = cbMode === 'ship' ? 'フネ' : 'マーク';
@@ -2559,6 +2649,7 @@ window.toggleReplayColorFilter = (hex) => {
             return;
         }
 
+        // 3. 位置補正モード中の処理
         if (isHoseiMode) {
             if (isViewerMode) {
                 showToast("⚠️ 観戦モードでは位置補正は使用できません");
@@ -2578,6 +2669,7 @@ window.toggleReplayColorFilter = (hex) => {
             return;
         }
         
+        // 4. マーク追加モード中の処理
         if (isAddPointMode) {
             let colorOpts = '';
             COLOR_OPTIONS.forEach(c => { colorOpts += `<option value="${c.hex}">${c.name}</option>`; });
@@ -2588,7 +2680,7 @@ window.toggleReplayColorFilter = (hex) => {
                     <select id="new_type" onchange="document.getElementById('new_shape_row').style.display = this.value==='ship'?'none':'block';">
                         <option value="buoy">🚩 マーク</option>
                         <option value="ship">🚤 フネ</option>
-                    </select>
+                </select>
                     <div id="new_shape_row" style="margin:4px 0;">
                         <select id="new_shape">
                             <option value="triangle">縦長三角形</option>
@@ -2607,7 +2699,10 @@ window.toggleReplayColorFilter = (hex) => {
         }
     });
 
-   
+
+
+
+    
     
    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzWQsh4Fw4puaQZWnBfrNtE_kavTz7y3HGb1L-VnqFT1OnKlYG-g0b-uA4X1UAdEO8g_Q/exec"; // ★ご自身のGASのURLに書き換えてください
     const ADMIN_SECRET = "1234";
@@ -3152,6 +3247,126 @@ setInterval(() => {
     }
 }, 19000); // 19秒ごとに実行
 
+
+// --- 【追加】独立記号・図形管理用の変数とロジック ---
+    let isShapeDeleteMode = false;
+
+    window.toggleMarkerManagementPanel = () => {
+        if (!isAdminMode) {
+            alert("管理者モードがONのときのみ使用できます");
+            return;
+        }
+        const panel = document.getElementById('marker-management-panel');
+        if (panel) {
+            panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
+        }
+    };
+
+    window.toggleShapeDeleteMode = () => {
+        isShapeDeleteMode = !isShapeDeleteMode;
+        const btn = document.getElementById('btn-delete-mode');
+        if (btn) {
+            if (isShapeDeleteMode) {
+                btn.textContent = "削除モード: ON";
+                btn.style.background = "#c0392b";
+                map.getContainer().classList.add('delete-cursor');
+                showToast("🗑️ 削除モードON：削除したい記号をタップしてください");
+            } else {
+                btn.textContent = "削除モード: OFF";
+                btn.style.background = "#333";
+                map.getContainer().classList.remove('delete-cursor');
+                showToast("削除モードOFF");
+            }
+        }
+    };
+
+    // 【追加】独立記号・図形マーカーを生成する関数
+  
+
+
+
+function createIndependentShapeMarker(latlng, shapeType) {
+        let labelText = '';
+        switch(shapeType) {
+            case 'circle': labelText = '●'; break; // 塗りつぶし丸
+            case 'triangle': labelText = '▲'; break; // 塗りつぶし三角
+            case 'square': labelText = '■'; break; // 塗りつぶし四角
+            case 'diamond': labelText = '◆'; break; // 塗りつぶしひし形
+            case 'star': labelText = '★'; break; // 塗りつぶし星
+            case 'boat': labelText = '🚤'; break;
+            case 'buoy': labelText = '🚩'; break;
+        }
+
+        let markerColor = '#ff3b30';
+        let currentLabel = labelText;
+
+        const getIcon = (text, col) => {
+            if (text === '🚤' || text === '🚩') {
+                return L.divIcon({
+                    className: 'custom-shape-marker',
+                    html: `<div style="font-size:22px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.8)); text-align:center; line-height:22px;">${text}</div>`,
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                });
+            }
+            // 半分のサイズ（約14px〜16px）にして塗りつぶした図形を描画
+            return L.divIcon({
+                className: 'custom-shape-marker',
+                html: `<div style="font-size:20px; font-weight:bold; color:${col}; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff; text-align:center; line-height:16px;">${text}</div>`,
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
+        };
+
+        const marker = L.marker(latlng, { icon: getIcon(currentLabel, markerColor) }).addTo(map);
+
+        marker.on('click', function(e) {
+            L.DomEvent.stopPropagation(e);
+
+            if (isAdminMode && isShapeDeleteMode) {
+                if (confirm("本当に削除しますか？")) {
+                    map.removeLayer(marker);
+                    showToast("🗑️ 記号を削除しました");
+                }
+            } else if (isAdminMode) {
+                let colorOpts = '';
+                COLOR_OPTIONS.forEach(c => {
+                    colorOpts += `<option value="${c.hex}" ${markerColor === c.hex ? 'selected' : ''}>${c.name}</option>`;
+                });
+
+                const popupContent = `
+                    <div class="popup-form" style="text-align:center;">
+                        <b>◇ 記号の設定変更</b><br>
+                        <input type="text" id="edit_shape_label" value="${currentLabel}" style="width:80px; text-align:center; font-size:14px; margin:6px 0;"><br>
+                        <select id="edit_shape_color" style="width:100%; margin:4px 0;">${colorOpts}</select>
+                        <button class="btn-save" onclick="updateShapeMarker('${marker._leaflet_id}')">更新</button>
+                    </div>`;
+                
+                marker.bindPopup(popupContent).openPopup();
+            }
+        });
+
+        window._activeShapeMarkers = window._activeShapeMarkers || {};
+        window._activeShapeMarkers[marker._leaflet_id] = {
+            marker: marker,
+            update: (newText, newColor) => {
+                currentLabel = newText;
+                markerColor = newColor;
+                marker.setIcon(getIcon(currentLabel, markerColor));
+                marker.closePopup();
+                showToast("✨ 記号を更新しました");
+            }
+        };
+    }
+
+    window.updateShapeMarker = (id) => {
+        const text = document.getElementById('edit_shape_label').value;
+        const color = document.getElementById('edit_shape_color').value;
+        if (window._activeShapeMarkers && window._activeShapeMarkers[id]) {
+            window._activeShapeMarkers[id].update(text, color);
+        }
+    };
+    // --- 【ここまで】 ---
     
 </script>
 </body>
