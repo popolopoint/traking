@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.4.3 by Popolo App.com</title>
+    <title>虎キング v5.4.4 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -523,7 +523,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.4.3 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.4.4 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1153,7 +1153,7 @@ document.addEventListener('pointerdown', () => {
         });
     };
 
-    window.addCurrentPositionObject = () => {
+   window.addCurrentPositionObject = () => {
         if (!currentLatestPos) {
             alert("現在地のGPS位置情報がまだ取得できていません。少しお待ちください。");
             return;
@@ -1170,8 +1170,13 @@ document.addEventListener('pointerdown', () => {
             });
             const num = count + 1;
 
-            const commentText = (type === 'ship') ? `フネ${num}` : `マーク${num}`;
-            const initialLabel = (type === 'ship') ? `フネ${num}` : `マーク${num}`;
+            // 丸数字の配列（必要に応じて増減できます）
+            const circleNums = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '十八', '⑲', '⑳'];
+            const numStr = (num <= circleNums.length) ? circleNums[num - 1] : String(num);
+
+            const baseName = (type === 'ship') ? 'フネ' : 'マーク';
+            const commentText = baseName + numStr;
+            const initialLabel = commentText;
             const randomKey = "C" + Math.floor(Math.random() * 10000);
 
             db.ref('objects/' + randomKey).set({ 
@@ -2732,7 +2737,11 @@ window.toggleReplayColorFilter = (hex) => {
             });
             const num = count + 1;
 
-            const defaultName = (type === 'ship') ? `フネ${num}` : `マーク${num}`;
+            const circleNums = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳'];
+            const numStr = (num <= circleNums.length) ? circleNums[num - 1] : String(num);
+
+            const baseName = (type === 'ship') ? 'フネ' : 'マーク';
+            const defaultName = baseName + numStr;
             const finalComment = commentInput ? commentInput : defaultName;
             const initialLabel = defaultName;
             const randomKey = "M" + Math.floor(Math.random() * 1000);
