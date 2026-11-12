@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.4.5 by Popolo App.com</title>
+    <title>虎キング v5.4.6 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -523,7 +523,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.4.5 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.4.6 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1202,25 +1202,24 @@ window.renumberCourseObjects = () => {
         const initialLabel = (type === 'ship') ? 'フネ' : 'ブイ';
         const randomKey = "C" + Math.floor(Math.random() * 10000);
 
-        db.ref('objects/' + randomKey).set({ 
-            type: type, 
-            shape: 'triangle',
-            color: '#ff3b30', 
-            lat: lat, 
-            lng: lng, 
-            comment: commentText,
-            assignedLabel: initialLabel,
-            ownerId: myId,
-            ts: Date.now() 
-        }, err => {
-           if (!err) {
-    window.renumberCourseObjects();
-    showToast(`📍 ${commentText}を設置しました`);
-}
-            } else {
-                alert("登録に失敗しました");
-            }
-        });
+        db.ref('objects/' + randomKey).set({
+    type: type,
+    shape: 'triangle',
+    color: '#ff3b30',
+    lat: lat,
+    lng: lng,
+    comment: commentText,
+    assignedLabel: initialLabel,
+    ownerId: myId,
+    ts: Date.now()
+}, err => {
+    if (!err) {
+        window.renumberCourseObjects();
+        showToast(`📍 現在地に${commentText}を登録しました！`);
+    } else {
+        alert("登録に失敗しました");
+    }
+});
     };
 
     window.openAdminUsersModal = () => {
@@ -2666,26 +2665,31 @@ window.toggleReplayColorFilter = (hex) => {
         }
         
         // 2. コース作成モード中の処理
+                // 2. コース作成モード中の処理
         if (isCourseBuilderActive) {
             if (cbMode === 'ship' || cbMode === 'buoy') {
                 const commentText = cbMode === 'ship' ? 'フネ' : 'マーク';
                 const initialLabel = cbMode === 'ship' ? 'フネ' : 'ブイ';
                 const randomKey = "C" + Math.floor(Math.random() * 10000);
-                db.ref('objects/' + randomKey).set({ 
-                    type: cbMode, 
+
+                db.ref('objects/' + randomKey).set({
+                    type: cbMode,
                     shape: 'triangle',
-                    color: '#ff3b30', 
-                    lat: lat, 
-                    lng: lng, 
+                    color: '#ff3b30',
+                    lat: lat,
+                    lng: lng,
                     comment: commentText,
                     assignedLabel: initialLabel,
                     ownerId: myId,
-                    ts: Date.now() 
+                    ts: Date.now()
                 }, err => {
                     if (!err) {
-    window.renumberCourseObjects();
-    showToast(`📍 現在地に${commentText}を登録しました！`);
-});
+                        window.renumberCourseObjects();
+                        showToast(`📍 ${commentText}を設置しました`);
+                    } else {
+                        alert("登録に失敗しました");
+                    }
+                });
             }
             return;
         }
