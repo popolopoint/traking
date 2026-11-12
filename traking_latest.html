@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.4.6 by Popolo App.com</title>
+    <title>虎キング v5.4.7 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -523,7 +523,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.4.6 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.4.7 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -2159,7 +2159,14 @@ window.toggleReplayColorFilter = (hex) => {
         if (msg) msg.style.display = 'none';
 
         let card = document.querySelector(`.point-card[data-key="${key}"]`);
-        if (card) return;
+
+if (card) {
+    const labelInput = card.querySelector('.label-input');
+    if (labelInput && document.activeElement !== labelInput) {
+        labelInput.value = labelChar || '';
+    }
+    return;
+}
 
         const currentType = obj.type || 'buoy';
         const currentShape = obj.shape || 'triangle';
