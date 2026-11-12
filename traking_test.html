@@ -1161,29 +1161,40 @@ document.addEventListener('pointerdown', () => {
         const lat = currentLatestPos.lat;
         const lng = currentLatestPos.lng;
         const type = (cbMode === 'ship') ? 'ship' : 'buoy';
-        const commentText = (type === 'ship') ? 'フネ' : 'マーク';
-        const initialLabel = (type === 'ship') ? 'フネ' : 'ブイ';
-        const randomKey = "C" + Math.floor(Math.random() * 10000);
 
-        db.ref('objects/' + randomKey).set({ 
-            type: type, 
-            shape: 'triangle',
-            color: '#ff3b30', 
-            lat: lat, 
-            lng: lng, 
-            comment: commentText,
-            assignedLabel: initialLabel,
-            ownerId: myId,
-            ts: Date.now() 
-        }, err => {
-            if (!err) {
-                showToast(`📍 現在地に${commentText}を登録しました！`);
-            } else {
-                alert("登録に失敗しました");
-            }
+        db.ref('objects').once('value', snap => {
+            const objs = snap.val() || {};
+            let count = 0;
+            Object.values(objs).forEach(o => {
+                if (o.type === type) count++;
+            });
+            const num = count + 1;
+
+            const commentText = (type === 'ship') ? `フネ${num}` : `マーク${num}`;
+            const initialLabel = (type === 'ship') ? `フネ${num}` : `マーク${num}`;
+            const randomKey = "C" + Math.floor(Math.random() * 10000);
+
+            db.ref('objects/' + randomKey).set({ 
+                type: type, 
+                shape: 'triangle',
+                color: '#ff3b30', 
+                lat: lat, 
+                lng: lng, 
+                comment: commentText,
+                assignedLabel: initialLabel,
+                ownerId: myId,
+                ts: Date.now() 
+            }, err => {
+                if (!err) {
+                    showToast(`📍 現在地に${commentText}を登録しました！`);
+                } else {
+                    alert("登録に失敗しました");
+                }
+            });
         });
     };
 
+    
     window.openAdminUsersModal = () => {
         toggleMenu();
         if (!checkAdminAuth()) return;
@@ -2711,40 +2722,52 @@ window.toggleReplayColorFilter = (hex) => {
         const type = document.getElementById('new_type').value;
         const shape = type === 'ship' ? 'triangle' : document.getElementById('new_shape').value;
         const color = document.getElementById('new_color').value;
-        const comment = document.getElementById('new_comment').value;
-        const initialLabel = type === 'ship' ? 'フネ' : 'ブイ';
-        const randomKey = "M" + Math.floor(Math.random() * 1000);
-        
-        const saveData = {
-            type: type, 
-            shape: shape,
-            color: color, 
-            lat: lat, 
-            lng: lng, 
-            comment: comment, 
-            assignedLabel: initialLabel,
-            ownerId: myId,
-            ts: Date.now() 
-        };
+        const commentInput = document.getElementById('new_comment').value;
 
-        // 1. Firebaseへ保存
-        db.ref('objects/' + randomKey).set(saveData);
+        db.ref('objects').once('value', snap => {
+            const objs = snap.val() || {};
+            let count = 0;
+            Object.values(objs).forEach(o => {
+                if (o.type === type) count++;
+            });
+            const num = count + 1;
 
-        // 2. 水深スプレッドシート（GAS）へも同時に保存
-        fetch(WEB_APP_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: JSON.stringify({
-                method: "SAVE_BOAT",
-                password: ADMIN_SECRET,
-                name: initialLabel,
-                lat: lat,
-                lng: lng
-            })
-        }).catch(err => console.log("GAS sync error", err));
+            const defaultName = (type === 'ship') ? `フネ${num}` : `マーク${num}`;
+            const finalComment = commentInput ? commentInput : defaultName;
+            const initialLabel = defaultName;
+            const randomKey = "M" + Math.floor(Math.random() * 1000);
+            
+            const saveData = {
+                type: type, 
+                shape: shape,
+                color: color, 
+                lat: lat, 
+                lng: lng, 
+                comment: finalComment, 
+                assignedLabel: initialLabel,
+                ownerId: myId,
+                ts: Date.now() 
+            };
 
-        map.closePopup();
-        document.getElementById('pointSettingsPanel').style.display = 'block';
+            // 1. Firebaseへ保存
+            db.ref('objects/' + randomKey).set(saveData);
+
+            // 2. 水深スプレッドシート（GAS）へも同時に保存
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({
+                    method: "SAVE_BOAT",
+                    password: ADMIN_SECRET,
+                    name: initialLabel,
+                    lat: lat,
+                    lng: lng
+                })
+            }).catch(err => console.log("GAS sync error", err));
+
+            map.closePopup();
+            document.getElementById('pointSettingsPanel').style.display = 'block';
+        });
     };
 
     function initSetupUI() {
