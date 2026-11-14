@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.5.0b by Popolo App.com</title>
+    <title>虎キング v5.5.0c by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -528,7 +528,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.5.0b by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.5.0c by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1397,12 +1397,17 @@ function loadCourseLayout(layout) {
                 window.renumberCourseObjects();
 
                 // 読み込んだコース全体が見えるようにする
-                if (boundsPoints.length > 0) {
-                    map.fitBounds(
-                        L.latLngBounds(boundsPoints),
-                        { padding: [30, 30] }
-                    );
-                }
+                // 地図のサイズを再認識してからコース全体を表示
+setTimeout(() => {
+    map.invalidateSize(true);
+
+    if (boundsPoints.length > 0) {
+        map.fitBounds(
+            L.latLngBounds(boundsPoints),
+            { padding: [30, 30] }
+        );
+    }
+}, 300);
 
                 showToast(
                     '📂「' + (layout.name || '保存コース') +
@@ -1450,15 +1455,24 @@ window.renumberCourseObjects = () => {
                 );
 
             keys.forEach((key, index) => {
-                const number = index + 1;
-                const mark = number <= 20
-                    ? String.fromCharCode(9311 + number)
-                    : `(${number})`;
+    const number = index + 1;
+    const mark = number <= 20
+        ? String.fromCharCode(9311 + number)
+        : `(${number})`;
 
-                const name = type === 'ship' ? 'フネ' : 'ブイ';
+    const name = type === 'ship' ? 'フネ' : 'ブイ';
+    const currentLabel = objects[key].assignedLabel || '';
 
-                updates[key + '/assignedLabel'] = name + mark;
-            });
+    // 手動で変更した名前はそのまま残す
+    const isAutoLabel =
+        currentLabel === '' ||
+        /^フネ(?:[①-⑳]|\(\d+\))?$/.test(currentLabel) ||
+        /^ブイ(?:[①-⑳]|\(\d+\))?$/.test(currentLabel);
+
+    if (isAutoLabel) {
+        updates[key + '/assignedLabel'] = name + mark;
+    }
+});
         });
 
         if (Object.keys(updates).length > 0) {
