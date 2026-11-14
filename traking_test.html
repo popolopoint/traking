@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.5.0c by Popolo App.com</title>
+    <title>虎キング v5.5.1 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -362,9 +362,7 @@
 
 <body>
 <!-- <body>の直下に追加 -->
-<video id="no-sleep-video" loop playsinline muted style="display:none; width:1px; height:1px;">
-    <source src="data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAA1tZGF0AAAAAAAAAAU=" type="video/mp4">
-</video>
+
 
 <!-- ここから下は元のHTML（<div id="touch-lock-overlay">...） -->
 
@@ -528,7 +526,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.5.0c by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.5.1 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -555,6 +553,23 @@
 
 <div class="status-panel" id="status">GPSシグナル待機中...</div>
 
+<div id="wake-lock-status" style="
+    position:fixed;
+    bottom:108px;
+    left:10px;
+    z-index:2000;
+    background:rgba(0,0,0,0.85);
+    color:#ffd27f;
+    padding:5px 8px;
+    border-radius:4px;
+    font-size:10px;
+    border:1px solid #ff9900;
+    pointer-events:none;">
+    画面スリープ防止：確認中
+</div>
+
+
+    
 <div id="button-container">
     <div id="menu-grid">
      <button class="action-btn" id="lock-btn" onclick="toggleTouchLock()" title="画面タッチロック">🔒</button>
@@ -667,33 +682,6 @@ let unlockStepSequence = []; // タップされた順番を記録する配列
 const correctSequence = [1, 2, 3]; // 正しい順番
 
 
-    
-    
-    
-// スリープ防止用のダミー動画再生処理
-function enableNoSleepVideo() {
-    const video = document.getElementById('no-sleep-video');
-    if (video) {
-        video.play().catch(err => {
-            console.log("Video play pending interaction:", err);
-        });
-    }
-}
-
-// 10秒ごとに動画再生状態をチェックしてスリープを強制阻止
-setInterval(() => {
-    if (document.visibilityState === 'visible') {
-        enableNoSleepVideo();
-        if (typeof requestWakeLock === 'function' && !wakeLock) {
-            requestWakeLock();
-        }
-    }
-}, 10000);
-
-
-
-    
-
 window.toggleTouchLock = () => {
     isTouchLocked = !isTouchLocked;
     const overlay = document.getElementById('touch-lock-overlay');
@@ -702,7 +690,7 @@ window.toggleTouchLock = () => {
     unlockStepSequence = []; // リセット
 
     if (isTouchLocked) {
-        enableNoSleepVideo(); // ロックオン時に無音動画を再生開始してスリープ阻止
+    
         if (overlay) overlay.style.display = 'block';
         if (unlockContainer) unlockContainer.style.display = 'flex';
         
@@ -961,12 +949,7 @@ let replayColorFilters = {};
 
 
 
-// 初回タッチ時にも念のため有効化（ブラウザの仕様対策）
-document.addEventListener('pointerdown', () => {
-    if (!wakeLock && document.visibilityState === 'visible') {
-        requestWakeLock();
-    }
-}, { once: true });
+
 
 
 
@@ -3293,6 +3276,9 @@ ts: Date.now()
         localStorage.setItem('tora_king_part_type', myParticipantType);
         localStorage.removeItem('tora_king_viewer');
         document.getElementById('setup-overlay').style.display = 'none'; 
+
+requestWakeLock();
+        
         startTracking();
     }
 
@@ -3315,6 +3301,9 @@ ts: Date.now()
         localStorage.removeItem('tora_king_part_type');
         document.getElementById('setup-overlay').style.display = 'none';
         showToast("👀 観戦モードで開始しました");
+
+requestWakeLock();
+        
         startTracking();
     };
 
@@ -3702,18 +3691,6 @@ ts: Date.now()
 
 
 
-// 【追加】自動でスリープ（自動消灯）を防ぐための定期チート処理
-setInterval(() => {
-    if (document.visibilityState === 'visible') {
-        // 方法1: ごく小さな画面スクロールイベントを強制発生させる
-        window.scrollBy(0, 0);
-
-        // 方法2: Wake Lockの再取得もあわせて行う（念のため）
-        if (typeof requestWakeLock === 'function' && !wakeLock) {
-            requestWakeLock();
-        }
-    }
-}, 19000); // 19秒ごとに実行
 
 
 // --- 【追加】独立記号・図形管理用の変数とロジック ---
