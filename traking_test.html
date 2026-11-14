@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.4.7 by Popolo App.com</title>
+    <title>虎キング v5.4.8 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -436,6 +436,11 @@
         <button class="cb-btn" id="cb-mode-data" onclick="setCourseBuilderMode('data')">📊 データ</button>
         <button class="cb-btn" onclick="undoLastCreatedObjectOrLine()" style="background:#e67e22; border-color:#f39c12;" title="直近で置いたブイや線を消去">↩️ 元に戻す</button>
         <button class="cb-btn" onclick="openDataListModal()" style="background:#2980b9;">📋 一覧</button>
+        <button class="cb-btn" onclick="saveCurrentCourseLayout()" style="background:#8e44ad;">💾 コース保存</button>
+        <button class="cb-btn" onclick="startNewCourseLayout()" style="background:#c0392b;">＋ 新規コース</button>
+        <button class="cb-btn" onclick="openSavedCourseLayouts()" style="background:#16a085;">📂 保存コース読み込み</button>
+
+        
     </div>
     <div style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-top:8px; border-top:2px solid #555; padding-top:10px;">
         <button class="cb-btn" onclick="addCurrentPositionObject()" style="background:#27ae60; font-size:15px; padding:10px 16px;">📍 現在位置を登録</button>
@@ -523,7 +528,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.4.7 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.4.8 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1023,6 +1028,313 @@ document.addEventListener('pointerdown', () => {
         document.getElementById('manual-modal').style.display = 'none';
     }
 
+
+// ==========================================
+// コースレイアウト保存・新規作成・読み込み
+// ==========================================
+
+// コース作成で配置したフネ・ブイかどうかを判定
+function isCourseLayoutObject(key, obj) {
+    if (!obj || (obj.type !== 'ship' && obj.type !== 'buoy')) return false;
+
+    // 新方式のフラグ、または旧バージョンのC始まりのコース点
+    return obj.courseLayoutObject === true ||
+        (/^C/.test(key) &&
+         obj.shape === 'triangle' &&
+         (obj.comment === 'フネ' || obj.comment === 'マーク'));
+}
+
+
+// ------------------------------------------
+// 1. 現在のコースを保存
+// ------------------------------------------
+window.saveCurrentCourseLayout = () => {
+    const name = prompt('保存するコース名を入力してください');
+    if (!name || !name.trim()) return;
+
+    db.ref('objects').once('value', objSnap => {
+        const objects = objSnap.val() || {};
+        const courseObjects = {};
+        const courseKeys = new Set();
+
+        Object.keys(objects).forEach(key => {
+            if (isCourseLayoutObject(key, objects[key])) {
+                courseObjects[key] = {
+                    ...objects[key],
+                    courseLayoutObject: true
+                };
+                courseKeys.add(key);
+            }
+        });
+
+        if (courseKeys.size === 0) {
+            alert('保存できるフネ・ブイがありません');
+            return;
+        }
+
+        db.ref('custom_lines').once('value', lineSnap => {
+            const allLines = lineSnap.val() || {};
+            const courseLines = {};
+
+            Object.keys(allLines).forEach(lineId => {
+                const line = allLines[lineId];
+
+                if (line &&
+                    courseKeys.has(line.from) &&
+                    courseKeys.has(line.to)) {
+                    courseLines[lineId] = line;
+                }
+            });
+
+            db.ref('course_layouts').push({
+                name: name.trim(),
+                objects: courseObjects,
+                lines: courseLines,
+                createdAt: Date.now()
+            }, err => {
+                if (err) {
+                    alert('コースの保存に失敗しました');
+                    return;
+                }
+
+                // 旧形式のコース点にも判定用フラグを付ける
+                const updates = {};
+                courseKeys.forEach(key => {
+                    updates[key + '/courseLayoutObject'] = true;
+                });
+
+                if (Object.keys(updates).length > 0) {
+                    db.ref('objects').update(updates);
+                }
+
+                showToast('💾「' + name.trim() + '」を保存しました');
+            });
+        });
+    });
+};
+
+
+// ------------------------------------------
+// 2. 新しいコースを作成
+// ------------------------------------------
+window.startNewCourseLayout = () => {
+    if (!confirm(
+        '現在のコース用フネ・ブイと、それらを結ぶ線を削除します。\n' +
+        '参加者のGPS位置とヒート記録は削除されません。\n\n' +
+        '新しいコースを作成しますか？'
+    )) return;
+
+    db.ref('objects').once('value', objSnap => {
+        const objects = objSnap.val() || {};
+        const courseKeys = new Set();
+
+        Object.keys(objects).forEach(key => {
+            if (isCourseLayoutObject(key, objects[key])) {
+                courseKeys.add(key);
+            }
+        });
+
+        db.ref('custom_lines').once('value', lineSnap => {
+            const lines = lineSnap.val() || {};
+            const updates = {};
+
+            // コース点に接続している線だけ削除
+            Object.keys(lines).forEach(lineId => {
+                const line = lines[lineId];
+
+                if (line &&
+                    (courseKeys.has(line.from) ||
+                     courseKeys.has(line.to))) {
+                    updates['custom_lines/' + lineId] = null;
+                }
+            });
+
+            // コース用のフネ・ブイだけ削除
+            courseKeys.forEach(key => {
+                updates['objects/' + key] = null;
+            });
+
+            if (Object.keys(updates).length === 0) {
+                showToast('新しいコースを作成できます');
+                return;
+            }
+
+            db.ref().update(updates, err => {
+                if (err) {
+                    alert('新規コースの準備に失敗しました');
+                    return;
+                }
+
+                cbSelectedFirstObj = null;
+                showToast('＋ 新しいコースを作成できます');
+            });
+        });
+    });
+};
+
+
+// ------------------------------------------
+// 3. 保存したコースの一覧を表示
+// ------------------------------------------
+window.openSavedCourseLayouts = () => {
+    db.ref('course_layouts').once('value', snap => {
+        const layouts = snap.val() || {};
+
+        const ids = Object.keys(layouts).sort((a, b) =>
+            (layouts[b].createdAt || 0) -
+            (layouts[a].createdAt || 0)
+        );
+
+        if (ids.length === 0) {
+            alert('保存されたコースはありません');
+            return;
+        }
+
+        const menu = ids.map((id, i) => {
+            const date = layouts[id].createdAt
+                ? new Date(layouts[id].createdAt).toLocaleDateString()
+                : '';
+
+            return (i + 1) + ': ' +
+                (layouts[id].name || '名称未設定') +
+                (date ? ' (' + date + ')' : '');
+        }).join('\n');
+
+        const answer = prompt(
+            '読み込むコースの番号を入力してください。\n\n' + menu
+        );
+
+        if (answer === null || !answer.trim()) return;
+
+        const index = Number(answer) - 1;
+
+        if (!Number.isInteger(index) ||
+            index < 0 ||
+            index >= ids.length) {
+            alert('番号が正しくありません');
+            return;
+        }
+
+        loadCourseLayout(layouts[ids[index]]);
+    });
+};
+
+
+// ------------------------------------------
+// 4. 選択したコースを地図に読み込む
+// ------------------------------------------
+function loadCourseLayout(layout) {
+    const savedObjects = layout.objects || {};
+    const savedLines = layout.lines || {};
+
+    if (Object.keys(savedObjects).length === 0) {
+        alert('このコースには読み込めるポイントがありません');
+        return;
+    }
+
+    if (!confirm(
+        '現在のコース用フネ・ブイと線を入れ替えて、\n' +
+        '「' + (layout.name || '保存コース') + '」を読み込みますか？'
+    )) return;
+
+    db.ref('objects').once('value', objSnap => {
+        const currentObjects = objSnap.val() || {};
+        const currentCourseKeys = new Set();
+
+        Object.keys(currentObjects).forEach(key => {
+            if (isCourseLayoutObject(key, currentObjects[key])) {
+                currentCourseKeys.add(key);
+            }
+        });
+
+        db.ref('custom_lines').once('value', lineSnap => {
+            const currentLines = lineSnap.val() || {};
+            const updates = {};
+            const keyMap = {};
+            const boundsPoints = [];
+
+            // 現在のコースに関係する線を削除
+            Object.keys(currentLines).forEach(lineId => {
+                const line = currentLines[lineId];
+
+                if (line &&
+                    (currentCourseKeys.has(line.from) ||
+                     currentCourseKeys.has(line.to))) {
+                    updates['custom_lines/' + lineId] = null;
+                }
+            });
+
+            // 現在のコース用ポイントを削除
+            currentCourseKeys.forEach(key => {
+                updates['objects/' + key] = null;
+            });
+
+            // 保存データのポイントを新しいキーで復元
+            Object.keys(savedObjects).forEach(oldKey => {
+                const obj = savedObjects[oldKey];
+                if (!obj) return;
+
+                const newKey = db.ref('objects').push().key;
+                keyMap[oldKey] = newKey;
+
+                updates['objects/' + newKey] = {
+                    ...obj,
+                    courseLayoutObject: true
+                };
+
+                boundsPoints.push([
+                    Number(obj.lat),
+                    Number(obj.lng)
+                ]);
+            });
+
+            // 保存していた線を復元
+            Object.keys(savedLines).forEach(lineId => {
+                const line = savedLines[lineId];
+                if (!line) return;
+
+                const fromKey = keyMap[line.from];
+                const toKey = keyMap[line.to];
+
+                if (!fromKey || !toKey) return;
+
+                const newLineKey = db.ref('custom_lines').push().key;
+
+                updates['custom_lines/' + newLineKey] = {
+                    from: fromKey,
+                    to: toKey,
+                    type: line.type,
+                    ts: line.ts || Date.now()
+                };
+            });
+
+            db.ref().update(updates, err => {
+                if (err) {
+                    alert('コースの読み込みに失敗しました');
+                    return;
+                }
+
+                cbSelectedFirstObj = null;
+                window.renumberCourseObjects();
+
+                // 読み込んだコース全体が見えるようにする
+                if (boundsPoints.length > 0) {
+                    map.fitBounds(
+                        L.latLngBounds(boundsPoints),
+                        { padding: [30, 30] }
+                    );
+                }
+
+                showToast(
+                    '📂「' + (layout.name || '保存コース') +
+                    '」を読み込みました'
+                );
+            });
+        });
+    });
+};
+
+    
     window.promptCourseCreate = () => {
         if (isMenuOpen) toggleMenu();
         if (!checkAdminAuth()) return;
@@ -1208,11 +1520,16 @@ window.renumberCourseObjects = () => {
     color: '#ff3b30',
     lat: lat,
     lng: lng,
-    comment: commentText,
-    assignedLabel: initialLabel,
-    ownerId: myId,
-    ts: Date.now()
-}, err => {
+  
+           comment: commentText,
+assignedLabel: initialLabel,
+ownerId: myId,
+courseLayoutObject: true,
+ts: Date.now()
+
+        
+        
+        }, err => {
     if (!err) {
         window.renumberCourseObjects();
         showToast(`📍 現在地に${commentText}を登録しました！`);
@@ -2685,10 +3002,16 @@ if (card) {
                     color: '#ff3b30',
                     lat: lat,
                     lng: lng,
+
+                    
                     comment: commentText,
-                    assignedLabel: initialLabel,
-                    ownerId: myId,
-                    ts: Date.now()
+assignedLabel: initialLabel,
+ownerId: myId,
+courseLayoutObject: true,
+ts: Date.now()
+
+
+                    
                 }, err => {
                     if (!err) {
                         window.renumberCourseObjects();
