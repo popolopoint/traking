@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.5.2b by Popolo App.com</title>
+    <title>虎キング v5.5.3 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -540,7 +540,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.5.2b by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.5.3 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -752,6 +752,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });    
 
 let wakeLock = null;
+let wakeLockInterval = null;
 
 async function requestWakeLock() {
     // 画面タッチ・操作時に無音動画も確実にキック
@@ -759,12 +760,27 @@ async function requestWakeLock() {
 
     try {
         if ('wakeLock' in navigator) {
+            // すでにロックがあれば一度解放して取り直す
+            if (wakeLock !== null) {
+                await wakeLock.release().catch(() => {});
+                wakeLock = null;
+            }
             wakeLock = await navigator.wakeLock.request('screen');
             console.log('Screen Wake Lock is active.');
         }
     } catch (err) {
         console.error(`${err.name}, ${err.message}`);
     }
+}
+
+// 30秒ごとに定期的にWake Lockを再取得（OSによる勝手な切断を防ぐ）
+function startWakeLockInterval() {
+    if (wakeLockInterval) clearInterval(wakeLockInterval);
+    wakeLockInterval = setInterval(async () => {
+        if (document.visibilityState === 'visible') {
+            await requestWakeLock();
+        }
+    }, 30000);
 }
 
 // 画面の表示状態が戻ったとき（バックグラウンドから復帰時など）に再取得する
@@ -774,6 +790,13 @@ document.addEventListener('visibilitychange', async () => {
         await requestWakeLock();
     }
 });
+
+// ユーザーが画面をタッチしたタイミングでも確実に対処
+document.addEventListener('touchstart', () => {
+    if (!wakeLock || wakeLock.released) {
+        requestWakeLock();
+    }
+}, { passive: true });
 
 
 
@@ -3714,17 +3737,23 @@ requestWakeLock();
     
     map.on('movestart', () => isFollowing = false);
 
- window.addEventListener('load', () => {
-        document.getElementById('user-list-title').innerText = `参加者 (${units[speedUnitMode]})`;
-        updateAdminModeUI();
-        setTimeout(() => { map.invalidateSize(); }, 300);
-        setTimeout(checkIncomingCourse, 1000);
-        
-        // ▼ ここでWake Lockを呼び出すのがベストです！
-        requestWakeLock();
-    });
 
 
+
+
+window.addEventListener('load', () => {
+    document.getElementById('user-list-title').innerText = `参加者 (${units[speedUnitMode]})`;
+    updateAdminModeUI();
+    setTimeout(() => { map.invalidateSize(); }, 300);
+    setTimeout(checkIncomingCourse, 1000);
+    
+    // スリープ防止を起動 ＆ 定期リフレッシュを開始
+    requestWakeLock();
+    startWakeLockInterval();
+});
+
+
+    
 
 
 
