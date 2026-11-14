@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.4.8b by Popolo App.com</title>
+    <title>虎キング v5.4.9 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -439,7 +439,7 @@
         <button class="cb-btn" onclick="saveCurrentCourseLayout()" style="background:#8e44ad;">💾 コース保存</button>
         <button class="cb-btn" onclick="startNewCourseLayout()" style="background:#c0392b;">＋ 新規コース</button>
         <button class="cb-btn" onclick="openSavedCourseLayouts()" style="background:#16a085;">📂 保存コース読み込み</button>
-
+        <button class="cb-btn" onclick="deleteSavedCourseLayout()" style="background:#c0392b;">🗑️ 保存コース削除</button>
         
     </div>
     <div style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-top:8px; border-top:2px solid #555; padding-top:10px;">
@@ -528,7 +528,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.4.8b by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.4.9 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1225,7 +1225,65 @@ window.openSavedCourseLayouts = () => {
     });
 };
 
+// ------------------------------------------
+// 保存したコースを削除
+// ------------------------------------------
+window.deleteSavedCourseLayout = () => {
+    db.ref('course_layouts').once('value', snap => {
+        const layouts = snap.val() || {};
 
+        const ids = Object.keys(layouts).sort((a, b) =>
+            (layouts[b].createdAt || 0) -
+            (layouts[a].createdAt || 0)
+        );
+
+        if (ids.length === 0) {
+            alert('保存されたコースはありません');
+            return;
+        }
+
+        const menu = ids.map((id, i) => {
+            return (i + 1) + ': ' +
+                (layouts[id].name || '名称未設定');
+        }).join('\n');
+
+        const answer = prompt(
+            '削除するコースの番号を入力してください。\n\n' + menu
+        );
+
+        if (answer === null || !answer.trim()) return;
+
+        const index = Number(answer) - 1;
+
+        if (!Number.isInteger(index) ||
+            index < 0 ||
+            index >= ids.length) {
+            alert('番号が正しくありません');
+            return;
+        }
+
+        const selectedId = ids[index];
+        const selectedName = layouts[selectedId].name || '名称未設定';
+
+        if (!confirm(
+            '「' + selectedName + '」を削除しますか？\n\n' +
+            'この操作は取り消せません。'
+        )) return;
+
+        db.ref('course_layouts/' + selectedId).remove(err => {
+            if (err) {
+                alert('削除に失敗しました：' + err.message);
+            } else {
+                alert('「' + selectedName + '」を削除しました');
+            }
+        });
+    });
+};
+
+
+
+
+    
 // ------------------------------------------
 // 4. 選択したコースを地図に読み込む
 // ------------------------------------------
