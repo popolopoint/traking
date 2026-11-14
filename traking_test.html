@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.5.2 by Popolo App.com</title>
+    <title>虎キング v5.5.2b by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -539,7 +539,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.5.2 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.5.2b by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -2526,39 +2526,39 @@ window.toggleReplayColorFilter = (hex) => {
             }
         }
 
-        if (userMarkers[identifier]) {
-            userMarkers[identifier].setLatLng([lat, lng]).setIcon(createUserIcon(partType, color, heading));
-        } else {
-            userMarkers[identifier] = L.marker([lat, lng], { icon: createUserIcon(partType, color, heading) }).addTo(map);
-        }
+      if (userMarkers[identifier]) {
+    userMarkers[identifier].setLatLng([lat, lng]);
+    // アイコンやスタイル（色や向き）の変更を確実に反映
+    userMarkers[identifier].setIcon(createUserIcon(partType, color, heading));
+} else {
+    userMarkers[identifier] = L.marker([lat, lng], { icon: createUserIcon(partType, color, heading) }).addTo(map);
+}
     }
 
 
 
 
 function createUserIcon(partType, color, heading) {
-        if (partType === 'ship') {
-            // ログイン中のフネ（例: モーターボートアイコン ＋ 点滅）
-            return L.divIcon({ 
-                html: `<div class="blinking-user-icon" style="font-size:26px; filter: drop-shadow(0 0 4px rgba(0,0,0,0.8)); text-align:center; line-height:26px;" title="ログイン中のフネ">🛥️</div>`, 
-                className: '', 
-                iconSize: [26, 26], 
-                iconAnchor: [13, 13] 
-            });
-        } else if (partType === 'buoy') {
-            // ログイン中のブイ（例: 旗アイコン ＋ 点滅）
-            return L.divIcon({ 
-                html: `<div class="blinking-user-icon" style="font-size:24px; filter: drop-shadow(0 0 4px rgba(0,0,0,0.8)); text-align:center; line-height:24px;" title="ログイン中のブイ">🚩</div>`, 
-                className: '', 
-                iconSize: [24, 24], 
-                iconAnchor: [12, 12] 
-            });
-        } else {
-            // 通常の選手（矢印 ＋ 点滅）
-            const html = `<div class="small-arrow-wrapper blinking-user-icon"><div class="arrow-icon-wrapper" style="transform: rotate(${heading||0}deg); width:15px; height:15px;"><svg viewBox="0 0 100 100" width="15" height="15"><path d="M50 5 L90 90 L50 75 L10 90 Z" fill="${color || '#ff9900'}" stroke="white" stroke-width="5" /></svg></div></div>`;
-            return L.divIcon({ html: html, className: '', iconSize: [15, 15], iconAnchor: [7.5, 7.5] });
-        }
+    if (partType === 'ship') {
+        return L.divIcon({ 
+            html: `<div class="blinking-user-icon" style="font-size:26px; filter: drop-shadow(0 0 4px rgba(0,0,0,0.8)); text-align:center; line-height:26px;" title="フネ">🛥️</div>`, 
+            className: '', 
+            iconSize: [26, 26], 
+            iconAnchor: [13, 13] 
+        });
+    } else if (partType === 'buoy') {
+        return L.divIcon({ 
+            html: `<div class="blinking-user-icon" style="font-size:24px; filter: drop-shadow(0 0 4px rgba(0,0,0,0.8)); text-align:center; line-height:24px;" title="ブイ">🚩</div>`, 
+            className: '', 
+            iconSize: [24, 24], 
+            iconAnchor: [12, 12] 
+        });
+    } else {
+        // 通常の選手（矢印 + 点滅）を1つのラッパーに整理
+        const html = `<div class="blinking-user-icon" style="width:15px; height:15px; display:flex; align-items:center; justify-content:center;"><div style="transform: rotate(${heading||0}deg); width:15px; height:15px; display:flex; align-items:center; justify-content:center;"><svg viewBox="0 0 100 100" width="15" height="15"><path d="M50 5 L90 90 L50 75 L10 90 Z" fill="${color || '#ff9900'}" stroke="white" stroke-width="5" /></svg></div></div>`;
+        return L.divIcon({ html: html, className: '', iconSize: [15, 15], iconAnchor: [7.5, 7.5] });
     }
+}
 
 
     
