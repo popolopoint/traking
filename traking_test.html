@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.4.8 by Popolo App.com</title>
+    <title>虎キング v5.4.8b by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -528,7 +528,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.4.8 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.4.8b by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1092,10 +1092,16 @@ window.saveCurrentCourseLayout = () => {
                 lines: courseLines,
                 createdAt: Date.now()
             }, err => {
+              
                 if (err) {
-                    alert('コースの保存に失敗しました');
-                    return;
-                }
+    console.error("コース保存エラー:", err);
+    alert(
+        'コースの保存に失敗しました。\n' +
+        'エラーコード：' + (err.code || '不明') + '\n' +
+        '詳細：' + (err.message || '不明')
+    );
+    return;
+}
 
                 // 旧形式のコース点にも判定用フラグを付ける
                 const updates = {};
