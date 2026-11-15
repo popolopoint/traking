@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.1b by Popolo App.com</title>
+    <title>虎キング v6.0.1c by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -547,7 +547,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.1b by Popolo App.com</div>
+<div id="map-watermark">虎キング v6.0.1c by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -3908,9 +3908,16 @@ function createIndependentShapeMarker(latlng, shapeType) {
         if (!btn) return;
 
         // 1. すでに読み込み済みの場合は表示・非表示を切り替えるだけ
+     
         if (isDepthLoaded) {
             isDepthVisible = !isDepthVisible;
-            loadedDepthMarkers.forEach(m => m.setMap(isDepthVisible ? map : null));
+            loadedDepthMarkers.forEach(m => {
+                if (isDepthVisible) {
+                    m.addTo(map);
+                } else {
+                    m.remove();
+                }
+            });
             btn.style.background = isDepthVisible ? "#e67e22" : "#27ae60";
             btn.textContent = isDepthVisible ? "🙈 水深を隠す" : "📊 水深データ";
             return;
@@ -3946,22 +3953,23 @@ function createIndependentShapeMarker(latlng, shapeType) {
                     else if (baseDepth < 160) color = "#a29bfe";
                     else color = "#000080";
 
-                    const marker = new google.maps.Marker({
-                        position: { lat: lat, lng: lng },
-                        map: map,
-                        icon: {
-                            path: google.maps.SymbolPath.CIRCLE,
-                            fillColor: color,
-                            fillOpacity: 0.85,
-                            scale: 4,
-                            strokeColor: "#333333",
-                            strokeWeight: 0.5
-                        },
-                        title: `水深: ${rawDepth}cm (基準: ${baseDepth}cm)`,
-                        zIndex: 400
-                    });
+                    // Leaflet用の円形マーカーに変更
+                    const marker = L.circleMarker([lat, lng], {
+                        radius: 4,
+                        fillColor: color,
+                        fillOpacity: 0.85,
+                        color: "#333333",
+                        weight: 0.5
+                    }).bindTooltip(`水深: ${rawDepth}cm (基準: ${baseDepth}cm)`);
 
+                    if (isDepthVisible) {
+                        marker.addTo(map);
+                    }
                     loadedDepthMarkers.push(marker);
+
+
+
+                    
                 });
 
                 isDepthLoaded = true;
