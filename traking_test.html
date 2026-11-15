@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.1d by Popolo App.com</title>
+    <title>虎キング v5.5.6 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -454,18 +454,13 @@
         <button class="cb-btn" onclick="deleteSavedCourseLayout()" style="background:#c0392b;">🗑️ 保存コース削除</button>
         
     </div>
-   
- 
-
-<div style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-top:8px; border-top:2px solid #555; padding-top:10px; gap:8px;">
-        <!-- 📍 現在位置を登録 の隣に水深データボタンを追加 -->
-        <button class="cb-btn" onclick="addCurrentPositionObject()" style="background:#27ae60; font-size:14px; padding:10px 12px; flex:1;">📍 現在位置を登録</button>
-        <button id="btn-toggle-depth" class="cb-btn" onclick="toggleDepthDataLayer()" style="background:#27ae60; font-size:14px; padding:10px 12px; flex:1;">📊 水深データ</button>
-        <div style="display:flex; align-items:center; gap:4px; font-size:14px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-top:8px; border-top:2px solid #555; padding-top:10px;">
+        <button class="cb-btn" onclick="addCurrentPositionObject()" style="background:#27ae60; font-size:15px; padding:10px 16px;">📍 現在位置を登録</button>
+        <div style="display:flex; align-items:center; gap:6px; font-size:15px;">
             <span>風向:</span>
-            <input type="number" id="cb-wind-deg" value="0" style="width:55px; padding:6px; font-size:14px; text-align:center;" placeholder="°">°
+            <input type="number" id="cb-wind-deg" value="0" style="width:65px; padding:6px; font-size:14px; text-align:center;" placeholder="°">°
         </div>
-        <button class="cb-btn" onclick="exitCourseBuilder()" style="background:#c0392b; font-size:14px; padding:10px 14px;">終了</button>
+        <button class="cb-btn" onclick="exitCourseBuilder()" style="background:#c0392b; font-size:15px; padding:10px 16px;">終了</button>
     </div>
 </div>
 
@@ -545,7 +540,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.1d by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.5.6 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -2523,15 +2518,10 @@ window.toggleReplayColorFilter = (hex) => {
         setTimeout(() => { location.reload(); }, 500);
     };
 
-   function updateUserTrailAndMarker(identifier, lat, lng, color, heading, timestamp, partType = 'normal') {
+    function updateUserTrailAndMarker(identifier, lat, lng, color, heading, timestamp, partType = 'normal') {
         if (!userTrails[identifier]) userTrails[identifier] = [];
         userTrails[identifier].push({ lat: lat, lng: lng, ts: timestamp });
-
-        // ★倍速（replaySpeed）を考慮し、どの倍速でも常に画面上で5秒間（5000ms）表示されるように調整
-        const currentSpeed = (isReplaying && typeof replaySpeed !== 'undefined') ? (replaySpeed || 1) : 1;
-        const maxAgeMs = 5000 * currentSpeed;
-
-        userTrails[identifier] = userTrails[identifier].filter(p => timestamp - p.ts <= maxAgeMs);
+        userTrails[identifier] = userTrails[identifier].filter(p => timestamp - p.ts <= 50000);
 
         if (userPolylineLines[identifier]) {
             userPolylineLines[identifier].forEach(seg => map.removeLayer(seg));
@@ -2545,13 +2535,12 @@ window.toggleReplayColorFilter = (hex) => {
                 const p2 = points[i+1];
                 const age = timestamp - p2.ts;
                 let opacity = 0.8;
-
-                // ★残り時間が8割を超えたら（全体の2割の期間で）フェードアウト開始
-                const fadeStartAge = maxAgeMs * 0.8;
-                const fadeDuration = maxAgeMs * 0.2;
-
-                if (age > fadeStartAge) {
-                    opacity = 0.8 * (1.0 - (age - fadeStartAge) / fadeDuration);
+                
+                // 5秒（5000ms）を寿命とし、残り1秒（4000ms経過後）からフェードアウト
+                if (age > 5000) {
+                    opacity = 0;
+                } else if (age > 4000) {
+                    opacity = 0.8 * (1.0 - (age - 4000) / 1000);
                     if (opacity < 0) opacity = 0;
                 }
 
@@ -2565,7 +2554,7 @@ window.toggleReplayColorFilter = (hex) => {
                 }
             }
         }
-    }
+
       if (userMarkers[identifier]) {
     userMarkers[identifier].setLatLng([lat, lng]);
     // アイコンやスタイル（色や向き）の変更を確実に反映
@@ -3892,103 +3881,6 @@ function createIndependentShapeMarker(latlng, shapeType) {
         }
     };
     // --- 【ここまで】 ---
-
-
-// ==========================================
-    // 📊 水深データの遅延読み込み＆表示・非表示機能
-    // ==========================================
-    let isDepthLoaded = false;
-    let isDepthVisible = false;
-    let loadedDepthMarkers = [];
-
-    async function toggleDepthDataLayer() {
-        const btn = document.getElementById('btn-toggle-depth');
-        if (!btn) return;
-
-        // 1. すでに読み込み済みの場合は表示・非表示を切り替えるだけ
-     
-        if (isDepthLoaded) {
-            isDepthVisible = !isDepthVisible;
-            loadedDepthMarkers.forEach(m => {
-                if (isDepthVisible) {
-                    m.addTo(map);
-                } else {
-                    m.remove();
-                }
-            });
-            btn.style.background = isDepthVisible ? "#e67e22" : "#27ae60";
-            btn.textContent = isDepthVisible ? "🙈 水深を隠す" : "📊 水深データ";
-            return;
-        }
-
-        // 2. 初回クリック時のみ非同期でフェッチする
-        if (typeof showLoading === 'function') showLoading(true);
-        btn.textContent = "⏳ 読込中...";
-        btn.disabled = true;
-
-        try {
-            const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz3Q4QaJxG-QAsRbykjZD8-DC1w9Y-6SaK1y2RWnS-xVmuzlgz_J2bXXUhrxD9gZQqPtQ/exec";
-            
-            const response = await fetch(WEB_APP_URL);
-            const data = await response.json();
-
-            if (data && data.points && data.points.length > 0) {
-                data.points.forEach(p => {
-                    const lat = parseFloat(p[2]);
-                    const lng = parseFloat(p[3]);
-                    if (isNaN(lat) || isNaN(lng)) return;
-
-                    const rawDepth = parseFloat(p[4]) || 0;
-                    const baseDepth = parseFloat(p[5]) || 0;
-
-                    let color = "#70a1ff";
-                    if (baseDepth < 20) color = "#ff0000";
-                    else if (baseDepth < 40) color = "#ffa500";
-                    else if (baseDepth < 60) color = "#ffff00";
-                    else if (baseDepth < 80) color = "#adff2f";
-                    else if (baseDepth < 100) color = "#a8e6cf";
-                    else if (baseDepth < 120) color = "#00ffff";
-                    else if (baseDepth < 160) color = "#a29bfe";
-                    else color = "#000080";
-
-                    // Leaflet用の円形マーカーに変更
-                    const marker = L.circleMarker([lat, lng], {
-                        radius: 4,
-                        fillColor: color,
-                        fillOpacity: 0.85,
-                        color: "#333333",
-                        weight: 0.5
-                    }).bindTooltip(`水深: ${rawDepth}cm (基準: ${baseDepth}cm)`);
-
-                    if (isDepthVisible) {
-                        marker.addTo(map);
-                    }
-                    loadedDepthMarkers.push(marker);
-
-
-
-                    
-                });
-
-                isDepthLoaded = true;
-                isDepthVisible = true;
-                btn.style.background = "#e67e22";
-                btn.textContent = "🙈 水深を隠す";
-            } else {
-                alert("水深データが見つかりませんでした。");
-                btn.textContent = "📊 水深データ";
-            }
-        } catch (error) {
-            console.error("水深データの取得失敗:", error);
-            alert("水深データの取得中に通信エラーが発生しました。");
-            btn.textContent = "📊 水深データ";
-        } finally {
-            if (typeof showLoading === 'function') showLoading(false);
-            btn.disabled = false;
-        }
-    }
-
-
     
 </script>
 </body>
