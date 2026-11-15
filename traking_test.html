@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.5.6b by Popolo App.com</title>
+    <title>虎キング v5.5.6c by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -540,7 +540,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.5.6b by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.5.6c by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -2518,7 +2518,7 @@ window.toggleReplayColorFilter = (hex) => {
         setTimeout(() => { location.reload(); }, 500);
     };
 
-    function updateUserTrailAndMarker(identifier, lat, lng, color, heading, timestamp, partType = 'normal') {
+   function updateUserTrailAndMarker(identifier, lat, lng, color, heading, timestamp, partType = 'normal') {
         if (!userTrails[identifier]) userTrails[identifier] = [];
         userTrails[identifier].push({ lat: lat, lng: lng, ts: timestamp });
         
@@ -2545,8 +2545,10 @@ window.toggleReplayColorFilter = (hex) => {
                     opacity = 0.8 * (1.0 - (age - 4000) / 1000);
                     if (opacity < 0) opacity = 0;
                 }
-...
 
+
+
+                
                 if (opacity > 0) {
                     const segLine = L.polyline([[p1.lat, p1.lng], [p2.lat, p2.lng]], {
                         color: color || '#ff9900',
