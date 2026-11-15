@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.5.7 by Popolo App.com</title>
+    <title>虎キング v5.5.7b by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -540,7 +540,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.5.7 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.5.7b by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1978,6 +1978,7 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
 
 
     // 外部からJSONファイルを読み込んでアプリに復元する
+// 外部からJSONファイルを読み込んでアプリに復元する（単体・複数一括両対応）
 window.importCourseFromJson = (inputElement) => {
     const file = inputElement.files[0];
     if (!file) return;
@@ -1985,28 +1986,50 @@ window.importCourseFromJson = (inputElement) => {
     const reader = new FileReader();
     reader.onload = (e) => {
         try {
-            const importedData = JSON.parse(e.target.result);
-            
-            // 最低限必要なデータ（history等）が入っているか簡易チェック
-            if (!importedData || !importedData.history) {
-                alert("❌ 無効なレースデータファイルです。");
+            const rawData = JSON.parse(e.target.result);
+            if (!rawData) {
+                alert("❌ 無効なファイルです。");
                 return;
             }
 
-            // 読み込み時にタイトルの重複がわかるよう「(インポート)」を付与してFirebaseへ追加
-            const newTitle = (importedData.title || 'インポートデータ') + " (読込)";
-            
-            const payload = {
-                title: newTitle,
-                startTime: importedData.startTime || '10:30',
-                objects: importedData.objects || {},
-                history: importedData.history,
-                createdAt: Date.now()
-            };
+            let coursesToImport = [];
 
-            db.ref('saved_courses').push(payload, err => {
+            // 「まとめて保存」されたデータ（オブジェクト形式で中に複数入っている場合）か、単体データかを判別
+            if (rawData.history) {
+                // 単体データの場合
+                coursesToImport.push(rawData);
+            } else {
+                // 複数データ（オブジェクトのなかに複数のヒートが入っている）の場合
+                for (let key in rawData) {
+                    if (rawData[key] && rawData[key].history) {
+                        coursesToImport.push(rawData[key]);
+                    }
+                }
+            }
+
+            if (coursesToImport.length === 0) {
+                alert("❌ 有効なレース履歴データが見つかりませんでした。");
+                return;
+            }
+
+            let updates = {};
+            coursesToImport.forEach(item => {
+                const newKey = db.ref('saved_courses').push().key;
+                const newTitle = (item.title || 'インポートデータ') + " (読込)";
+                
+                updates['saved_courses/' + newKey] = {
+                    title: newTitle,
+                    startTime: item.startTime || '10:30',
+                    objects: item.objects || {},
+                    lines: item.lines || {},
+                    history: item.history || {},
+                    createdAt: Date.now()
+                };
+            });
+
+            db.ref().update(updates, err => {
                 if (!err) {
-                    showToast("📤 レースデータを正常に読み込みました！");
+                    showToast(`📤 ${coursesToImport.length} 件のレース記録を一括読み込みしました！`);
                     openReplayMenu(); // リストを更新
                 } else {
                     alert("データの保存に失敗しました: " + err.message);
@@ -2016,13 +2039,11 @@ window.importCourseFromJson = (inputElement) => {
         } catch (err) {
             alert("❌ JSONファイルの解析に失敗しました:\n" + err.message);
         } finally {
-            // ファイル選択をリセット（同じファイルを再度選べるようにする）
             inputElement.value = "";
         }
     };
     reader.readAsText(file);
 };
-
 
 // 選択した1件のレースデータをJSONファイルとしてダウンロード
 window.exportSingleCourse = (id) => {
