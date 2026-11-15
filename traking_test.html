@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.5.4c by Popolo App.com</title>
+    <title>虎キング v5.5.5 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -540,7 +540,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.5.4c by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.5.5 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -2518,10 +2518,15 @@ window.toggleReplayColorFilter = (hex) => {
         setTimeout(() => { location.reload(); }, 500);
     };
 
-    function updateUserTrailAndMarker(identifier, lat, lng, color, heading, timestamp, partType = 'normal') {
+   function updateUserTrailAndMarker(identifier, lat, lng, color, heading, timestamp, partType = 'normal') {
         if (!userTrails[identifier]) userTrails[identifier] = [];
         userTrails[identifier].push({ lat: lat, lng: lng, ts: timestamp });
-        userTrails[identifier] = userTrails[identifier].filter(p => timestamp - p.ts <= 50000);
+
+        // ★倍速（replaySpeed）を考慮し、どの倍速でも常に画面上で5秒間（5000ms）表示されるように調整
+        const currentSpeed = (isReplaying && typeof replaySpeed !== 'undefined') ? (replaySpeed || 1) : 1;
+        const maxAgeMs = 5000 * currentSpeed;
+
+        userTrails[identifier] = userTrails[identifier].filter(p => timestamp - p.ts <= maxAgeMs);
 
         if (userPolylineLines[identifier]) {
             userPolylineLines[identifier].forEach(seg => map.removeLayer(seg));
@@ -2533,12 +2538,18 @@ window.toggleReplayColorFilter = (hex) => {
             for (let i = 0; i < points.length - 1; i++) {
                 const p1 = points[i];
                 const p2 = points[i+1];
-              const age = timestamp - p2.ts;
+                const age = timestamp - p2.ts;
                 let opacity = 0.8;
-                if (age >40000 ) { // ← 24秒経過後からフェードアウト開始（割合を3倍に）
-                    opacity = 0.8 * (1.0 - (age - 40000) / 10000);
+
+                // ★残り時間が8割を超えたら（全体の2割の期間で）フェードアウト開始
+                const fadeStartAge = maxAgeMs * 0.8;
+                const fadeDuration = maxAgeMs * 0.2;
+
+                if (age > fadeStartAge) {
+                    opacity = 0.8 * (1.0 - (age - fadeStartAge) / fadeDuration);
                     if (opacity < 0) opacity = 0;
                 }
+
                 if (opacity > 0) {
                     const segLine = L.polyline([[p1.lat, p1.lng], [p2.lat, p2.lng]], {
                         color: color || '#ff9900',
@@ -2549,7 +2560,7 @@ window.toggleReplayColorFilter = (hex) => {
                 }
             }
         }
-
+    }
       if (userMarkers[identifier]) {
     userMarkers[identifier].setLatLng([lat, lng]);
     // アイコンやスタイル（色や向き）の変更を確実に反映
