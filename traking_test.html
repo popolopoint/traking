@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.5.6d by Popolo App.com</title>
+    <title>虎キング v5.5.7 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -540,7 +540,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.5.6d by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.5.7 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1832,15 +1832,17 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
             const saved = snap.val();
             
             // 上部のボタン類（すべて選択・読み込み・削除）のHTML
+           // 上部のボタン類（すべて選択・読み込み・まとめて保存・削除）のHTML
             let html = `
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:0 5px; flex-wrap:wrap; gap:6px;">
                     <label style="cursor:pointer; font-size:0.9rem;">
                         <input type="checkbox" id="select-all-replays" onclick="toggleSelectAllReplays(this)" style="transform:scale(1.2);"> すべて選択
                     </label>
-                    <div style="display:flex; gap:4px;">
+                    <div style="display:flex; gap:4px; flex-wrap:wrap;">
                         <label style="background:#27ae60; color:white; padding:6px 10px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:bold; display:inline-block;">
                             📤 読み込み<input type="file" accept=".json" onchange="importCourseFromJson(this)" style="display:none;">
                         </label>
+                        <button onclick="exportSelectedReplays()" style="background:#8e44ad; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:bold;">📦 まとめて保存</button>
                         <button onclick="deleteSelectedReplays()" style="background:#e74c3c; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:bold;">🗑️ 削除</button>
                     </div>
                 </div>
@@ -2054,7 +2056,50 @@ window.exportSingleCourse = (id) => {
 };
 
 
+// 選択した複数のレース記録をまとめてJSONファイルとして保存する
+window.exportSelectedReplays = () => {
+    const checkboxes = document.querySelectorAll('.replay-del-chk:checked');
+    if (checkboxes.length === 0) {
+        alert("保存（エクスポート）するレース記録が選択されていません");
+        return;
+    }
 
+    db.ref('saved_courses').once('value', snap => {
+        const saved = snap.val() || {};
+        let exportData = {};
+        let count = 0;
+
+        checkboxes.forEach(chk => {
+            const id = chk.value;
+            if (saved[id]) {
+                exportData[id] = saved[id];
+                count++;
+            }
+        });
+
+        if (count === 0) {
+            alert("有効なデータが見つかりませんでした");
+            return;
+        }
+
+        const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        const fileName = `tora_king_races_${dateStr}.json`;
+
+        const jsonString = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showToast(`📦 選択した ${count} 件のレース記録をまとめて保存しました！`);
+    });
+};
 
 
 
