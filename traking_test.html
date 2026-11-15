@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.1 by Popolo App.com</title>
+    <title>虎キング v6.0.1b by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -454,19 +454,21 @@
         <button class="cb-btn" onclick="deleteSavedCourseLayout()" style="background:#c0392b;">🗑️ 保存コース削除</button>
         
     </div>
-    <div style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-top:8px; border-top:2px solid #555; padding-top:10px;">
-        <button class="cb-btn" onclick="addCurrentPositionObject()" style="background:#27ae60; font-size:15px; padding:10px 16px;">📍 現在位置を登録</button>
-        <button id="btn-toggle-depth" onclick="toggleDepthDataLayer()" style="flex: 1; background: #27ae60; color: white; border: none; padding: 12px 6px; border-radius: 8px; font-size: 0.95rem; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
-            📊 水深データを表示する
-        </button>
-        
-        
-        <div style="display:flex; align-items:center; gap:6px; font-size:15px;">
+   
+ 
+
+<div style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-top:8px; border-top:2px solid #555; padding-top:10px; gap:8px;">
+        <!-- 📍 現在位置を登録 の隣に水深データボタンを追加 -->
+        <button class="cb-btn" onclick="addCurrentPositionObject()" style="background:#27ae60; font-size:14px; padding:10px 12px; flex:1;">📍 現在位置を登録</button>
+        <button id="btn-toggle-depth" class="cb-btn" onclick="toggleDepthDataLayer()" style="background:#27ae60; font-size:14px; padding:10px 12px; flex:1;">📊 水深データ</button>
+        <div style="display:flex; align-items:center; gap:4px; font-size:14px;">
             <span>風向:</span>
-            <input type="number" id="cb-wind-deg" value="0" style="width:65px; padding:6px; font-size:14px; text-align:center;" placeholder="°">°
+            <input type="number" id="cb-wind-deg" value="0" style="width:55px; padding:6px; font-size:14px; text-align:center;" placeholder="°">°
         </div>
-        <button class="cb-btn" onclick="exitCourseBuilder()" style="background:#c0392b; font-size:15px; padding:10px 16px;">終了</button>
+        <button class="cb-btn" onclick="exitCourseBuilder()" style="background:#c0392b; font-size:14px; padding:10px 14px;">終了</button>
     </div>
+
+    
 </div>
 
 <button id="course-builder-minimized" onclick="expandCourseBuilderBar()">🛠️ コース作成バーを表示</button>
@@ -545,7 +547,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.1 by Popolo App.com</div>
+<div id="map-watermark">虎キング v6.0.1b by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -3905,18 +3907,18 @@ function createIndependentShapeMarker(latlng, shapeType) {
         const btn = document.getElementById('btn-toggle-depth');
         if (!btn) return;
 
-        // 1. すでに読み込み済みの場合は表示・非表示を切り替えるだけ（一瞬で切り替わります）
+        // 1. すでに読み込み済みの場合は表示・非表示を切り替えるだけ
         if (isDepthLoaded) {
             isDepthVisible = !isDepthVisible;
             loadedDepthMarkers.forEach(m => m.setMap(isDepthVisible ? map : null));
             btn.style.background = isDepthVisible ? "#e67e22" : "#27ae60";
-            btn.textContent = isDepthVisible ? "🙈 水深データを隠す" : "📊 水深データを表示する";
+            btn.textContent = isDepthVisible ? "🙈 水深を隠す" : "📊 水深データ";
             return;
         }
 
-        // 2. 初回クリック時のみ、水深測っ太郎のデータを非同期でフェッチする
+        // 2. 初回クリック時のみ非同期でフェッチする
         if (typeof showLoading === 'function') showLoading(true);
-        btn.textContent = "⏳ 水深データを読み込み中...";
+        btn.textContent = "⏳ 読込中...";
         btn.disabled = true;
 
         try {
@@ -3965,15 +3967,15 @@ function createIndependentShapeMarker(latlng, shapeType) {
                 isDepthLoaded = true;
                 isDepthVisible = true;
                 btn.style.background = "#e67e22";
-                btn.textContent = "🙈 水深データを隠す";
+                btn.textContent = "🙈 水深を隠す";
             } else {
                 alert("水深データが見つかりませんでした。");
-                btn.textContent = "📊 水深データを表示する";
+                btn.textContent = "📊 水深データ";
             }
         } catch (error) {
             console.error("水深データの取得失敗:", error);
             alert("水深データの取得中に通信エラーが発生しました。");
-            btn.textContent = "📊 水深データを表示する";
+            btn.textContent = "📊 水深データ";
         } finally {
             if (typeof showLoading === 'function') showLoading(false);
             btn.disabled = false;
