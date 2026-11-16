@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.2c by Popolo App.com</title>
+    <title>虎キング v6.0.2e by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -370,18 +370,6 @@
 }
 
 
-
-
-.leaflet-tooltip.depth-label {
-        font-size: 9px !important;
-        background: rgba(0, 122, 255, 0.85) !important;
-        color: white !important;
-        border: 1px solid white !important;
-        padding: 1px 3px !important;
-        border-radius: 3px !important;
-    }
-
-    
     
     </style>
 </head>
@@ -468,8 +456,13 @@
     </div>
     <div style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-top:8px; border-top:2px solid #555; padding-top:10px;">
         <button class="cb-btn" onclick="addCurrentPositionObject()" style="background:#27ae60; font-size:15px; padding:10px 16px;">📍 現在位置を登録</button>
-        <!-- button-container 内の #menu-grid の中に追加 -->
-<button class="action-btn" id="depth-toggle-btn" onclick="toggleDepthDisplay()" title="水深表示切り替え">🌊</button>
+       
+        <div style="margin-top: 8px;">
+    <button onclick="toggleDepthPointsDisplay()" id="btn-depth-toggle" style="width: 100%; background: #007AFF; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer;">
+        🌊 水深マップ表示 (OFF)
+    </button>
+</div>
+        
         
         <div style="display:flex; align-items:center; gap:6px; font-size:15px;">
             <span>風向:</span>
@@ -555,7 +548,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.2c by Popolo App.com</div>
+<div id="map-watermark">虎キング v6.0.2e by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -994,68 +987,7 @@ let replayColorFilters = {};
     let isSeeking = false;
     let replayStartTimeMs = null;
 
-// --- 【追加】水深データ表示のON/OFF切り替え用ロジック ---
-    let isDepthVisible = false;
-    let depthPointsLayer = L.layerGroup(); // 初期状態ではマップに追加しない
 
-    window.toggleDepthDisplay = () => {
-        isDepthVisible = !isDepthVisible;
-        const btn = document.getElementById('depth-toggle-btn');
-
-        if (isDepthVisible) {
-            depthPointsLayer.addTo(map);
-            loadAndDisplayDepthData();
-            if (btn) btn.style.background = "rgba(41, 128, 185, 0.9)";
-            showToast("🌊 水深データの表示：ON");
-        } else {
-            depthPointsLayer.remove();
-            if (btn) btn.style.background = "rgba(44, 62, 80, 0.45)";
-            showToast("🌊 水深データの表示：OFF");
-        }
-    };
-
-   function loadAndDisplayDepthData() {
-        db.ref('depth_points').once('value', snap => {
-            depthPointsLayer.clearLayers();
-            const depths = snap.val() || {};
-            
-            console.log("取得した水深データ:", depths); // デバッグ用
-
-            let count = 0;
-            for (let key in depths) {
-                const d = depths[key];
-                if (d && typeof d.lat === 'number' && typeof d.lng === 'number') {
-                    const depthVal = d.depth !== undefined ? d.depth : (d.value !== undefined ? d.value : 0);
-                    
-                    const marker = L.circleMarker([d.lat, d.lng], {
-                        radius: 7,
-                        color: '#ffffff',
-                        fillColor: '#007AFF',
-                        fillOpacity: 0.8,
-                        weight: 2
-                    });
-                    
-                    marker.bindPopup(`<b>🌊 水深データ</b><br>水深: ${depthVal}m<br>メモ: ${d.comment || 'なし'}`);
-                    marker.bindTooltip(`${depthVal}m`, { 
-                        permanent: true, 
-                        direction: 'top', 
-                        className: 'depth-label' 
-                    });
-                    
-                    depthPointsLayer.addLayer(marker);
-                    count++;
-                }
-            }
-
-            if (count === 0) {
-                console.log("⚠️ 表示できる水深データがFirebaseにありません");
-            } else {
-                console.log(`🌊 ${count}件の水深データを表示しました`);
-            }
-        }, err => {
-            console.error("水深データ取得エラー:", err);
-        });
-    }
 
 
     
@@ -3962,6 +3894,72 @@ function createIndependentShapeMarker(latlng, shapeType) {
         }
     };
     // --- 【ここまで】 ---
+
+
+// 🌊 水深マップ表示用の変数と関数
+let depthPointsLayer = [];
+let isDepthVisible = false;
+
+function toggleDepthPointsDisplay() {
+    isDepthVisible = !isDepthVisible;
+    const btn = document.getElementById('btn-depth-toggle');
+
+    if (isDepthVisible) {
+        if (btn) {
+            btn.textContent = "🌊 水深マップ表示 (ON)";
+            btn.style.background = "#27ae60";
+        }
+        loadAndDispatchDepthData();
+    } else {
+        if (btn) {
+            btn.textContent = "🌊 水深マップ表示 (OFF)";
+            btn.style.background = "#007AFF";
+        }
+        depthPointsLayer.forEach(m => m.setMap(null));
+        depthPointsLayer = [];
+    }
+}
+
+function loadAndDispatchDepthData() {
+    depthPointsLayer.forEach(m => m.setMap(null));
+    depthPointsLayer = [];
+
+    db.ref('depth_points').once('value', snap => {
+        const depths = snap.val() || {};
+        let count = 0;
+
+        for (let key in depths) {
+            const d = depths[key];
+            if (d && typeof d.lat === 'number' && typeof d.lng === 'number') {
+                const depthVal = d.depth !== undefined ? d.depth : (d.value !== undefined ? d.value : 0);
+                
+                const circle = new google.maps.Circle({
+                    strokeColor: '#ffffff',
+                    strokeOpacity: 0.8,
+                    strokeWeight: 2,
+                    fillColor: '#007AFF',
+                    fillOpacity: 0.8,
+                    map: map,
+                    center: { lat: d.lat, lng: d.lng },
+                    radius: 5
+                });
+
+                circle.addListener('click', () => {
+                    alert(`水深: ${depthVal}m\nメモ: ${d.comment || 'なし'}`);
+                });
+
+                depthPointsLayer.push(circle);
+                count++;
+            }
+        }
+        console.log(`🌊 ${count}件の水深データをロードしました`);
+    }, err => {
+        console.error("水深データの取得に失敗しました:", err);
+    });
+}
+
+
+
     
 </script>
 </body>
