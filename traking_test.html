@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.2 by Popolo App.com</title>
+    <title>虎キング v5.5.6d by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -437,7 +437,7 @@
 
 <div id="course-builder-bar">
     <div style="display:flex; justify-content:space-between; width:100%; align-items:center; border-bottom:2px solid #555; padding-bottom:10px; margin-bottom:4px;">
-        <span style="font-weight:bold; color:#ff9900; font-size:18px;">🛠️ コース作成（設置点をタップ）</span>
+        <span style="font-weight:bold; color:#ff9900; font-size:18px;">🛠️ コース作成コントロールパネル</span>
         <button onclick="minimizeCourseBuilderBar()" style="background:rgba(255,255,255,0.25); border:none; color:white; border-radius:6px; padding:6px 14px; font-size:14px; cursor:pointer; font-weight:bold;">収納する</button>
     </div>
     <div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center; width:100%;">
@@ -456,9 +456,6 @@
     </div>
     <div style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-top:8px; border-top:2px solid #555; padding-top:10px;">
         <button class="cb-btn" onclick="addCurrentPositionObject()" style="background:#27ae60; font-size:15px; padding:10px 16px;">📍 現在位置を登録</button>
-       <!-- ▼ 【追加】水深データ表示切り替えボタン -->
-　　　　<button class="cb-btn" onclick="toggleWaterDepthDisplay()" id="cb-water-depth-btn" style="background:#16a085;">🌊 水深を表示</button>
-        
         <div style="display:flex; align-items:center; gap:6px; font-size:15px;">
             <span>風向:</span>
             <input type="number" id="cb-wind-deg" value="0" style="width:65px; padding:6px; font-size:14px; text-align:center;" placeholder="°">°
@@ -543,7 +540,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.2 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.5.6d by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -951,36 +948,6 @@ window.deleteSelectedReplays = () => {
 
 // 👇 このあたり（グローバル変数がまとめて宣言されている場所）に追加します
 let replayColorFilters = {};
-
-// ▼ 【追加】水深データの表示・非表示を切り替えるトグル関数
-window.toggleWaterDepthDisplay = () => {
-    isWaterDepthVisible = !isWaterDepthVisible;
-    const btn = document.getElementById('cb-water-depth-btn');
-    
-    if (isWaterDepthVisible) {
-        if (btn) {
-            btn.style.background = '#e74c3c';
-            btn.innerText = '🌊 水深を隠す';
-        }
-        showToast("🌊 水深データを表示します");
-        // TODO: 必要に応じてスプレッドシートやFirebaseから水深データを取得してマーカーを描画する処理をここに記述します
-    } else {
-        if (btn) {
-            btn.style.background = '#16a085';
-            btn.innerText = '🌊 水深を表示';
-        }
-        showToast("🌊 水深データを非表示にしました");
-        // 既存の水深マーカーを地図から削除
-        waterDepthMarkers.forEach(m => map.removeLayer(m));
-        waterDepthMarkers = [];
-    }
-};
-
-
-
-
-
-
     
     let offsetLat = parseFloat(localStorage.getItem('tora_king_offset_lat') || "0");
     let offsetLng = parseFloat(localStorage.getItem('tora_king_offset_lng') || "0");
@@ -1865,17 +1832,15 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
             const saved = snap.val();
             
             // 上部のボタン類（すべて選択・読み込み・削除）のHTML
-           // 上部のボタン類（すべて選択・読み込み・まとめて保存・削除）のHTML
             let html = `
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:0 5px; flex-wrap:wrap; gap:6px;">
                     <label style="cursor:pointer; font-size:0.9rem;">
                         <input type="checkbox" id="select-all-replays" onclick="toggleSelectAllReplays(this)" style="transform:scale(1.2);"> すべて選択
                     </label>
-                    <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                    <div style="display:flex; gap:4px;">
                         <label style="background:#27ae60; color:white; padding:6px 10px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:bold; display:inline-block;">
                             📤 読み込み<input type="file" accept=".json" onchange="importCourseFromJson(this)" style="display:none;">
                         </label>
-                        <button onclick="exportSelectedReplays()" style="background:#8e44ad; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:bold;">📦 まとめて保存</button>
                         <button onclick="deleteSelectedReplays()" style="background:#e74c3c; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:bold;">🗑️ 削除</button>
                     </div>
                 </div>
@@ -2011,7 +1976,6 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
 
 
     // 外部からJSONファイルを読み込んでアプリに復元する
-// 外部からJSONファイルを読み込んでアプリに復元する（単体・複数一括両対応）
 window.importCourseFromJson = (inputElement) => {
     const file = inputElement.files[0];
     if (!file) return;
@@ -2019,50 +1983,28 @@ window.importCourseFromJson = (inputElement) => {
     const reader = new FileReader();
     reader.onload = (e) => {
         try {
-            const rawData = JSON.parse(e.target.result);
-            if (!rawData) {
-                alert("❌ 無効なファイルです。");
+            const importedData = JSON.parse(e.target.result);
+            
+            // 最低限必要なデータ（history等）が入っているか簡易チェック
+            if (!importedData || !importedData.history) {
+                alert("❌ 無効なレースデータファイルです。");
                 return;
             }
 
-            let coursesToImport = [];
+            // 読み込み時にタイトルの重複がわかるよう「(インポート)」を付与してFirebaseへ追加
+            const newTitle = (importedData.title || 'インポートデータ') + " (読込)";
+            
+            const payload = {
+                title: newTitle,
+                startTime: importedData.startTime || '10:30',
+                objects: importedData.objects || {},
+                history: importedData.history,
+                createdAt: Date.now()
+            };
 
-            // 「まとめて保存」されたデータ（オブジェクト形式で中に複数入っている場合）か、単体データかを判別
-            if (rawData.history) {
-                // 単体データの場合
-                coursesToImport.push(rawData);
-            } else {
-                // 複数データ（オブジェクトのなかに複数のヒートが入っている）の場合
-                for (let key in rawData) {
-                    if (rawData[key] && rawData[key].history) {
-                        coursesToImport.push(rawData[key]);
-                    }
-                }
-            }
-
-            if (coursesToImport.length === 0) {
-                alert("❌ 有効なレース履歴データが見つかりませんでした。");
-                return;
-            }
-
-            let updates = {};
-            coursesToImport.forEach(item => {
-                const newKey = db.ref('saved_courses').push().key;
-                const newTitle = (item.title || 'インポートデータ') + " (読込)";
-                
-                updates['saved_courses/' + newKey] = {
-                    title: newTitle,
-                    startTime: item.startTime || '10:30',
-                    objects: item.objects || {},
-                    lines: item.lines || {},
-                    history: item.history || {},
-                    createdAt: Date.now()
-                };
-            });
-
-            db.ref().update(updates, err => {
+            db.ref('saved_courses').push(payload, err => {
                 if (!err) {
-                    showToast(`📤 ${coursesToImport.length} 件のレース記録を一括読み込みしました！`);
+                    showToast("📤 レースデータを正常に読み込みました！");
                     openReplayMenu(); // リストを更新
                 } else {
                     alert("データの保存に失敗しました: " + err.message);
@@ -2072,11 +2014,13 @@ window.importCourseFromJson = (inputElement) => {
         } catch (err) {
             alert("❌ JSONファイルの解析に失敗しました:\n" + err.message);
         } finally {
+            // ファイル選択をリセット（同じファイルを再度選べるようにする）
             inputElement.value = "";
         }
     };
     reader.readAsText(file);
 };
+
 
 // 選択した1件のレースデータをJSONファイルとしてダウンロード
 window.exportSingleCourse = (id) => {
@@ -2110,50 +2054,7 @@ window.exportSingleCourse = (id) => {
 };
 
 
-// 選択した複数のレース記録をまとめてJSONファイルとして保存する
-window.exportSelectedReplays = () => {
-    const checkboxes = document.querySelectorAll('.replay-del-chk:checked');
-    if (checkboxes.length === 0) {
-        alert("保存（エクスポート）するレース記録が選択されていません");
-        return;
-    }
 
-    db.ref('saved_courses').once('value', snap => {
-        const saved = snap.val() || {};
-        let exportData = {};
-        let count = 0;
-
-        checkboxes.forEach(chk => {
-            const id = chk.value;
-            if (saved[id]) {
-                exportData[id] = saved[id];
-                count++;
-            }
-        });
-
-        if (count === 0) {
-            alert("有効なデータが見つかりませんでした");
-            return;
-        }
-
-        const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-        const fileName = `tora_king_races_${dateStr}.json`;
-
-        const jsonString = JSON.stringify(exportData, null, 2);
-        const blob = new Blob([jsonString], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        showToast(`📦 選択した ${count} 件のレース記録をまとめて保存しました！`);
-    });
-};
 
 
 
