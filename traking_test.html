@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.3 by Popolo App.com</title>
+    <title>虎キング v6.0.3a by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -457,11 +457,12 @@
     <div style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-top:8px; border-top:2px solid #555; padding-top:10px;">
         <button class="cb-btn" onclick="addCurrentPositionObject()" style="background:#27ae60; font-size:15px; padding:10px 16px;">📍 現在位置を登録</button>
        
-       <div style="margin-top: 8px;">
-   <!-- 🌊 追加する水深表示ボタン -->
-<button onclick="toggleDepthPointsDisplayInToraKing()" id="btn-depth-toggle" style="width: 100%; background: #007AFF; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 8px;">
-    🌊 水深マップ表示 (OFF)
-
+<div style="margin-top: 8px; background: rgba(255,255,255,0.1); padding: 8px; border-radius: 6px;">
+    <div style="font-size: 12px; margin-bottom: 4px; font-weight: bold;">水深・潮位の日時指定</div>
+    <input type="datetime-local" id="tora-depth-datetime" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 6px; box-sizing: border-box;" onchange="updateToraKingDepthTime(this.value)">
+    
+    <button onclick="toggleDepthPointsDisplayInToraKing()" id="btn-depth-toggle" style="width: 100%; background: #007AFF; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer;">
+        🌊 水深マップ表示 (OFF)
     </button>
 </div>
         
@@ -550,7 +551,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.3 by Popolo App.com</div>
+<div id="map-watermark">虎キング v6.0.3a by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -3933,6 +3934,13 @@ window.toggleDepthPointsDisplayInToraKing = () => {
     isDepthVisibleInToraKing = !isDepthVisibleInToraKing;
     const btn = document.getElementById('btn-depth-toggle');
     const legendBox = document.getElementById('depth-legend-box');
+    
+    // 🔹 ここを追加：表示がONになったときに、指定日時で水深ポイントを計算・反映させる
+    if (isDepthVisibleInToraKing) {
+        refreshToraKingDepthPointsWithTime(currentToraDepthTime);
+    }
+    
+    // （既存の表示・非表示の切り替えロジックが続く）
 
     if (isDepthVisibleInToraKing) {
         if (btn) {
@@ -4184,6 +4192,50 @@ modeControl.addTo(map);
 
 // 既存の createModeSwitchControl のクリックイベント内に連動処理を追加
 // （※すでに記述されている switchContainer.onclick の中に追加、または以下のように更新）   
+
+
+// 選択された日時を保持する変数
+let currentToraDepthTime = new Date();
+
+// 日時が変更されたときの処理
+function updateToraKingDepthTime(datetimeStr) {
+    if (!datetimeStr) return;
+    currentToraDepthTime = new Date(datetimeStr);
+    // 水深マップがすでにONの場合は、日時変更に合わせて即時再描画
+    if (window.isToraDepthDisplayOn) {
+        refreshToraKingDepthPointsWithTime(currentToraDepthTime);
+    }
+}
+
+// 選択日時の潮位を考慮して水深ポイントを再描画する関数
+function refreshToraKingDepthPointsWithTime(targetDate) {
+    // 水深測っ太郎の潮位計算アルゴリズム（干満差・時間補正）を適用
+    const tideOffset = calculateTideOffsetForToraKing(targetDate);
+    
+    // マップ上の各測点の表示データを更新
+    if (window.toraDepthMarkersLayer) {
+        window.toraDepthMarkersLayer.eachLayer(function(marker) {
+            const baseDepth = marker.options.baseDepth; // 基準水深
+            const adjustedDepth = baseDepth + tideOffset; // 潮位補正後の水深
+            
+            // ポップアップや表示テキストの更新
+            marker.bindPopup(`補正水深: ${adjustedDepth.toFixed(2)}m<br>日時: ${targetDate.toLocaleString()}`);
+            // 必要に応じてマーカーの色などもここで更新
+        });
+    }
+}
+
+// 潮位補正値を計算するヘルパー（水深測っ太郎の計算式ベース）
+function calculateTideOffsetForToraKing(date) {
+    // ここに沖縄地方の潮汐・時間に応じた補正計算（またはAPI/ローカル計算ロジック）を記述
+    // 例としての簡易プレースホルダー計算（実際の水深測っ太郎の計算ロジックに置き換えてください）
+    const hours = date.getHours() + date.getMinutes() / 60;
+    const tideVal = Math.sin((hours / 12) * 2 * Math.PI) * 0.8; // 仮の干満差±0.8m
+    return tideVal;
+}
+
+
+
     
 </script>
 </body>
