@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.2n by Popolo App.com</title>
+    <title>虎キング v6.0.2p by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -550,7 +550,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.2n by Popolo App.com</div>
+<div id="map-watermark">虎キング v6.0.2p by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -4025,7 +4025,57 @@ function loadAndDispatchDepthDataInToraKing() {
     document.body.appendChild(script);
 }
 
+// （先ほど作成したモード切替・管理のコード）
+let currentDepthMode = 'wind'; // モード状態の保持 ('wind' = ウインドモード, 'foil' = フォイルモード)
 
+function createModeSwitchControl() {
+    const switchContainer = document.createElement('div');
+    switchContainer.className = 'leaflet-bar leaflet-control';
+    switchContainer.style.backgroundColor = 'white';
+    switchContainer.style.padding = '5px';
+    switchContainer.style.cursor = 'pointer';
+    switchContainer.style.fontSize = '12px';
+    switchContainer.style.fontWeight = 'bold';
+    switchContainer.style.textAlign = 'center';
+    switchContainer.style.boxShadow = '0 1px 5px rgba(0,0,0,0.65)';
+    switchContainer.style.borderRadius = '4px';
+
+    updateSwitchLabel(switchContainer);
+
+    switchContainer.onclick = function() {
+        currentDepthMode = (currentDepthMode === 'wind') ? 'foil' : 'wind';
+        updateSwitchLabel(switchContainer);
+        
+        // モードが切り替わった際、すでに水深マップが表示中であれば再描画してカラーを更新
+        if (isDepthVisibleInToraKing) {
+            loadAndDispatchDepthDataInToraKing();
+        }
+    };
+
+    const controlDiv = document.createElement('div');
+    controlDiv.className = 'leaflet-control leaflet-bar';
+    controlDiv.appendChild(switchContainer);
+    
+    return controlDiv;
+}
+
+function updateSwitchLabel(container) {
+    if (currentDepthMode === 'wind') {
+        container.innerHTML = '🏄‍♂️ ウインドモード';
+        container.style.color = '#0055ff';
+    } else {
+        container.innerHTML = '🛸 フォイルモード';
+        container.style.color = '#ff5500';
+    }
+}
+
+
+    // マップへのコントロール追加例
+const modeControl = L.control({position: 'topright'});
+modeControl.onAdd = function(map) { return createModeSwitchControl(); };
+modeControl.onAdd(map); // または modeControl.addTo(map);
+
+    
     
 </script>
 </body>
