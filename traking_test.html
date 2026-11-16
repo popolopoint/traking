@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.2u by Popolo App.com</title>
+    <title>虎キング v6.0.2v by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -550,7 +550,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.2u by Popolo App.com</div>
+<div id="map-watermark">虎キング v6.0.2v by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -4019,7 +4019,7 @@ function loadAndDispatchDepthDataInToraKing() {
     document.body.appendChild(script);
 }
 
-// --- 🌊 水深カラー凡例の定義と管理 ---
+// 🌊 水深カラー凡例の定義と管理
 const depthLegends = {
     wind: [
         { label: '160cm以上 (紺)', color: '#000080' },
@@ -4043,6 +4043,8 @@ const depthLegends = {
         { label: '80以下 (赤)', color: '#ff0000' }
     ]
 };
+
+let currentDepthMode = 'wind'; // モード状態の保持
 
 // 凡例の中身を現在のモードに合わせて更新する関数
 function updateLegendContent() {
@@ -4078,15 +4080,14 @@ const DepthLegendControl = L.Control.extend({
         
         L.DomEvent.disableClickPropagation(div);
         
-        updateLegendContent();
+        // 生成直後に内容を流し込む
+        setTimeout(() => updateLegendContent(), 50);
         return div;
     }
 });
 
 const depthLegendControl = new DepthLegendControl();
 depthLegendControl.addTo(map);
-
-let currentDepthMode = 'wind'; // モード状態の保持
 
 function createModeSwitchControl() {
     const switchContainer = document.createElement('div');
@@ -4132,7 +4133,7 @@ function updateSwitchLabel(container) {
     }
 }
 
-// マップへのコントロール追加
+// マップへのモード切替コントロール追加
 const modeControl = L.control({position: 'topright'});
 modeControl.onAdd = function(map) { return createModeSwitchControl(); };
 modeControl.addTo(map);
