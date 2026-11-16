@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.2p by Popolo App.com</title>
+    <title>虎キング v6.0.2q by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -550,7 +550,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.2p by Popolo App.com</div>
+<div id="map-watermark">虎キング v6.0.2q by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -3932,19 +3932,21 @@ let isDepthVisibleInToraKing = false;
 window.toggleDepthPointsDisplayInToraKing = () => {
     isDepthVisibleInToraKing = !isDepthVisibleInToraKing;
     const btn = document.getElementById('btn-depth-toggle');
+    const legendBox = document.getElementById('depth-legend-box');
 
     if (isDepthVisibleInToraKing) {
         if (btn) {
             btn.textContent = "🌊 水深マップ表示 (ON)";
             btn.style.background = "#27ae60";
         }
+        if (legendBox) legendBox.style.display = 'block'; // 凡例を表示
         loadAndDispatchDepthDataInToraKing();
     } else {
         if (btn) {
             btn.textContent = "🌊 水深マップ表示 (OFF)";
             btn.style.background = "#007AFF";
         }
-        // OFFにしたときは地図上の水深マーカーをすべて消去する
+        if (legendBox) legendBox.style.display = 'none'; // 凡例を非表示
         toraKingDepthMarkers.forEach(m => map.removeLayer(m));
         toraKingDepthMarkers = [];
         showToast("🌊 水深マップを非表示にしました");
@@ -4046,6 +4048,9 @@ function createModeSwitchControl() {
         currentDepthMode = (currentDepthMode === 'wind') ? 'foil' : 'wind';
         updateSwitchLabel(switchContainer);
         
+        // ★凡例の内容を現在のモードに更新
+        updateLegendContent();
+
         // モードが切り替わった際、すでに水深マップが表示中であれば再描画してカラーを更新
         if (isDepthVisibleInToraKing) {
             loadAndDispatchDepthDataInToraKing();
@@ -4075,7 +4080,76 @@ const modeControl = L.control({position: 'topright'});
 modeControl.onAdd = function(map) { return createModeSwitchControl(); };
 modeControl.onAdd(map); // または modeControl.addTo(map);
 
+ // --- 🌊 水深カラー凡例の定義と管理 ---
+const depthLegends = {
+    wind: [
+        { label: '160cm以上 (紺)', color: '#000080' },
+        { label: '140-160cm (薄紫)', color: '#a29bfe' },
+        { label: '120-140cm (青)', color: '#70a1ff' },
+        { label: '100-120cm (水色)', color: '#00ffff' },
+        { label: '80-100cm (パステル緑)', color: '#a8e6cf' },
+        { label: '60-80cm (黄緑)', color: '#adff2f' },
+        { label: '40-60cm (黄)', color: '#ffff00' },
+        { label: '20-40cm (橙)', color: '#ffa500' },
+        { label: '20cm未満 (赤)', color: '#ff0000' }
+    ],
+    foil: [
+        { label: '160以上 (濃紺)', color: '#000080' },
+        { label: '140～160 (薄紫)', color: '#a29bfe' },
+        { label: '130～140 (青)', color: '#70a1ff' },
+        { label: '120～130 (水色)', color: '#00ffff' },
+        { label: '110～120 (黄緑)', color: '#adff2f' },
+        { label: '100～110 (黄色)', color: '#ffff00' },
+        { label: '80～100 (オレンジ)', color: '#ffa500' },
+        { label: '80以下 (赤)', color: '#ff0000' }
+    ]
+};
+
+// 凡例コントロールの作成
+const DepthLegendControl = L.Control.extend({
+    options: { position: 'bottomright' },
+    onAdd: function (map) {
+        const div = L.DomUtil.create('div', 'info legend');
+        div.id = 'depth-legend-box';
+        div.style.background = 'rgba(30, 39, 46, 0.9)';
+        div.style.color = 'white';
+        div.style.padding = '8px 12px';
+        div.style.borderRadius = '8px';
+        div.style.fontSize = '11px';
+        div.style.boxShadow = '0 2px 10px rgba(0,0,0,0.5)';
+        div.style.border = '1px solid rgba(255,255,255,0.3)';
+        div.style.display = 'none'; // 初期状態は非表示（水深ON時に連動させる場合）
+        
+        // タップやクリックがマップに伝播しないようにする
+        L.DomEvent.disableClickPropagation(div);
+        
+        updateLegendContent(div);
+        return div;
+    }
+});
+
+const depthLegendControl = new DepthLegendControl();
+depthLegendControl.addTo(map);
+
+// 凡例の中身を現在のモードに合わせて更新する関数
+function updateLegendContent(container) {
+    const box = container || document.getElementById('depth-legend-box');
+    if (!box) return;
+
+    const items = depthLegends[currentDepthMode];
+    let html = `<b style="color:#ff9900; display:block; margin-bottom:4px; text-align:center;">🌊 水深凡例 (${currentDepthMode === 'wind' ? 'ウインド' : 'フォイル'})</b>`;
     
+    items.forEach(item => {
+        html += `<div style="display:flex; align-items:center; gap:6px; margin-bottom:2px;">
+            <span style="width:12px; height:12px; background:${item.color}; border:1px solid #fff; display:inline-block; border-radius:2px;"></span>
+            <span>${item.label}</span>
+        </div>`;
+    });
+    box.innerHTML = html;
+}
+
+// 既存の createModeSwitchControl のクリックイベント内に連動処理を追加
+// （※すでに記述されている switchContainer.onclick の中に追加、または以下のように更新）   
     
 </script>
 </body>
