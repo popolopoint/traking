@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.5.7b by Popolo App.com</title>
+    <title>虎キング v6.0.2 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -543,7 +543,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.5.7b by Popolo App.com</div>
+<div id="map-watermark">虎キング v6.0.2 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -951,6 +951,36 @@ window.deleteSelectedReplays = () => {
 
 // 👇 このあたり（グローバル変数がまとめて宣言されている場所）に追加します
 let replayColorFilters = {};
+
+// ▼ 【追加】水深データの表示・非表示を切り替えるトグル関数
+window.toggleWaterDepthDisplay = () => {
+    isWaterDepthVisible = !isWaterDepthVisible;
+    const btn = document.getElementById('cb-water-depth-btn');
+    
+    if (isWaterDepthVisible) {
+        if (btn) {
+            btn.style.background = '#e74c3c';
+            btn.innerText = '🌊 水深を隠す';
+        }
+        showToast("🌊 水深データを表示します");
+        // TODO: 必要に応じてスプレッドシートやFirebaseから水深データを取得してマーカーを描画する処理をここに記述します
+    } else {
+        if (btn) {
+            btn.style.background = '#16a085';
+            btn.innerText = '🌊 水深を表示';
+        }
+        showToast("🌊 水深データを非表示にしました");
+        // 既存の水深マーカーを地図から削除
+        waterDepthMarkers.forEach(m => map.removeLayer(m));
+        waterDepthMarkers = [];
+    }
+};
+
+
+
+
+
+
     
     let offsetLat = parseFloat(localStorage.getItem('tora_king_offset_lat') || "0");
     let offsetLng = parseFloat(localStorage.getItem('tora_king_offset_lng') || "0");
