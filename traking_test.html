@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.2z by Popolo App.com</title>
+    <title>虎キング v6.0.3 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -550,7 +550,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.2z by Popolo App.com</div>
+<div id="map-watermark">虎キング v6.0.3 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -4087,12 +4087,13 @@ const DepthLegendControl = L.Control.extend({
         div.style.display = 'none'; // 初期状態は非表示
         
         L.DomEvent.disableClickPropagation(div);
-　　　
         L.DomEvent.disableScrollPropagation(div);
-        ['touchstart', 'touchmove', 'touchend', 'pointerdown'].forEach(eventType => {
+        // タッチやクリック、ポインターイベントの伝播を完全にブロック
+        ['click', 'mousedown', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'pointerdown', 'pointerup'].forEach(eventType => {
+            L.DomEvent.on(div, eventType, L.DomEvent.stopPropagation);
             div.addEventListener(eventType, (e) => {
-                e.stopPropagation(); // 地図へのクリック・タッチのすり抜けを完全にブロック
-            });
+                e.stopPropagation();
+            }, { passive: false });
         });
 
         
