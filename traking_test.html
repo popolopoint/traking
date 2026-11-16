@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.3a by Popolo App.com</title>
+    <title>虎キング v6.0.3b by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -459,13 +459,16 @@
        
 <div style="margin-top: 8px; background: rgba(255,255,255,0.1); padding: 8px; border-radius: 6px;">
     <div style="font-size: 12px; margin-bottom: 4px; font-weight: bold;">水深・潮位の日時指定</div>
-    <input type="datetime-local" id="tora-depth-datetime" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 6px; box-sizing: border-box;" onchange="updateToraKingDepthTime(this.value)">
+    <input type="datetime-local" id="tora-depth-datetime" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 6px; box-sizing: border-box;">
+    <!-- 🔹 決定ボタンを追加 -->
+    <button onclick="applyToraKingDepthTime()" style="width: 100%; background: #34C759; color: white; border: none; padding: 6px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-bottom: 8px;">
+        日時を決定して更新
+    </button>
     
     <button onclick="toggleDepthPointsDisplayInToraKing()" id="btn-depth-toggle" style="width: 100%; background: #007AFF; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer;">
         🌊 水深マップ表示 (OFF)
     </button>
-</div>
-        
+</div> 
         
         <div style="display:flex; align-items:center; gap:6px; font-size:15px;">
             <span>風向:</span>
@@ -551,7 +554,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.3a by Popolo App.com</div>
+<div id="map-watermark">虎キング v6.0.3b by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -4234,7 +4237,44 @@ function calculateTideOffsetForToraKing(date) {
     return tideVal;
 }
 
+// 「日時を決定して更新」ボタンが押されたときの処理
+function applyToraKingDepthTime() {
+    const inputVal = document.getElementById('tora-depth-datetime').value;
+    if (!inputVal) {
+        alert('日時を指定してください');
+        return;
+    }
+    currentToraDepthTime = new Date(inputVal);
+    
+    // 水深マップがONであれば、即座に指定日時の計算・再描画を実行
+    if (isDepthVisibleInToraKing) {
+        refreshToraKingDepthPointsWithTime(currentToraDepthTime);
+        alert('指定した日時の水深・潮位に更新しました');
+    } else {
+        alert('日時を設定しました。「水深マップ表示」をONにすると反映されます');
+    }
+}
 
+// 選択日時の潮位を考慮して水深ポイントを再描画する関数（修正版）
+function refreshToraKingDepthPointsWithTime(targetDate) {
+    const tideOffset = calculateTideOffsetForToraKing(targetDate);
+    
+    if (window.toraDepthMarkersLayer) {
+        window.toraDepthMarkersLayer.eachLayer(function(marker) {
+            // 各マーカーのベースとなる水深データを確実に取得（プロパティ名に合わせて調整）
+            if (marker.options.baseDepth === undefined) {
+                marker.options.baseDepth = marker.options.depth || marker.options.originalDepth || 0;
+            }
+            
+            const baseDepth = marker.options.baseDepth; 
+            const adjustedDepth = baseDepth + tideOffset; // 潮位を反映した水深
+            
+            // マップ上の表示やポップアップを更新
+            // （※もしマーカー自体のテキストやアイコンを書き換えている場合はここに記述）
+            marker.bindPopup(`基準水深: ${baseDepth.toFixed(1)}m<br>補正水深: ${adjustedDepth.toFixed(2)}m<br>日時: ${targetDate.toLocaleString()}`);
+        });
+    }
+}
 
     
 </script>
