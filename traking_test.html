@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.2l by Popolo App.com</title>
+    <title>虎キング v6.0.2m by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -550,7 +550,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.2l by Popolo App.com</div>
+<div id="map-watermark">虎キング v6.0.2m by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -3904,9 +3904,9 @@ function createIndependentShapeMarker(latlng, shapeType) {
 let toraKingDepthMarkers = [];
 let isDepthVisibleInToraKing = false;
 
-function toggleDepthPointsDisplayInToraKing() {
+window.toggleDepthPointsDisplayInToraKing = () => {
     isDepthVisibleInToraKing = !isDepthVisibleInToraKing;
-    const btn = document.getElementById('btn-depth-toggle');
+    const btn = document.getElementById('btn-deFpth-toggle');
 
     if (isDepthVisibleInToraKing) {
         if (btn) {
@@ -3920,50 +3920,51 @@ function toggleDepthPointsDisplayInToraKing() {
             btn.style.background = "#007AFF";
         }
         // OFFにしたときは地図上の水深マーカーをすべて消去する
-        toraKingDepthMarkers.forEach(m => m.setMap(null));
+        toraKingDepthMarkers.forEach(m => map.removeLayer(m));
         toraKingDepthMarkers = [];
+        showToast("🌊 水深マップを非表示にしました");
     }
-}
+};
 
 function loadAndDispatchDepthDataInToraKing() {
     // 既存のマーカーがあれば一度クリア
-    toraKingDepthMarkers.forEach(m => m.setMap(null));
+    toraKingDepthMarkers.forEach(m => map.removeLayer(m));
     toraKingDepthMarkers = [];
+
+    showToast("🌊 水深データを取得中...");
 
     const callbackName = 'toraKingDepthCb_' + Math.round(Math.random() * 100000);
     window[callbackName] = function(data) {
         cleanup();
-        // 水深測っ太郎と同じデータ構造（data.points）から読み込む
-        if (data && data.points) {
+        // 水深測っ太郎と同じデータ構造（data.points または配列そのもの）に対応
+        const points = Array.isArray(data) ? data : (data && data.points ? data.points : null);
+        
+        if (points && points.length > 0) {
             let count = 0;
-            data.points.forEach(p => {
+            points.forEach(p => {
                 // p[2]が緯度、p[3]が経度、p[4]が水深(rawDepth)
                 const lat = parseFloat(p[2]), lng = parseFloat(p[3]);
                 const rawDepth = parseFloat(p[4]) || 0;
                 
                 if (!isNaN(lat) && !isNaN(lng)) {
-                    const marker = new google.maps.Marker({
-                        position: { lat: lat, lng: lng },
-                        map: map,
-                        icon: {
-                            path: google.maps.SymbolPath.CIRCLE,
-                            fillColor: '#007AFF',
-                            fillOpacity: 0.8,
-                            scale: 6,
-                            strokeColor: '#ffffff',
-                            strokeWeight: 2
-                        },
-                        title: `水深: ${rawDepth}cm`,
-                        zIndex: 1100
-                    });
+                    // Leaflet用の円形マーカーを使用
+                    const marker = L.circleMarker([lat, lng], {
+                        radius: 6,
+                        fillColor: '#007AFF',
+                        fillOpacity: 0.8,
+                        color: '#ffffff',
+                        weight: 2,
+                        zIndexOffset: 1100
+                    }).addTo(map);
 
+                    marker.bindTooltip(`水深: ${rawDepth}cm`, { direction: 'top', className: 'object-label' });
                     toraKingDepthMarkers.push(marker);
                     count++;
                 }
             });
-            console.log(`🌊 ${count}件の水深データを読み込みました`);
+            showToast(`🌊 ${count}件の水深データを表示しました`);
         } else {
-            console.log("⚠️ 水深データが見つかりませんでした");
+            showToast("⚠️ 有効な水深データが見つかりませんでした");
         }
     };
 
@@ -3972,7 +3973,7 @@ function loadAndDispatchDepthDataInToraKing() {
     script.onerror = function() {
         cleanup();
         console.error("水深データの取得通信に失敗しました");
-        alert("水深データの取得に失敗しました");
+        showToast("❌ 水深データの取得に失敗しました");
     };
 
     function cleanup() {
