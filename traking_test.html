@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.2s by Popolo App.com</title>
+    <title>虎キング v6.0.2t by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -550,7 +550,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.2s by Popolo App.com</div>
+<div id="map-watermark">虎キング v6.0.2t by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -4139,28 +4139,7 @@ modeControl.addTo(map);
 
  
 
-// 凡例コントロールの作成
-const DepthLegendControl = L.Control.extend({
-    options: { position: 'bottomright' },
-    onAdd: function (map) {
-        const div = L.DomUtil.create('div', 'info legend');
-        div.id = 'depth-legend-box';
-        div.style.background = 'rgba(30, 39, 46, 0.9)';
-        div.style.color = 'white';
-        div.style.padding = '8px 12px';
-        div.style.borderRadius = '8px';
-        div.style.fontSize = '11px';
-        div.style.boxShadow = '0 2px 10px rgba(0,0,0,0.5)';
-        div.style.border = '1px solid rgba(255,255,255,0.3)';
-        div.style.display = 'none'; // 初期状態は非表示（水深ON時に連動させる場合）
-        
-        // タップやクリックがマップに伝播しないようにする
-        L.DomEvent.disableClickPropagation(div);
-        
-        updateLegendContent(div);
-        return div;
-    }
-});
+
 
 const depthLegendControl = new DepthLegendControl();
 depthLegendControl.addTo(map);
