@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.2e by Popolo App.com</title>
+    <title>虎キング v6.0.2f by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -548,7 +548,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.2e by Popolo App.com</div>
+<div id="map-watermark">虎キング v6.0.2f by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -3900,6 +3900,10 @@ function createIndependentShapeMarker(latlng, shapeType) {
 let depthPointsLayer = [];
 let isDepthVisible = false;
 
+// 🌊 水深マップ表示用の変数と関数（Leaflet版）
+let depthPointsLayer = L.layerGroup().addTo(map); // 初期状態でマップに関連付け
+let isDepthVisible = false;
+
 function toggleDepthPointsDisplay() {
     isDepthVisible = !isDepthVisible;
     const btn = document.getElementById('btn-depth-toggle');
@@ -3915,14 +3919,12 @@ function toggleDepthPointsDisplay() {
             btn.textContent = "🌊 水深マップ表示 (OFF)";
             btn.style.background = "#007AFF";
         }
-        depthPointsLayer.forEach(m => m.setMap(null));
-        depthPointsLayer = [];
+        depthPointsLayer.clearLayers();
     }
 }
 
 function loadAndDispatchDepthData() {
-    depthPointsLayer.forEach(m => m.setMap(null));
-    depthPointsLayer = [];
+    depthPointsLayer.clearLayers();
 
     db.ref('depth_points').once('value', snap => {
         const depths = snap.val() || {};
@@ -3933,28 +3935,32 @@ function loadAndDispatchDepthData() {
             if (d && typeof d.lat === 'number' && typeof d.lng === 'number') {
                 const depthVal = d.depth !== undefined ? d.depth : (d.value !== undefined ? d.value : 0);
                 
-                const circle = new google.maps.Circle({
-                    strokeColor: '#ffffff',
-                    strokeOpacity: 0.8,
-                    strokeWeight: 2,
+                // Leaflet用の円マーカーで描画
+                const circleMarker = L.circleMarker([d.lat, d.lng], {
+                    radius: 6,
+                    color: '#ffffff',
+                    weight: 2,
                     fillColor: '#007AFF',
-                    fillOpacity: 0.8,
-                    map: map,
-                    center: { lat: d.lat, lng: d.lng },
-                    radius: 5
+                    fillOpacity: 0.8
                 });
 
-                circle.addListener('click', () => {
-                    alert(`水深: ${depthVal}m\nメモ: ${d.comment || 'なし'}`);
+                // ポップアップと常時表示のラベル（ツールチップ）を設定
+                circleMarker.bindPopup(`<b>🌊 水深データ</b><br>水深: ${depthVal}m<br>メモ: ${d.comment || 'なし'}`);
+                circleMarker.bindTooltip(`${depthVal}m`, { 
+                    permanent: true, 
+                    direction: 'top', 
+                    className: 'object-label' 
                 });
 
-                depthPointsLayer.push(circle);
+                depthPointsLayer.addLayer(circleMarker);
                 count++;
             }
         }
         console.log(`🌊 ${count}件の水深データをロードしました`);
+        showToast(`🌊 ${count}件の水深データを読み込みました`);
     }, err => {
         console.error("水深データの取得に失敗しました:", err);
+        alert("水深データの取得に失敗しました");
     });
 }
 
