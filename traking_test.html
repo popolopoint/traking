@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.2m by Popolo App.com</title>
+    <title>虎キング v6.0.2n by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -550,7 +550,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.2m by Popolo App.com</div>
+<div id="map-watermark">虎キング v6.0.2n by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -3900,13 +3900,38 @@ function createIndependentShapeMarker(latlng, shapeType) {
 
 
 
-// 🌊 水深データを保持・管理するための配列
+
+// 🌊 水深測っ太郎の仕様に合わせたカラー判定関数
+function getDepthColor(depth, mode) {
+    if (mode === "foil") {
+        if (depth >= 160) return '#000080'; // 160以上 濃紺
+        if (depth >= 140) return '#a29bfe'; // 140～160 薄紫
+        if (depth >= 130) return '#70a1ff'; // 130～140 青
+        if (depth >= 120) return '#00ffff'; // 120～130 水色
+        if (depth >= 110) return '#adff2f'; // 110～120 黄緑
+        if (depth >= 100) return '#ffff00'; // 100～110 黄色
+        if (depth >= 80)  return '#ffa500'; // 80～100 オレンジ
+        return '#ff0000';                   // 80以下 赤
+    } else {
+        if (depth >= 160) return '#000080'; // 160cm以上 (紺)
+        if (depth >= 140) return '#a29bfe'; // 140-160cm (薄紫)
+        if (depth >= 120) return '#70a1ff'; // 120-140cm (青)
+        if (depth >= 100) return '#00ffff'; // 100-120cm (水色)
+        if (depth >= 80)  return '#a8e6cf'; // 80-100cm (パステル緑)
+        if (depth >= 60)  return '#adff2f'; // 60-80cm (黄緑)
+        if (depth >= 40)  return '#ffff00'; // 40-60cm (黄)
+        if (depth >= 20)  return '#ffa500'; // 20-40cm (橙)
+        return '#ff0000';                   // 20cm未満 (赤)
+    }
+}
+
+// 🌊 水深データを保持・管理するための変数
 let toraKingDepthMarkers = [];
 let isDepthVisibleInToraKing = false;
 
 window.toggleDepthPointsDisplayInToraKing = () => {
     isDepthVisibleInToraKing = !isDepthVisibleInToraKing;
-    const btn = document.getElementById('btn-deFpth-toggle');
+    const btn = document.getElementById('btn-depth-toggle');
 
     if (isDepthVisibleInToraKing) {
         if (btn) {
@@ -3931,6 +3956,10 @@ function loadAndDispatchDepthDataInToraKing() {
     toraKingDepthMarkers.forEach(m => map.removeLayer(m));
     toraKingDepthMarkers = [];
 
+    // 日時選択の取得（HTML側に <input type="datetime-local" id="depth-datetime-picker"> がある想定）
+    const picker = document.getElementById('depth-datetime-picker');
+    const selectedDatetime = picker ? picker.value : "";
+
     showToast("🌊 水深データを取得中...");
 
     const callbackName = 'toraKingDepthCb_' + Math.round(Math.random() * 100000);
@@ -3941,30 +3970,43 @@ function loadAndDispatchDepthDataInToraKing() {
         
         if (points && points.length > 0) {
             let count = 0;
+            // JavaScriptの正しい配列ループ（forEach）に修正
             points.forEach(p => {
-                // p[2]が緯度、p[3]が経度、p[4]が水深(rawDepth)
+                // p[0]=日時, p[2]=緯度, p[3]=経度, p[4]=水深(rawDepth)
+                const recordTime = p[0] || "";
                 const lat = parseFloat(p[2]), lng = parseFloat(p[3]);
                 const rawDepth = parseFloat(p[4]) || 0;
                 
+                // 日時選択のフィルタリング（指定がある場合）
+                if (selectedDatetime && recordTime) {
+                    if (!recordTime.startsWith(selectedDatetime.substring(0, 13))) {
+                        return; // 一致しない場合はスキップ
+                    }
+                }
+
                 if (!isNaN(lat) && !isNaN(lng)) {
+                    // 現在のモード（currentDepthMode）に合わせたカラーを取得
+                    const mode = typeof currentDepthMode !== 'undefined' ? currentDepthMode : 'normal';
+                    const color = getDepthColor(rawDepth, mode);
+
                     // Leaflet用の円形マーカーを使用
                     const marker = L.circleMarker([lat, lng], {
                         radius: 6,
-                        fillColor: '#007AFF',
-                        fillOpacity: 0.8,
+                        fillColor: color,
+                        fillOpacity: 0.9,
                         color: '#ffffff',
-                        weight: 2,
+                        weight: 1.5,
                         zIndexOffset: 1100
                     }).addTo(map);
 
-                    marker.bindTooltip(`水深: ${rawDepth}cm`, { direction: 'top', className: 'object-label' });
+                    marker.bindTooltip(`日時: ${recordTime}<br>水深: ${rawDepth}cm`, { direction: 'top', className: 'object-label' });
                     toraKingDepthMarkers.push(marker);
                     count++;
                 }
             });
             showToast(`🌊 ${count}件の水深データを表示しました`);
         } else {
-            showToast("⚠️ 有効な水深データが見つかりませんでした");
+            showToast("⚠️ 該当する日時の水深データが見つかりませんでした");
         }
     };
 
@@ -3982,7 +4024,6 @@ function loadAndDispatchDepthDataInToraKing() {
     }
     document.body.appendChild(script);
 }
-
 
 
     
