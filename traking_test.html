@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.2v by Popolo App.com</title>
+    <title>虎キング v6.0.2w by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -550,7 +550,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.2v by Popolo App.com</div>
+<div id="map-watermark">虎キング v6.0.2w by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -4044,7 +4044,11 @@ const depthLegends = {
     ]
 };
 
-let currentDepthMode = 'wind'; // モード状態の保持
+// 修正後
+let currentDepthMode = 'foil'; // デフォルトをフォイルモードに変更
+let legendState = 'foil';      // 凡例の状態管理 ('foil' | 'wind' | 'minimized')
+
+    
 
 // 凡例の中身を現在のモードに合わせて更新する関数
 function updateLegendContent() {
@@ -4064,6 +4068,7 @@ function updateLegendContent() {
 }
 
 // 凡例コントロールの作成
+
 const DepthLegendControl = L.Control.extend({
     options: { position: 'bottomright' },
     onAdd: function (map) {
@@ -4076,16 +4081,40 @@ const DepthLegendControl = L.Control.extend({
         div.style.fontSize = '11px';
         div.style.boxShadow = '0 2px 10px rgba(0,0,0,0.5)';
         div.style.border = '1px solid rgba(255,255,255,0.3)';
+        div.style.cursor = 'pointer'; // タップできることがわかるようにカーソルを変更
         div.style.display = 'none'; // 初期状態は非表示
         
         L.DomEvent.disableClickPropagation(div);
+
+        // ★凡例をタップしたときのループ切り替え処理
+        div.onclick = function() {
+            if (legendState === 'foil') {
+                // フォイル → ウインド
+                legendState = 'wind';
+                currentDepthMode = 'wind';
+                updateLegendContent();
+            } else if (legendState === 'wind') {
+                // ウインド → 最小化（コンパクト表示にする）
+                legendState = 'minimized';
+                div.innerHTML = `<b style="color:#ff9900; font-size:10px;">🌊 凡例 (最小化)</b>`;
+            } else {
+                // 最小化 → フォイルに戻る
+                legendState = 'foil';
+                currentDepthMode = 'foil';
+                updateLegendContent();
+            }
+
+            // 水深マップが表示中であれば、モード連動して再描画
+            if (isDepthVisibleInToraKing && typeof loadAndDispatchDepthDataInToraKing === 'function') {
+                loadAndDispatchDepthDataInToraKing();
+            }
+        };
         
         // 生成直後に内容を流し込む
         setTimeout(() => updateLegendContent(), 50);
         return div;
     }
 });
-
 const depthLegendControl = new DepthLegendControl();
 depthLegendControl.addTo(map);
 
