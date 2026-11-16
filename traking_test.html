@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.2j by Popolo App.com</title>
+    <title>虎キング v6.0.2k by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -458,8 +458,10 @@
         <button class="cb-btn" onclick="addCurrentPositionObject()" style="background:#27ae60; font-size:15px; padding:10px 16px;">📍 現在位置を登録</button>
        
         <div style="margin-top: 8px;">
-    <button onclick="toggleDepthPointsDisplay()" id="btn-depth-toggle" style="width: 100%; background: #007AFF; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer;">
-        🌊 水深マップ表示 (OFF)
+   <!-- 🌊 追加する水深表示ボタン -->
+<button onclick="toggleDepthPointsDisplayInToraKing()" id="btn-depth-toggle" style="width: 100%; background: #007AFF; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 8px;">
+    🌊 水深マップ表示 (OFF)
+
     </button>
 </div>
         
@@ -548,7 +550,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.2j by Popolo App.com</div>
+<div id="map-watermark">虎キング v6.0.2k by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
