@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.2t by Popolo App.com</title>
+    <title>虎キング v6.0.2u by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -550,7 +550,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.2t by Popolo App.com</div>
+<div id="map-watermark">虎キング v6.0.2u by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -4141,25 +4141,7 @@ modeControl.addTo(map);
 
 
 
-const depthLegendControl = new DepthLegendControl();
-depthLegendControl.addTo(map);
 
-// 凡例の中身を現在のモードに合わせて更新する関数
-function updateLegendContent(container) {
-    const box = container || document.getElementById('depth-legend-box');
-    if (!box) return;
-
-    const items = depthLegends[currentDepthMode];
-    let html = `<b style="color:#ff9900; display:block; margin-bottom:4px; text-align:center;">🌊 水深凡例 (${currentDepthMode === 'wind' ? 'ウインド' : 'フォイル'})</b>`;
-    
-    items.forEach(item => {
-        html += `<div style="display:flex; align-items:center; gap:6px; margin-bottom:2px;">
-            <span style="width:12px; height:12px; background:${item.color}; border:1px solid #fff; display:inline-block; border-radius:2px;"></span>
-            <span>${item.label}</span>
-        </div>`;
-    });
-    box.innerHTML = html;
-}
 
 // 既存の createModeSwitchControl のクリックイベント内に連動処理を追加
 // （※すでに記述されている switchContainer.onclick の中に追加、または以下のように更新）   
