@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.2b by Popolo App.com</title>
+    <title>虎キング v6.0.2c by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -555,7 +555,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.2b by Popolo App.com</div>
+<div id="map-watermark">虎キング v6.0.2c by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1014,15 +1014,18 @@ let replayColorFilters = {};
         }
     };
 
-    function loadAndDisplayDepthData() {
+   function loadAndDisplayDepthData() {
         db.ref('depth_points').once('value', snap => {
             depthPointsLayer.clearLayers();
             const depths = snap.val() || {};
             
+            console.log("取得した水深データ:", depths); // デバッグ用
+
+            let count = 0;
             for (let key in depths) {
                 const d = depths[key];
                 if (d && typeof d.lat === 'number' && typeof d.lng === 'number') {
-                    const depthVal = d.depth !== undefined ? d.depth : (d.value || 0);
+                    const depthVal = d.depth !== undefined ? d.depth : (d.value !== undefined ? d.value : 0);
                     
                     const marker = L.circleMarker([d.lat, d.lng], {
                         radius: 7,
@@ -1040,8 +1043,17 @@ let replayColorFilters = {};
                     });
                     
                     depthPointsLayer.addLayer(marker);
+                    count++;
                 }
             }
+
+            if (count === 0) {
+                console.log("⚠️ 表示できる水深データがFirebaseにありません");
+            } else {
+                console.log(`🌊 ${count}件の水深データを表示しました`);
+            }
+        }, err => {
+            console.error("水深データ取得エラー:", err);
         });
     }
 
