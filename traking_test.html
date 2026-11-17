@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.3h by Popolo App.com</title>
+    <title>虎キング v6.0.3e by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -460,11 +460,7 @@
 <div style="margin-top: 8px; background: rgba(255,255,255,0.1); padding: 8px; border-radius: 6px;">
     <div style="font-size: 12px; margin-bottom: 4px; font-weight: bold;">水深・潮位の日時指定</div>
     <!-- ★ onchange を追加し、日時が変わったら即座に更新されるようにする -->
-    
-    
-    <input type="datetime-local" id="tora-depth-datetime" onchange="calculateTideAndRefresh()" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 6px; box-sizing: border-box;">
-    
-
+    <input type="datetime-local" id="tora-depth-datetime" onchange="applyToraKingDepthTime()" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 6px; box-sizing: border-box;">
     
     <button onclick="applyToraKingDepthTime()" style="width: 100%; background: #34C759; color: white; border: none; padding: 6px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-bottom: 8px;">
         日時を決定して更新
@@ -559,7 +555,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.3h by Popolo App.com</div>
+<div id="map-watermark">虎キング v6.0.3e by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -710,13 +706,6 @@
 
 <script>
 
-// ここに他の変数（map や markers など）と一緒に置く
-let fullTideMasterData = [];
-let currentSelectedTide = 0; 
-let isTideDisplayActive = false; 
-let toraKingDepthMarkers = [];
-
-    
 let isTouchLocked = false;
 let unlockStepSequence = []; // タップされた順番を記録する配列
 const correctSequence = [1, 2, 3]; // 正しい順番
@@ -3995,7 +3984,7 @@ window.loadAndDispatchDepthDataInToraKing = () => {
 
     const callbackName = 'toraKingDepthCb_' + Math.round(Math.random() * 100000);
     window[callbackName] = function(data) {
-      
+        cleanup();
         const points = Array.isArray(data) ? data : (data && data.points ? data.points : null);
         
         if (points && points.length > 0) {
@@ -4037,22 +4026,20 @@ window.loadAndDispatchDepthDataInToraKing = () => {
         }
     };
 
-const script = document.createElement('script');
-script.src = `${WEB_APP_URL}?callback=${callbackName}`;
-// コールバック関数内でレスポンスデータを処理するため、ここでは削除または適切に処理します
-script.onerror = function() {
-    cleanup();
-    console.error("水深データの取得通信に失敗しました");
-};
-document.body.appendChild(script);
+    const script = document.createElement('script');
+    // 必要に応じてGAS側へ日時パラメータを渡す
+    script.src = `${WEB_APP_URL}?callback=${callbackName}&datetime=${encodeURIComponent(selectedDatetimeStr)}`;
+    script.onerror = function() {
+        cleanup();
+        console.error("水深データの取得通信に失敗しました");
+        showToast("❌ 水深データの取得に失敗しました");
+    };
 
-
-    
-script.onerror = function() {
-    cleanup();
-    console.error("水深データの取得通信に失敗しました");
-};
-document.body.appendChild(script);
+    function cleanup() {
+        if (script.parentNode) script.parentNode.removeChild(script);
+        delete window[callbackName];
+    }
+    document.body.appendChild(script);
 };
 
 // 🌊 水深カラー凡例の定義と管理
@@ -4334,79 +4321,7 @@ window.addEventListener('load', () => {
     initToraDateTime(); // ★ここで初期セット
 });
 
-// ①「🌊 水深マップ表示」ボタンを押したときのトグル処理
-function toggleDepthPointsDisplayInToraKing() {
-    isTideDisplayActive = !isTideDisplayActive;
-    const btn = document.getElementById('btn-depth-toggle');
-    
-    if (isTideDisplayActive) {
-        btn.innerText = "🌊 水深マップ表示 (ON)";
-        btn.style.background = "#34C759";
-        renderToraKingDepthPoints();
-    } else {
-        btn.innerText = "🌊 水深マップ表示 (OFF)";
-        btn.style.background = "#007AFF";
-        clearToraKingDepthPoints();
-    }
-}
 
-// ② マップ上に水深ポイントを描画する処理
-function renderToraKingDepthPoints() {
-    clearToraKingDepthPoints(); // 既存のピンを一度クリア
-    
-    // 虎キング側で保持しているポイントデータ（allPointsData）を使用
-    if (!allPointsData || allPointsData.length === 0) {
-        return; 
-    }
-
-    allPointsData.forEach(p => {
-        const lat = parseFloat(p[2]), lng = parseFloat(p[3]);
-        if (isNaN(lat) || isNaN(lng)) return;
-        
-        const rawDepth = parseFloat(p[4]) || 0;
-        const baseDepth = parseFloat(p[5]) || 0;
-        // 選択された潮位（currentSelectedTide）を足し引きしてシミュレーション水深を計算
-        const simDepth = baseDepth + currentSelectedTide;
-        
-        // 水深に応じたカラーコードを取得
-        const color = getDepthColorForTora(simDepth);
-
-        const marker = new google.maps.Marker({
-            position: { lat: lat, lng: lng },
-            map: map,
-            icon: {
-                path: google.maps.SymbolPath.CIRCLE,
-                fillColor: color,
-                fillOpacity: 0.85,
-                scale: 4,
-                strokeColor: "#333",
-                strokeWeight: 0.5
-            },
-            zIndex: 500
-        });
-
-        toraKingDepthMarkers.push(marker);
-    });
-}
-
-// ③ マップ上の水深ポイントをすべて消去する処理
-function clearToraKingDepthPoints() {
-    toraKingDepthMarkers.forEach(m => m.setMap(null));
-    toraKingDepthMarkers = [];
-}
-
-// ④ 水深に応じたカラーコードを返すヘルパー関数
-function getDepthColorForTora(b) {
-    if (b < 20) return "#ff0000";
-    if (b < 40) return "#ffa500";
-    if (b < 60) return "#ffff00";
-    if (b < 80) return "#adff2f";
-    if (b < 100) return "#a8e6cf";
-    if (b < 120) return "#00ffff";
-    if (b < 140) return "#70a1ff";
-    if (b < 160) return "#a29bfe";
-    return "#000080";
-}
     
 </script>
 </body>
