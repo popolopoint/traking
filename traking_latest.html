@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.5.2b by Popolo App.com</title>
+    <title>虎キング v5.5.6d by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -539,7 +540,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.5.2b by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.5.6d by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -585,22 +586,22 @@
     
 <div id="button-container">
     <div id="menu-grid">
-     <button class="action-btn" id="lock-btn" onclick="toggleTouchLock()" title="画面タッチロック">🔒</button>
-        <button class="action-btn" id="logout-btn" onclick="triggerLogout()" title="ログアウト">🏃</button>
-        <button class="action-btn" id="name-btn" onclick="triggerSetup()" title="再設定">👤</button>
+    
+        
+        
         <button class="action-btn" id="manual-btn" onclick="openManualModal()" title="使い方・ヘルプ">❓</button>
         <button class="action-btn" id="replay-btn" onclick="openReplayMenu()" title="航跡リプレイ再生">▶️</button>
         
         <button class="action-btn" id="record-start-btn" onclick="startRaceRecording()" title="レース記録スタート">🔴</button>
         <button class="action-btn" id="admin-user-del-btn" onclick="openAdminUsersModal()" title="参加者管理・削除">🛡️</button>
 
-        <button class="action-btn" id="course-menu-btn" onclick="promptCourseCreate()" title="コース作成">🛠️</button>
+        
         <button class="action-btn" id="hosei-btn" onclick="triggerHoseiMode()" title="位置補正">🔧</button>
 
         <button class="action-btn" id="gps-retry-btn" onclick="triggerGPSRetry()" title="GPS再接続">🔄</button>
-        <button class="action-btn" id="add-point-btn" onclick="triggerAddPointMode()" title="マーク追加">🚩</button>
+        
     </div>
-    
+    <button class="action-btn" id="lock-btn" onclick="toggleTouchLock()" title="画面タッチロック">🔒</button>
     <button id="menu-toggle-btn" class="action-btn" onclick="toggleMenu()" title="メニュー">☰</button>
     <button id="recenter-btn" class="action-btn" onclick="triggerRecenter()" title="現在地追従">🎯</button>
 </div>
@@ -751,6 +752,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });    
 
 let wakeLock = null;
+let wakeLockInterval = null;
 
 async function requestWakeLock() {
     // 画面タッチ・操作時に無音動画も確実にキック
@@ -758,12 +760,27 @@ async function requestWakeLock() {
 
     try {
         if ('wakeLock' in navigator) {
+            // すでにロックがあれば一度解放して取り直す
+            if (wakeLock !== null) {
+                await wakeLock.release().catch(() => {});
+                wakeLock = null;
+            }
             wakeLock = await navigator.wakeLock.request('screen');
             console.log('Screen Wake Lock is active.');
         }
     } catch (err) {
         console.error(`${err.name}, ${err.message}`);
     }
+}
+
+// 30秒ごとに定期的にWake Lockを再取得（OSによる勝手な切断を防ぐ）
+function startWakeLockInterval() {
+    if (wakeLockInterval) clearInterval(wakeLockInterval);
+    wakeLockInterval = setInterval(async () => {
+        if (document.visibilityState === 'visible') {
+            await requestWakeLock();
+        }
+    }, 30000);
 }
 
 // 画面の表示状態が戻ったとき（バックグラウンドから復帰時など）に再取得する
@@ -773,6 +790,13 @@ document.addEventListener('visibilitychange', async () => {
         await requestWakeLock();
     }
 });
+
+// ユーザーが画面をタッチしたタイミングでも確実に対処
+document.addEventListener('touchstart', () => {
+    if (!wakeLock || wakeLock.released) {
+        requestWakeLock();
+    }
+}, { passive: true });
 
 
 
@@ -2494,10 +2518,12 @@ window.toggleReplayColorFilter = (hex) => {
         setTimeout(() => { location.reload(); }, 500);
     };
 
-    function updateUserTrailAndMarker(identifier, lat, lng, color, heading, timestamp, partType = 'normal') {
+   function updateUserTrailAndMarker(identifier, lat, lng, color, heading, timestamp, partType = 'normal') {
         if (!userTrails[identifier]) userTrails[identifier] = [];
         userTrails[identifier].push({ lat: lat, lng: lng, ts: timestamp });
-        userTrails[identifier] = userTrails[identifier].filter(p => timestamp - p.ts <= 50000);
+        
+        // 【修正】保持するログも5秒（5000ms）分に制限する
+        userTrails[identifier] = userTrails[identifier].filter(p => timestamp - p.ts <= 5000);
 
         if (userPolylineLines[identifier]) {
             userPolylineLines[identifier].forEach(seg => map.removeLayer(seg));
@@ -2509,12 +2535,20 @@ window.toggleReplayColorFilter = (hex) => {
             for (let i = 0; i < points.length - 1; i++) {
                 const p1 = points[i];
                 const p2 = points[i+1];
-              const age = timestamp - p2.ts;
+                const age = timestamp - p2.ts;
                 let opacity = 0.8;
-                if (age >40000 ) { // ← 24秒経過後からフェードアウト開始（割合を3倍に）
-                    opacity = 0.8 * (1.0 - (age - 40000) / 10000);
+                
+                // 5秒（5000ms）を寿命とし、後半の2.5秒（2500ms経過後）からなめらかにフェードアウト
+                if (age > 5000) {
+                    opacity = 0;
+                } else if (age > 2500) {
+                    opacity = 0.8 * (1.0 - (age - 2500) / 2500);
                     if (opacity < 0) opacity = 0;
                 }
+
+
+
+                
                 if (opacity > 0) {
                     const segLine = L.polyline([[p1.lat, p1.lng], [p2.lat, p2.lng]], {
                         color: color || '#ff9900',
@@ -3713,17 +3747,23 @@ requestWakeLock();
     
     map.on('movestart', () => isFollowing = false);
 
- window.addEventListener('load', () => {
-        document.getElementById('user-list-title').innerText = `参加者 (${units[speedUnitMode]})`;
-        updateAdminModeUI();
-        setTimeout(() => { map.invalidateSize(); }, 300);
-        setTimeout(checkIncomingCourse, 1000);
-        
-        // ▼ ここでWake Lockを呼び出すのがベストです！
-        requestWakeLock();
-    });
 
 
+
+
+window.addEventListener('load', () => {
+    document.getElementById('user-list-title').innerText = `参加者 (${units[speedUnitMode]})`;
+    updateAdminModeUI();
+    setTimeout(() => { map.invalidateSize(); }, 300);
+    setTimeout(checkIncomingCourse, 1000);
+    
+    // スリープ防止を起動 ＆ 定期リフレッシュを開始
+    requestWakeLock();
+    startWakeLockInterval();
+});
+
+
+    
 
 
 
