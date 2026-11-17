@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.3b by Popolo App.com</title>
+    <title>虎キング v6.0.3c by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -554,7 +554,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.3b by Popolo App.com</div>
+<div id="map-watermark">虎キング v6.0.3c by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -3964,14 +3964,22 @@ window.toggleDepthPointsDisplayInToraKing = () => {
     }
 };
 
-function loadAndDispatchDepthDataInToraKing() {
+window.loadAndDispatchDepthDataInToraKing = () => {
     toraKingDepthMarkers.forEach(m => map.removeLayer(m));
     toraKingDepthMarkers = [];
 
-    const picker = document.getElementById('depth-datetime-picker');
-    const selectedDatetime = picker ? picker.value : "";
+    // 正しいID「tora-depth-datetime」から日時を取得
+    const datetimeInput = document.getElementById('tora-depth-datetime');
+    let selectedDatetimeStr = datetimeInput ? datetimeInput.value : "";
+    
+    // 未設定の場合は現在時刻をデフォルトにする
+    if (!selectedDatetimeStr) {
+        const now = new Date();
+        selectedDatetimeStr = now.toISOString().slice(0, 16);
+        datetimeInput.value = selectedDatetimeStr;
+    }
 
-    showToast("🌊 水深データを取得中...");
+    showToast("🌊 指定日時の水深データを取得中...");
 
     const callbackName = 'toraKingDepthCb_' + Math.round(Math.random() * 100000);
     window[callbackName] = function(data) {
@@ -3980,20 +3988,21 @@ function loadAndDispatchDepthDataInToraKing() {
         
         if (points && points.length > 0) {
             let count = 0;
+            // 選択された日時オブジェクト
+            const targetDate = new Date(selectedDatetimeStr);
+            const tideOffset = calculateTideOffsetForToraKing(targetDate);
+
             points.forEach(p => {
                 const recordTime = p[0] || "";
                 const lat = parseFloat(p[2]), lng = parseFloat(p[3]);
-                const rawDepth = parseFloat(p[4]) || 0;
+                const baseDepth = parseFloat(p[4]) || 0;
                 
-                if (selectedDatetime && recordTime) {
-                    if (!recordTime.startsWith(selectedDatetime.substring(0, 13))) {
-                        return;
-                    }
-                }
+                // 潮位補正を適用した水深を計算
+                const adjustedDepth = baseDepth + tideOffset;
 
                 if (!isNaN(lat) && !isNaN(lng)) {
-                    const mode = typeof currentDepthMode !== 'undefined' ? currentDepthMode : 'wind';
-                    const color = getDepthColor(rawDepth, mode);
+                    const mode = typeof currentDepthMode !== 'undefined' ? currentDepthMode : 'foil';
+                    const color = getDepthColor(adjustedDepth, mode);
 
                     const marker = L.circleMarker([lat, lng], {
                         radius: 6,
@@ -4001,22 +4010,24 @@ function loadAndDispatchDepthDataInToraKing() {
                         fillOpacity: 0.9,
                         color: '#ffffff',
                         weight: 1.5,
-                        zIndexOffset: 1100
+                        zIndexOffset: 1100,
+                        baseDepth: baseDepth
                     }).addTo(map);
 
-                    marker.bindTooltip(`日時: ${recordTime}<br>水深: ${rawDepth}cm`, { direction: 'top', className: 'object-label' });
+                    marker.bindTooltip(`日時: ${targetDate.toLocaleString()}<br>補正水深: ${adjustedDepth.toFixed(1)}cm`, { direction: 'top', className: 'object-label' });
                     toraKingDepthMarkers.push(marker);
                     count++;
                 }
             });
-            showToast(`🌊 ${count}件の水深データを表示しました`);
+            showToast(`🌊 ${count}件の水深データを指定日時で表示しました`);
         } else {
-            showToast("⚠️ 該当する日時の水深データが見つかりませんでした");
+            showToast("⚠️ 水深データが見つかりませんでした");
         }
     };
 
     const script = document.createElement('script');
-    script.src = `${WEB_APP_URL}?callback=${callbackName}`;
+    // 必要に応じてGAS側へ日時パラメータを渡す
+    script.src = `${WEB_APP_URL}?callback=${callbackName}&datetime=${encodeURIComponent(selectedDatetimeStr)}`;
     script.onerror = function() {
         cleanup();
         console.error("水深データの取得通信に失敗しました");
@@ -4028,7 +4039,7 @@ function loadAndDispatchDepthDataInToraKing() {
         delete window[callbackName];
     }
     document.body.appendChild(script);
-}
+};
 
 // 🌊 水深カラー凡例の定義と管理
 const depthLegends = {
@@ -4238,7 +4249,7 @@ function calculateTideOffsetForToraKing(date) {
 }
 
 // 「日時を決定して更新」ボタンが押されたときの処理
-function applyToraKingDepthTime() {
+function applyToraKingDepthTime = () => {
     const inputVal = document.getElementById('tora-depth-datetime').value;
     if (!inputVal) {
         alert('日時を指定してください');
@@ -4246,15 +4257,13 @@ function applyToraKingDepthTime() {
     }
     currentToraDepthTime = new Date(inputVal);
     
-    // 水深マップがONであれば、即座に指定日時の計算・再描画を実行
     if (isDepthVisibleInToraKing) {
-        refreshToraKingDepthPointsWithTime(currentToraDepthTime);
-        alert('指定した日時の水深・潮位に更新しました');
+        loadAndDispatchDepthDataInToraKing();
+        showToast('🔄 指定した日時の潮位マップに更新しました');
     } else {
-        alert('日時を設定しました。「水深マップ表示」をONにすると反映されます');
+        showToast('✅ 日時を設定しました。「水深マップ表示」をONにすると反映されます');
     }
-}
-
+};
 // 選択日時の潮位を考慮して水深ポイントを再描画する関数（修正版）
 function refreshToraKingDepthPointsWithTime(targetDate) {
     const tideOffset = calculateTideOffsetForToraKing(targetDate);
