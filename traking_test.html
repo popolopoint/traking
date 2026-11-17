@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.3c by Popolo App.com</title>
+    <title>虎キング v6.0.3d by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -554,7 +554,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.3c by Popolo App.com</div>
+<div id="map-watermark">虎キング v6.0.3d by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -4249,7 +4249,7 @@ function calculateTideOffsetForToraKing(date) {
 }
 
 // 「日時を決定して更新」ボタンが押されたときの処理
-function applyToraKingDepthTime = () => {
+function applyToraKingDepthTime() {
     const inputVal = document.getElementById('tora-depth-datetime').value;
     if (!inputVal) {
         alert('日時を指定してください');
