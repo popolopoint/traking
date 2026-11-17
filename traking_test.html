@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.3g by Popolo App.com</title>
+    <title>虎キング v6.0.3h by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -559,7 +559,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.3g by Popolo App.com</div>
+<div id="map-watermark">虎キング v6.0.3h by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -3995,7 +3995,7 @@ window.loadAndDispatchDepthDataInToraKing = () => {
 
     const callbackName = 'toraKingDepthCb_' + Math.round(Math.random() * 100000);
     window[callbackName] = function(data) {
-        cleanup();
+      
         const points = Array.isArray(data) ? data : (data && data.points ? data.points : null);
         
         if (points && points.length > 0) {
@@ -4039,13 +4039,15 @@ window.loadAndDispatchDepthDataInToraKing = () => {
 
 const script = document.createElement('script');
 script.src = `${WEB_APP_URL}?callback=${callbackName}`;
-script.onload = function() {
-    // 💡 ここ（データが届いたタイミング）で tideData を受け取る
-    // ※ data はGASから送られてくるオブジェクトです
-    if (data && data.allTideData) {
-        fullTideMasterData = data.allTideData;
-    }
+// コールバック関数内でレスポンスデータを処理するため、ここでは削除または適切に処理します
+script.onerror = function() {
+    cleanup();
+    console.error("水深データの取得通信に失敗しました");
 };
+document.body.appendChild(script);
+
+
+    
 script.onerror = function() {
     cleanup();
     console.error("水深データの取得通信に失敗しました");
