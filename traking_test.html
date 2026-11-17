@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v6.0.3d by Popolo App.com</title>
+    <title>虎キング v6.0.3e by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -459,8 +459,9 @@
        
 <div style="margin-top: 8px; background: rgba(255,255,255,0.1); padding: 8px; border-radius: 6px;">
     <div style="font-size: 12px; margin-bottom: 4px; font-weight: bold;">水深・潮位の日時指定</div>
-    <input type="datetime-local" id="tora-depth-datetime" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 6px; box-sizing: border-box;">
-    <!-- 🔹 決定ボタンを追加 -->
+    <!-- ★ onchange を追加し、日時が変わったら即座に更新されるようにする -->
+    <input type="datetime-local" id="tora-depth-datetime" onchange="applyToraKingDepthTime()" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 6px; box-sizing: border-box;">
+    
     <button onclick="applyToraKingDepthTime()" style="width: 100%; background: #34C759; color: white; border: none; padding: 6px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-bottom: 8px;">
         日時を決定して更新
     </button>
@@ -468,7 +469,7 @@
     <button onclick="toggleDepthPointsDisplayInToraKing()" id="btn-depth-toggle" style="width: 100%; background: #007AFF; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer;">
         🌊 水深マップ表示 (OFF)
     </button>
-</div> 
+</div>
         
         <div style="display:flex; align-items:center; gap:6px; font-size:15px;">
             <span>風向:</span>
@@ -554,7 +555,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v6.0.3d by Popolo App.com</div>
+<div id="map-watermark">虎キング v6.0.3e by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -4284,6 +4285,42 @@ function refreshToraKingDepthPointsWithTime(targetDate) {
         });
     }
 }
+
+
+// 1. 起動時に #tora-depth-datetime に現在のローカル時刻をセットする関数
+function initToraDateTime() {
+    const datetimeInput = document.getElementById('tora-depth-datetime');
+    if (datetimeInput && !datetimeInput.value) {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        datetimeInput.value = now.toISOString().slice(0, 16);
+    }
+}
+
+// 2. 「日時を決定して更新」および onchange で呼ばれるメイン関数
+window.applyToraKingDepthTime = () => {
+    const inputVal = document.getElementById('tora-depth-datetime').value;
+    if (!inputVal) {
+        alert('日時を指定してください');
+        return;
+    }
+    currentToraDepthTime = new Date(inputVal);
+    
+    // 水深マップがONでもOFFでも、指定日時を反映してデータを再読み込み・再計算する
+    if (isDepthVisibleInToraKing) {
+        loadAndDispatchDepthDataInToraKing();
+        showToast('🔄 指定した日時の潮位マップに更新しました');
+    } else {
+        showToast('✅ 日時を設定しました。「水深マップ表示」をONにすると反映されます');
+    }
+};
+
+// ページ読み込み時に現在時刻を初期セットするように window.addEventListener('load', ...) 内に追加
+window.addEventListener('load', () => {
+    // （既存の処理...）
+    initToraDateTime(); // ★ここで初期セット
+});
+
 
     
 </script>
