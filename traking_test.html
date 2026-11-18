@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.1 by Popolo App.com</title>
+    <title>虎キング v5.6.1b by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -540,7 +540,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.1 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.1b by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -2001,111 +2001,128 @@ window.exportSingleCourse = (id) => {
     }
 };
 
-    window.startReplay = (id) => {
-        document.getElementById('saved-courses-modal').style.display = 'none';
+   window.startReplay = (id) => {
+    document.getElementById('saved-courses-modal').style.display = 'none';
 
+    // ▼ 【修正】まず端末のローカルストレージからデータを探す
+    const localCourses = JSON.parse(localStorage.getItem('tora_king_local_courses') || '{}');
+    const localData = localCourses[id];
+
+    if (localData) {
+        // ローカルに見つかった場合はそのまま処理へ
+        processReplayData(localData);
+    } else {
+        // ローカルになければ念のためFirebaseから取得
         db.ref('saved_courses/' + id).once('value', snap => {
-            const data = snap.val();
-            if (!data) return;
-
-            for (let key in objectMarkers) {
-                map.removeLayer(objectMarkers[key]);
+            const fbData = snap.val();
+            if (!fbData) {
+                alert("再生するデータが見つかりませんでした");
+                return;
             }
-            customLinesGroup.clearLayers();
-
-            for (let key in replayObjectMarkers) {
-                map.removeLayer(replayObjectMarkers[key]);
-            }
-            replayObjectMarkers = {};
-
-           if (data.objects) {
-                for (let key in data.objects) {
-                    const obj = data.objects[key];
-                    const letter = obj.assignedLabel || (obj.type === 'ship' ? 'フネ' : 'ブイ');
-                    const marker = L.marker([obj.lat, obj.lng], { 
-                        icon: createObjectIcon(obj.type, obj.shape, obj.color) 
-                    }).addTo(map);
-                    marker.bindTooltip(letter, { permanent: true, direction: 'top', className: 'object-label' });
-                    replayObjectMarkers[key] = marker;
-                }
-            }
-
-            // ▼ 【追加】保存されている点線・実線をリプレイ画面に復元して描画する
-            if (data.lines && data.objects) {
-                for (let lineId in data.lines) {
-                    const l = data.lines[lineId];
-                    if (data.objects[l.from] && data.objects[l.to]) {
-                        const p1 = [data.objects[l.from].lat, data.objects[l.from].lng];
-                        const p2 = [data.objects[l.to].lat, data.objects[l.to].lng];
-                        const poly = L.polyline([p1, p2], {
-                            color: '#ffffff',
-                            weight: 3,
-                            dashArray: l.type === 'dashed' ? '5, 10' : null
-                        });
-                        customLinesGroup.addLayer(poly);
-                    }
-                }
-            }
-
-            const heatTitle = data.title || '再生中';
-            const startStr = data.startTime ? ` (${data.startTime} スタート)` : '';
-            document.getElementById('replay-title-label').innerText = heatTitle + startStr;
-            document.getElementById('minimized-title').innerText = heatTitle;
-
-
-setupReplayClassFilters(data.history);
-
-
-            
-            document.getElementById('header-replay-status').style.display = 'block';
-            document.getElementById('header-replay-time').style.display = 'block';
-
-            let baseDate = new Date();
-            if (data.history) {
-                let firstTs = null;
-                for (let uid in data.history) {
-                    for (let pushId in data.history[uid]) {
-                        const ts = data.history[uid][pushId].ts;
-                        if (!firstTs || ts < firstTs) firstTs = ts;
-                    }
-                }
-                if (firstTs) baseDate = new Date(firstTs);
-            }
-
-            if (data.startTime && data.startTime.includes(':')) {
-                const parts = data.startTime.split(':');
-                baseDate.setHours(parseInt(parts[0]), parseInt(parts[1]), 0, 0);
-                replayStartTimeMs = baseDate.getTime();
-            } else {
-                replayStartTimeMs = null;
-            }
-
-            document.getElementById('replay-control-bar').style.display = 'flex';
-            document.getElementById('replay-minimized-btn').style.display = 'none';
-
-            isReplaying = true;
-            replayPaused = false;
-            document.getElementById('btn-pause').innerText = "一時停止";
-
-            if (myMarker) {
-                map.removeLayer(myMarker);
-                myMarker = null;
-            }
-
-            for (let name in userPolylineLines) {
-                if(userPolylineLines[name]) {
-                    userPolylineLines[name].forEach(seg => map.removeLayer(seg));
-                }
-            }
-            Object.keys(userPolylineLines).forEach(k => delete userPolylineLines[k]);
-            Object.keys(userTrails).forEach(k => delete userTrails[k]);
-            Object.keys(userMarkers).forEach(k => { map.removeLayer(userMarkers[k]); delete userMarkers[k]; });
-            
-            if (data.history) {
-                prepareHistoryTimeline(data.history);
-            }
+            processReplayData(fbData);
         });
-    };
+    }
+};
+
+// 実際の描画・再生準備を行う共通関数
+function processReplayData(data) {
+    for (let key in objectMarkers) {
+        map.removeLayer(objectMarkers[key]);
+    }
+    customLinesGroup.clearLayers();
+
+    for (let key in replayObjectMarkers) {
+        map.removeLayer(replayObjectMarkers[key]);
+    }
+    replayObjectMarkers = {};
+
+    if (data.objects) {
+        for (let key in data.objects) {
+            const obj = data.objects[key];
+            const letter = obj.assignedLabel || (obj.type === 'ship' ? 'フネ' : 'ブイ');
+            const marker = L.marker([obj.lat, obj.lng], { 
+                icon: createObjectIcon(obj.type, obj.shape, obj.color) 
+            }).addTo(map);
+            marker.bindTooltip(letter, { permanent: true, direction: 'top', className: 'object-label' });
+            replayObjectMarkers[key] = marker;
+        }
+    }
+
+    // 保存されている点線・実線をリプレイ画面に復元して描画
+    if (data.lines && data.objects) {
+        for (let lineId in data.lines) {
+            const l = data.lines[lineId];
+            if (data.objects[l.from] && data.objects[l.to]) {
+                const p1 = [data.objects[l.from].lat, data.objects[l.from].lng];
+                const p2 = [data.objects[l.to].lat, data.objects[l.to].lng];
+                const poly = L.polyline([p1, p2], {
+                    color: '#ffffff',
+                    weight: 3,
+                    dashArray: l.type === 'dashed' ? '5, 10' : null
+                });
+                customLinesGroup.addLayer(poly);
+            }
+        }
+    }
+
+    const heatTitle = data.title || '再生中';
+    const startStr = data.startTime ? ` (${data.startTime} スタート)` : '';
+    document.getElementById('replay-title-label').innerText = heatTitle + startStr;
+    document.getElementById('minimized-title').innerText = heatTitle;
+
+    setupReplayClassFilters(data.history);
+
+    document.getElementById('header-replay-status').style.display = 'block';
+    document.getElementById('header-replay-time').style.display = 'block';
+
+    let baseDate = new Date();
+    if (data.history) {
+        let firstTs = null;
+        for (let uid in data.history) {
+            const userTracks = data.history[uid];
+            if (userTracks) {
+                for (let pushId in userTracks) {
+                    const ts = userTracks[pushId].ts;
+                    if (ts && (!firstTs || ts < firstTs)) firstTs = ts;
+                }
+            }
+        }
+        if (firstTs) baseDate = new Date(firstTs);
+    }
+
+    if (data.startTime && data.startTime.includes(':')) {
+        const parts = data.startTime.split(':');
+        baseDate.setHours(parseInt(parts[0]), parseInt(parts[1]), 0, 0);
+        replayStartTimeMs = baseDate.getTime();
+    } else {
+        replayStartTimeMs = null;
+    }
+
+    document.getElementById('replay-control-bar').style.display = 'flex';
+    document.getElementById('replay-minimized-btn').style.display = 'none';
+
+    isReplaying = true;
+    replayPaused = false;
+    document.getElementById('btn-pause').innerText = "一時停止";
+
+    if (myMarker) {
+        map.removeLayer(myMarker);
+        myMarker = null;
+    }
+
+    for (let name in userPolylineLines) {
+        if(userPolylineLines[name]) {
+            userPolylineLines[name].forEach(seg => map.removeLayer(seg));
+        }
+    }
+    Object.keys(userPolylineLines).forEach(k => delete userPolylineLines[k]);
+    Object.keys(userTrails).forEach(k => delete userTrails[k]);
+    Object.keys(userMarkers).forEach(k => { map.removeLayer(userMarkers[k]); delete userMarkers[k]; });
+    
+    if (data.history) {
+        prepareHistoryTimeline(data.history);
+    }
+}
 
 
 
