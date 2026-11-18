@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.5.9 by Popolo App.com</title>
+    <title>虎キング v5.6.0 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -540,7 +540,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.5.9 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.0 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -819,33 +819,28 @@ window.toggleSelectAllReplays = (masterChk) => {
     });
 };
 
-// 選択した複数のレースを一括削除
 window.deleteSelectedReplays = () => {
-    if (!checkAdminAuth()) return;
-    
     const checkboxes = document.querySelectorAll('.replay-del-chk:checked');
     if (checkboxes.length === 0) {
         alert("削除するレース記録が選択されていません");
         return;
     }
 
-    if (confirm(`選択した ${checkboxes.length} 件のレース記録を削除しますか？（元に戻せません）`)) {
-        let updates = {};
+    if (confirm(`選択した ${checkboxes.length} 件のレース記録をこの端末のリストから非表示にしますか？`)) {
+        let hiddenReplays = JSON.parse(localStorage.getItem('tora_king_hidden_replays') || '[]');
+        
         checkboxes.forEach(chk => {
-            updates['saved_courses/' + chk.value] = null;
-        });
-
-        db.ref().update(updates, err => {
-            if (!err) {
-                showToast("🗑️ 選択した記録を削除しました");
-                openReplayMenu(); // リストを再読み込み
-            } else {
-                alert("削除に失敗しました: " + (err.message || ''));
+            const id = chk.value;
+            if (!hiddenReplays.includes(id)) {
+                hiddenReplays.push(id);
             }
         });
+
+        localStorage.setItem('tora_king_hidden_replays', JSON.stringify(hiddenReplays));
+        showToast("🗑️ 選択した記録をこの端末のリストから非表示にしました");
+        openReplayMenu(); // リストを再描画
     }
 };
-    
     
     
     
