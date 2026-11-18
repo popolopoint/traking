@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.1c by Popolo App.com</title>
+    <title>虎キング v5.6.1d by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -540,7 +540,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.1c by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.1d by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1819,89 +1819,89 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
     };
 
 window.openReplayMenu = () => {
-        toggleMenu();
-        const listDiv = document.getElementById('saved-courses-list');
-        listDiv.innerHTML = "読み込み中...";
-        document.getElementById('saved-courses-modal').style.display = 'flex';
+    toggleMenu();
+    const listDiv = document.getElementById('saved-courses-list');
+    listDiv.innerHTML = "読み込み中...";
+    document.getElementById('saved-courses-modal').style.display = 'flex';
 
-        // Firebaseではなく、この端末のローカルストレージから保存データを取得
-        const saved = JSON.parse(localStorage.getItem('tora_king_local_courses') || '{}');
-        
-        // この端末で非表示（削除）に設定されているIDリストを取得
-        let hiddenReplays = JSON.parse(localStorage.getItem('tora_king_hidden_replays') || '[]');
+    // Firebaseではなく、この端末のローカルストレージから保存データを取得
+    const saved = JSON.parse(localStorage.getItem('tora_king_local_courses') || '{}');
+    
+    // この端末で非表示（削除）に設定されているIDリストを取得
+    let hiddenReplays = JSON.parse(localStorage.getItem('tora_king_hidden_replays') || '[]');
 
-        // 上部のボタン類（すべて選択・読み込み・削除）のHTML
-        let html = `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:0 5px; flex-wrap:wrap; gap:6px;">
-                <label style="cursor:pointer; font-size:0.9rem;">
-                    <input type="checkbox" id="select-all-replays" onclick="toggleSelectAllReplays(this)" style="transform:scale(1.2);"> すべて選択
+    // 上部のボタン類（すべて選択・読み込み・削除）のHTML
+    let html = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:0 5px; flex-wrap:wrap; gap:6px;">
+            <label style="cursor:pointer; font-size:0.9rem;">
+                <input type="checkbox" id="select-all-replays" onclick="toggleSelectAllReplays(this)" style="transform:scale(1.2);"> すべて選択
+            </label>
+            <div style="display:flex; gap:4px;">
+                <label style="background:#27ae60; color:white; padding:6px 10px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:bold; display:inline-block;">
+                    📤 読み込み<input type="file" accept=".json" onchange="importCourseFromJson(this)" style="display:none;">
                 </label>
-                <div style="display:flex; gap:4px;">
-                    <label style="background:#27ae60; color:white; padding:6px 10px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:bold; display:inline-block;">
-                        📤 読み込み<input type="file" accept=".json" onchange="importCourseFromJson(this)" style="display:none;">
-                    </label>
-                    <button onclick="deleteSelectedReplays()" style="background:#e74c3c; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:bold;">🗑️ 削除</button>
-                </div>
+                <button onclick="deleteSelectedReplays()" style="background:#e74c3c; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:bold;">🗑️ 削除</button>
             </div>
-        `;
+        </div>
+    `;
 
-        const ids = Object.keys(saved);
-        if (ids.length === 0) {
-            html += "<p style='color:#666; padding:20px;'>保存されたヒート記録はありません</p>";
-        } else {
-            let hasVisibleItem = false;
-            for (let id in saved) {
-                // この端末で非表示にされている記録はスキップ
-                if (hiddenReplays.includes(id)) continue;
+    const ids = Object.keys(saved);
+    if (ids.length === 0) {
+        html += "<p style='color:#666; padding:20px;'>保存されたヒート記録はありません</p>";
+    } else {
+        let hasVisibleItem = false;
+        for (let id in saved) {
+            // この端末で非表示にされている記録はスキップ
+            if (hiddenReplays.includes(id)) continue;
 
-                hasVisibleItem = true;
-                const c = saved[id];
-                const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '';
-                const startInfo = c.startTime ? `スタート: ${c.startTime}` : '';
+            hasVisibleItem = true;
+            const c = saved[id];
+            const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '';
+            const startInfo = c.startTime ? `スタート: ${c.startTime}` : '';
 
-                html += `
-                <div class="replay-item-card" style="display:flex; align-items:center; gap:8px;">
-                    <input type="checkbox" class="replay-del-chk" value="${id}" style="transform:scale(1.3); cursor:pointer;">
-                    <div class="replay-item-info" style="flex-grow:1;">
-                        <div class="replay-item-title">🏁 ${c.title || '無題'}</div>
-                        <div class="replay-item-sub">${startInfo} ${dateStr ? ' (' + dateStr + ')' : ''}</div>
-                    </div>
-                    <div class="replay-item-btns">
-                        <button class="replay-item-btn replay-btn-play" onclick="startReplay('${id}')">再生</button>
-                        <button class="replay-item-btn" onclick="exportSingleCourse('${id}')" title="外部保存(JSON)" style="background:#8e44ad; color:white; border:none; padding:4px 6px; border-radius:4px; cursor:pointer;">📥</button>
-                        <button class="replay-item-btn replay-btn-trim" onclick="authAndTrim('${id}')" title="切り出し">✂️</button>
-                        <button class="replay-item-btn replay-btn-edit" onclick="authAndRename('${id}', '${c.title || ''}', '${c.startTime || '10:30'}')" title="編集">✏️</button>
-                        <button class="replay-item-btn replay-btn-del" onclick="authAndDelete('${id}')" title="削除">🗑️</button>
-                    </div>
-                </div>`;
-            }
-            if (!hasVisibleItem) {
-                html += "<p style='color:#666; padding:20px;'>表示できるヒート記録はありません</p>";
-            }
+            // ▼ 【修正】各ボタンのonclickをローカルストレージ用の正しい関数に修正
+            html += `
+            <div class="replay-item-card" style="display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" class="replay-del-chk" value="${id}" style="transform:scale(1.3); cursor:pointer;">
+                <div class="replay-item-info" style="flex-grow:1;">
+                    <div class="replay-item-title">🏁 ${c.title || '無題'}</div>
+                    <div class="replay-item-sub">${startInfo} ${dateStr ? ' (' + dateStr + ')' : ''}</div>
+                </div>
+                <div class="replay-item-btns">
+                    <button class="replay-item-btn replay-btn-play" onclick="startReplay('${id}')">再生</button>
+                    <button class="replay-item-btn" onclick="exportSingleCourse('${id}')" title="外部保存(JSON)" style="background:#8e44ad; color:white; border:none; padding:4px 6px; border-radius:4px; cursor:pointer;">📥</button>
+                    <button class="replay-item-btn replay-btn-edit" onclick="renameCourse('${id}', '${(c.title || '').replace(/'/g, "\\'")}', '${c.startTime || '10:30'}')" title="編集">✏️</button>
+                    <button class="replay-item-btn replay-btn-del" onclick="deleteCourse('${id}')" title="削除">🗑️</button>
+                </div>
+            </div>`;
         }
-        listDiv.innerHTML = html;
-    };
+        if (!hasVisibleItem) {
+            html += "<p style='color:#666; padding:20px;'>表示できるヒート記録はありません</p>";
+        }
+    }
+    listDiv.innerHTML = html;
+};
 
-    window.renameCourse = (id, currentTitle, currentStartTime) => {
-        const newTitle = prompt("新しいヒート名を入力してください", currentTitle);
-        if (newTitle === null) return;
+// ▼ 【修正】ローカルストレージのヒート名を編集する関数
+window.renameCourse = (id, currentTitle, currentStartTime) => {
+    const newTitle = prompt("新しいヒート名を入力してください", currentTitle);
+    if (newTitle === null) return;
 
-        const newStartTime = prompt("新しいスタート時刻を入力してください\n（例: 10:30）", currentStartTime || "10:30");
-        if (newStartTime === null) return;
+    const newStartTime = prompt("新しいスタート時刻を入力してください\n（例: 10:30）", currentStartTime || "10:30");
+    if (newStartTime === null) return;
 
-        db.ref('saved_courses/' + id).update({ 
-            title: newTitle,
-            startTime: newStartTime 
-        }, err => {
-            if (!err) {
-                showToast("✏️ 記録情報を更新しました");
-                openReplayMenu();
-            } else {
-                alert("変更に失敗しました: " + (err.message || ''));
-            }
-        });
-    };
-
+    let localCourses = JSON.parse(localStorage.getItem('tora_king_local_courses') || '{}');
+    if (localCourses[id]) {
+        localCourses[id].title = newTitle;
+        localCourses[id].startTime = newStartTime;
+        localStorage.setItem('tora_king_local_courses', JSON.stringify(localCourses));
+        
+        showToast("✏️ 記録情報を更新しました");
+        openReplayMenu();
+    } else {
+        alert("該当するデータが見つかりませんでした");
+    }
+};
 
 // 外部からJSONファイルを読み込んで端末内に復元する
 window.importCourseFromJson = (inputElement) => {
@@ -1913,7 +1913,6 @@ window.importCourseFromJson = (inputElement) => {
         try {
             const importedData = JSON.parse(e.target.result);
             
-            // 最低限必要なデータ（history等）が入っているか簡易チェック
             if (!importedData || !importedData.history) {
                 alert("❌ 無効なレースデータファイルです。");
                 return;
@@ -1942,43 +1941,51 @@ window.importCourseFromJson = (inputElement) => {
         } catch (err) {
             alert("❌ JSONファイルの解析に失敗しました:\n" + err.message);
         } finally {
-            // ファイル選択をリセット（同じファイルを再度選べるようにする）
             inputElement.value = "";
         }
     };
     reader.readAsText(file);
 };
 
-    
-// 選択した1件のレースデータをJSONファイルとしてダウンロード
+// ▼ 【修正】ローカルストレージから指定した1件をJSONファイルとしてダウンロードする関数
 window.exportSingleCourse = (id) => {
-    db.ref('saved_courses/' + id).once('value', snap => {
-        const data = snap.val();
-        if (!data) {
-            alert("エクスポートするデータが見つかりませんでした");
-            return;
+    const localCourses = JSON.parse(localStorage.getItem('tora_king_local_courses') || '{}');
+    const data = localCourses[id];
+    
+    if (!data) {
+        alert("エクスポートするデータが見つかりませんでした");
+        return;
+    }
+
+    const safeTitle = (data.title || 'race_data').replace(/[\/\\?%*:|"<>]/g, '_');
+    const fileName = `${safeTitle}_${id}.json`;
+
+    const jsonString = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast("📥 レースデータをダウンロードしました！");
+};
+
+// ▼ 【修正】ローカルストレージから指定した1件を非表示（削除）にする関数
+window.deleteCourse = (id) => {
+    if (confirm("このレース記録をこの端末のリストから非表示（削除）にしますか？")) {
+        let hiddenReplays = JSON.parse(localStorage.getItem('tora_king_hidden_replays') || '[]');
+        if (!hiddenReplays.includes(id)) {
+            hiddenReplays.push(id);
+            localStorage.setItem('tora_king_hidden_replays', JSON.stringify(hiddenReplays));
         }
-
-        // ファイル名に使用するタイトル（使えない記号などは置換）
-        const safeTitle = (data.title || 'race_data').replace(/[\/\\?%*:|"<>]/g, '_');
-        const fileName = `${safeTitle}_${id}.json`;
-
-        // JSON文字列に変換
-        const jsonString = JSON.stringify(data, null, 2);
-        const blob = new Blob([jsonString], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-
-        // ダウンロード用のリンクを自動生成してクリックさせる
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        showToast("📥 レースデータをダウンロードしました！");
-    });
+        showToast("🗑️ この端末のリストから非表示にしました");
+        openReplayMenu(); 
+    }
 };
 
 
