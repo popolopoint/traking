@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.5.8 by Popolo App.com</title>
+    <title>虎キング v5.5.9 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -540,7 +540,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.5.8 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.5.9 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1827,10 +1827,12 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
         const listDiv = document.getElementById('saved-courses-list');
         listDiv.innerHTML = "読み込み中...";
         document.getElementById('saved-courses-modal').style.display = 'flex';
-
-        db.ref('saved_courses').once('value', snap => {
+db.ref('saved_courses').once('value', snap => {
             const saved = snap.val();
             
+            // ▼ この端末で非表示（削除）に設定されているIDリストをローカルストレージから取得
+            let hiddenReplays = JSON.parse(localStorage.getItem('tora_king_hidden_replays') || '[]');
+
             // 上部のボタン類（すべて選択・読み込み・削除）のHTML
             let html = `
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:0 5px; flex-wrap:wrap; gap:6px;">
@@ -1849,7 +1851,12 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
             if (!saved) {
                 html += "<p style='color:#666; padding:20px;'>保存されたヒート記録はありません</p>";
             } else {
+                let hasVisibleItem = false;
                 for (let id in saved) {
+                    // ▼ この端末で非表示にされている記録はスキップ
+                    if (hiddenReplays.includes(id)) continue;
+
+                    hasVisibleItem = true;
                     const c = saved[id];
                     const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '';
                     const startInfo = c.startTime ? `スタート: ${c.startTime}` : '';
@@ -1869,6 +1876,9 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
                             <button class="replay-item-btn replay-btn-del" onclick="authAndDelete('${id}')" title="削除">🗑️</button>
                         </div>
                     </div>`;
+                }
+                if (!hasVisibleItem) {
+                    html += "<p style='color:#666; padding:20px;'>表示できるヒート記録はありません</p>";
                 }
             }
             listDiv.innerHTML = html;
@@ -2060,18 +2070,18 @@ window.exportSingleCourse = (id) => {
 
 
     
-    window.deleteCourse = (id) => {
-        if (confirm("このレース記録を削除しますか？（元に戻せません）")) {
-            db.ref('saved_courses/' + id).remove(err => {
-                if (!err) {
-                    showToast("🗑️ 記録を削除しました");
-                    openReplayMenu();
-                } else {
-                    alert("削除に失敗しました");
-                }
-            });
+  window.deleteCourse = (id) => {
+    if (confirm("このレース記録をこの端末のリストから非表示（削除）にしますか？")) {
+        // ▼ 自分の端末用の非表示リストに追加して保存
+        let hiddenReplays = JSON.parse(localStorage.getItem('tora_king_hidden_replays') || '[]');
+        if (!hiddenReplays.includes(id)) {
+            hiddenReplays.push(id);
+            localStorage.setItem('tora_king_hidden_replays', JSON.stringify(hiddenReplays));
         }
-    };
+        showToast("🗑️ この端末のリストから非表示にしました");
+        openReplayMenu(); // リストを再描画
+    }
+};
 
     window.startReplay = (id) => {
         document.getElementById('saved-courses-modal').style.display = 'none';
