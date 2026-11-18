@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.5.6d by Popolo App.com</title>
+    <title>虎キング v5.5.8 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -540,7 +540,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.5.6d by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.5.8 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -2522,8 +2522,8 @@ window.toggleReplayColorFilter = (hex) => {
         if (!userTrails[identifier]) userTrails[identifier] = [];
         userTrails[identifier].push({ lat: lat, lng: lng, ts: timestamp });
         
-        // 【修正】保持するログも5秒（5000ms）分に制限する
-        userTrails[identifier] = userTrails[identifier].filter(p => timestamp - p.ts <= 5000);
+        // 【修正】保持するログも5秒（15000ms）分に制限する
+        userTrails[identifier] = userTrails[identifier].filter(p => timestamp - p.ts <= 15000);
 
         if (userPolylineLines[identifier]) {
             userPolylineLines[identifier].forEach(seg => map.removeLayer(seg));
@@ -2538,11 +2538,11 @@ window.toggleReplayColorFilter = (hex) => {
                 const age = timestamp - p2.ts;
                 let opacity = 0.8;
                 
-                // 5秒（5000ms）を寿命とし、後半の2.5秒（2500ms経過後）からなめらかにフェードアウト
-                if (age > 5000) {
+                // 15秒（15000ms）を寿命とし、後半の7.5秒（7500ms経過後）からなめらかにフェードアウト
+                if (age > 15000) {
                     opacity = 0;
-                } else if (age > 2500) {
-                    opacity = 0.8 * (1.0 - (age - 2500) / 2500);
+                } else if (age > 7500) {
+                    opacity = 0.8 * (1.0 - (age - 7500) / 7500);
                     if (opacity < 0) opacity = 0;
                 }
 
