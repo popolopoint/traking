@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.2 by Popolo App.com</title>
+    <title>虎キング v5.6.2a by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -370,6 +370,27 @@
 }
 
 
+
+ #course-builder-bar {
+    position: fixed; 
+    top: 65px; 
+    left: 50%; 
+    transform: translateX(-50%); 
+    z-index: 4000; /* メニューボタン等より確実に手前にする */
+    background: rgba(30, 39, 46, 0.98); 
+    border: 3px solid #ff9900;
+    padding: 16px 20px; 
+    border-radius: 20px; 
+    display: none; 
+    flex-direction: column; /* 縦方向のレイアウトを整理 */
+    gap: 12px; 
+    color: white;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.7); 
+    width: 94vw; 
+    max-width: 680px; 
+    box-sizing: border-box;
+    pointer-events: auto !important; /* タップを確実に受け付ける */
+}   
     
     </style>
 </head>
@@ -454,16 +475,17 @@
         <button class="cb-btn" onclick="deleteSavedCourseLayout()" style="background:#c0392b;">🗑️ 保存コース削除</button>
         
     </div>
-    <div style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-top:8px; border-top:2px solid #555; padding-top:10px;">
-        <button class="cb-btn" onclick="addCurrentPositionObject()" style="background:#27ae60; font-size:15px; padding:10px 16px;">📍 現在位置を登録</button>
-        <div style="display:flex; align-items:center; gap:6px; font-size:15px;">
-            <span>風向:</span>
-            <input type="number" id="cb-wind-deg" value="0" style="width:65px; padding:6px; font-size:14px; text-align:center;" placeholder="°">°
+<div style="display:flex; flex-direction:column; gap:10px; width:100%; margin-top:8px; border-top:2px solid #555; padding-top:10px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+            <button class="cb-btn" onclick="addCurrentPositionObject()" style="background:#27ae60; font-size:15px; padding:10px 16px; flex:1;">📍 現在位置を登録</button>
+            <div style="display:flex; align-items:center; gap:6px; font-size:15px; margin-left:10px;">
+                <span>風向:</span>
+                <input type="number" id="cb-wind-deg" value="0" style="width:65px; padding:6px; font-size:14px; text-align:center;" placeholder="°">°
+            </div>
         </div>
-        
-        <button class="cb-btn" ontouchend="event.preventDefault(); exitCourseBuilder();" onclick="exitCourseBuilder()" style="background:#c0392b; font-size:15px; padding:10px 16px;">終了</button>
+        <!-- 終了ボタンを単独の大きな行にして、タッチミスやボタン被りを完全に防止 -->
+        <button class="cb-btn" ontouchend="event.preventDefault(); exitCourseBuilder();" onclick="exitCourseBuilder()" style="background:#c0392b; font-size:16px; padding:12px; width:100%; font-weight:bold;">✖ コース作成モードを終了する</button>
     </div>
-</div>
 
 <button id="course-builder-minimized" onclick="expandCourseBuilderBar()">🛠️ コース作成バーを表示</button>
 
@@ -541,7 +563,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.2 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.2a by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
