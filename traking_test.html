@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.2b by Popolo App.com</title>
+    <title>虎キング v5.6.2c by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -461,20 +461,29 @@
         <span style="font-weight:bold; color:#ff9900; font-size:18px;">🛠️ コース作成コントロールパネル</span>
         <button onclick="minimizeCourseBuilderBar()" style="background:rgba(255,255,255,0.25); border:none; color:white; border-radius:6px; padding:6px 14px; font-size:14px; cursor:pointer; font-weight:bold;">収納する</button>
     </div>
-    <div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center; width:100%;">
+<div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; width:100%;">
         <button class="cb-btn cb-btn-large" id="cb-mode-ship" onclick="setCourseBuilderMode('ship')">🚤 フネ</button>
         <button class="cb-btn cb-btn-large" id="cb-mode-buoy" onclick="setCourseBuilderMode('buoy')">🚩 ブイ</button>
         <button class="cb-btn" id="cb-mode-dashed" onclick="setCourseBuilderMode('dashed')">┈ 点線</button>
         <button class="cb-btn" id="cb-mode-solid" onclick="setCourseBuilderMode('solid')">━ 実線</button>
         <button class="cb-btn" id="cb-mode-data" onclick="setCourseBuilderMode('data')">📊 データ</button>
-        <button class="cb-btn" onclick="undoLastCreatedObjectOrLine()" style="background:#e67e22; border-color:#f39c12;" title="直近で置いたブイや線を消去">↩️ 元に戻す</button>
-        <button class="cb-btn" onclick="openDataListModal()" style="background:#2980b9;">📋 一覧</button>
-        <button class="cb-btn" onclick="saveCurrentCourseLayout()" style="background:#8e44ad;">💾 コース保存</button>
-        <button class="cb-btn" onclick="startNewCourseLayout()" style="background:#c0392b;">＋ 新規コース</button>
-        <button class="cb-btn" onclick="openSavedCourseLayouts()" style="background:#16a085;">📂 保存コース読み込み</button>
-        <button class="cb-btn" onclick="deleteSavedCourseLayout()" style="background:#c0392b;">🗑️ 保存コース削除</button>
-        
     </div>
+
+    <!-- 2段目: ご指定の3つ（元に戻す、一覧、コース保存） -->
+    <div style="display:flex; gap:8px; justify-content:center; width:100%;">
+        <button class="cb-btn" onclick="undoLastCreatedObjectOrLine()" style="background:#e67e22; border-color:#f39c12; flex:1;" title="直近で置いたブイや線を消去">↩️ 元に戻す</button>
+        <button class="cb-btn" onclick="openDataListModal()" style="background:#2980b9; flex:1;">📋 一覧</button>
+        <button class="cb-btn" onclick="saveCurrentCourseLayout()" style="background:#8e44ad; flex:1;">💾 コース保存</button>
+    </div>
+
+    <!-- 3段目: ご指定の3つ（新規コース、保存コース読込、保存コース削除） -->
+    <div style="display:flex; gap:8px; justify-content:center; width:100%;">
+        <button class="cb-btn" onclick="startNewCourseLayout()" style="background:#c0392b; flex:1;">＋ 新規</button>
+        <button class="cb-btn" onclick="openSavedCourseLayouts()" style="background:#16a085; flex:1;">📂 読込</button>
+        <button class="cb-btn" onclick="deleteSavedCourseLayout()" style="background:#c0392b; flex:1;">🗑️ 削除</button>
+    </div>
+
+    
 <div style="display:flex; flex-direction:column; gap:10px; width:100%; margin-top:8px; border-top:2px solid #555; padding-top:10px;">
         <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
             <button class="cb-btn" onclick="addCurrentPositionObject()" style="background:#27ae60; font-size:15px; padding:10px 16px; flex:1;">📍 現在位置を登録</button>
@@ -564,7 +573,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.2b by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.2c by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
