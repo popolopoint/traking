@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.2c by Popolo App.com</title>
+    <title>虎キング v5.6.2d by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -573,7 +573,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.2c by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.2d by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1942,12 +1942,18 @@ window.importCourseFromJson = (inputElement) => {
     if (!file) return;
 
     const reader = new FileReader();
+    
     reader.onload = (e) => {
         try {
-            const importedData = JSON.parse(e.target.result);
+            const textResult = e.target.result;
+            if (!textResult || textResult.trim() === "") {
+                throw new Error("ファイルの内容が空です。");
+            }
+
+            const importedData = JSON.parse(textResult);
             
             if (!importedData || !importedData.history) {
-                alert("❌ 無効なレースデータファイルです。");
+                alert("❌ 無効なレースデータファイルです（historyデータが含まれていません）。");
                 return;
             }
 
@@ -1966,18 +1972,34 @@ window.importCourseFromJson = (inputElement) => {
 
             let localCourses = JSON.parse(localStorage.getItem('tora_king_local_courses') || '{}');
             localCourses[newId] = payload;
-            localStorage.setItem('tora_king_local_courses', JSON.stringify(localCourses));
+            
+            // ローカルストレージの容量オーバー対策
+            try {
+                localStorage.setItem('tora_king_local_courses', JSON.stringify(localCourses));
+            } catch (storageErr) {
+                alert("❌ 端末の保存容量（LocalStorage）がいっぱいです。不要な古い記録を削除してから再度お試しください。");
+                return;
+            }
 
             showToast("📤 レースデータをこの端末に読み込みました！");
             openReplayMenu();
 
         } catch (err) {
-            alert("❌ JSONファイルの解析に失敗しました:\n" + err.message);
+            console.error("JSON Parse Error:", err);
+            alert("❌ JSONファイルの解析に失敗しました。\nファイルが破損しているか、フォーマットが正しくありません。\nエラー: " + err.message);
         } finally {
             inputElement.value = "";
         }
     };
-    reader.readAsText(file);
+
+    reader.onerror = (err) => {
+        console.error("FileReader Error:", err);
+        alert("❌ ファイルの読み込みに失敗しました。スマホのセキュリティ制限か、ファイルアクセス権限のエラーの可能性があります。");
+        inputElement.value = "";
+    };
+
+    // スマホでの文字コードズレを防ぐため、UTF-8で強制読み込み
+    reader.readAsText(file, "UTF-8");
 };
 
 // ▼ 【修正】ローカルストレージから指定した1件をJSONファイルとしてダウンロードする関数
