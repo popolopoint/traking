@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.1d by Popolo App.com</title>
+    <title>虎キング v5.6.2 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -460,7 +460,8 @@
             <span>風向:</span>
             <input type="number" id="cb-wind-deg" value="0" style="width:65px; padding:6px; font-size:14px; text-align:center;" placeholder="°">°
         </div>
-        <button class="cb-btn" onclick="exitCourseBuilder()" style="background:#c0392b; font-size:15px; padding:10px 16px;">終了</button>
+        
+        <button class="cb-btn" ontouchend="event.preventDefault(); exitCourseBuilder();" onclick="exitCourseBuilder()" style="background:#c0392b; font-size:15px; padding:10px 16px;">終了</button>
     </div>
 </div>
 
@@ -540,7 +541,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.1d by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.2 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
