@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.3a by Popolo App.com</title>
+    <title>虎キング v5.6.3b by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -573,7 +573,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.3a by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.3b by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -2127,25 +2127,7 @@ window.startReplay = async (id) => {
 
     
 
-    // ▼ 【修正】まず端末のローカルストレージからデータを探す
-    const localCourses = JSON.parse(localStorage.getItem('tora_king_local_courses') || '{}');
-    const localData = localCourses[id];
-
-    if (localData) {
-        // ローカルに見つかった場合はそのまま処理へ
-        processReplayData(localData);
-    } else {
-        // ローカルになければ念のためFirebaseから取得
-        db.ref('saved_courses/' + id).once('value', snap => {
-            const fbData = snap.val();
-            if (!fbData) {
-                alert("再生するデータが見つかりませんでした");
-                return;
-            }
-            processReplayData(fbData);
-        });
-    }
-};
+ 
 
 // 実際の描画・再生準備を行う共通関数
 function processReplayData(data) {
