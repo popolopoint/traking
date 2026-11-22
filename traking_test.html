@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.2a by Popolo App.com</title>
+    <title>虎キング v5.6.2b by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -486,7 +486,8 @@
         <!-- 終了ボタンを単独の大きな行にして、タッチミスやボタン被りを完全に防止 -->
         <button class="cb-btn" ontouchend="event.preventDefault(); exitCourseBuilder();" onclick="exitCourseBuilder()" style="background:#c0392b; font-size:16px; padding:12px; width:100%; font-weight:bold;">✖ コース作成モードを終了する</button>
     </div>
-
+  </div>
+    
 <button id="course-builder-minimized" onclick="expandCourseBuilderBar()">🛠️ コース作成バーを表示</button>
 
 <div id="course-data-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
@@ -563,7 +564,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.2a by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.2b by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -779,7 +780,7 @@ let wakeLockInterval = null;
 
 async function requestWakeLock() {
     // 画面タッチ・操作時に無音動画も確実にキック
-    enableNoSleepVideo();
+    if (typeof enableNoSleepVideo === 'function') enableNoSleepVideo();
 
     try {
         if ('wakeLock' in navigator) {
@@ -809,7 +810,7 @@ function startWakeLockInterval() {
 // 画面の表示状態が戻ったとき（バックグラウンドから復帰時など）に再取得する
 document.addEventListener('visibilitychange', async () => {
     if (document.visibilityState === 'visible') {
-        enableNoSleepVideo();
+        if (typeof enableNoSleepVideo === 'function') enableNoSleepVideo();
         await requestWakeLock();
     }
 });
