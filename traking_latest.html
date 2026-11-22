@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.5.6d by Popolo App.com</title>
+    <title>虎キング v5.6.3b by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -370,6 +370,27 @@
 }
 
 
+
+ #course-builder-bar {
+    position: fixed; 
+    top: 65px; 
+    left: 50%; 
+    transform: translateX(-50%); 
+    z-index: 4000; /* メニューボタン等より確実に手前にする */
+    background: rgba(30, 39, 46, 0.98); 
+    border: 3px solid #ff9900;
+    padding: 16px 20px; 
+    border-radius: 20px; 
+    display: none; 
+    flex-direction: column; /* 縦方向のレイアウトを整理 */
+    gap: 12px; 
+    color: white;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.7); 
+    width: 94vw; 
+    max-width: 680px; 
+    box-sizing: border-box;
+    pointer-events: auto !important; /* タップを確実に受け付ける */
+}   
     
     </style>
 </head>
@@ -440,30 +461,42 @@
         <span style="font-weight:bold; color:#ff9900; font-size:18px;">🛠️ コース作成コントロールパネル</span>
         <button onclick="minimizeCourseBuilderBar()" style="background:rgba(255,255,255,0.25); border:none; color:white; border-radius:6px; padding:6px 14px; font-size:14px; cursor:pointer; font-weight:bold;">収納する</button>
     </div>
-    <div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center; width:100%;">
+<div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; width:100%;">
         <button class="cb-btn cb-btn-large" id="cb-mode-ship" onclick="setCourseBuilderMode('ship')">🚤 フネ</button>
         <button class="cb-btn cb-btn-large" id="cb-mode-buoy" onclick="setCourseBuilderMode('buoy')">🚩 ブイ</button>
         <button class="cb-btn" id="cb-mode-dashed" onclick="setCourseBuilderMode('dashed')">┈ 点線</button>
         <button class="cb-btn" id="cb-mode-solid" onclick="setCourseBuilderMode('solid')">━ 実線</button>
         <button class="cb-btn" id="cb-mode-data" onclick="setCourseBuilderMode('data')">📊 データ</button>
-        <button class="cb-btn" onclick="undoLastCreatedObjectOrLine()" style="background:#e67e22; border-color:#f39c12;" title="直近で置いたブイや線を消去">↩️ 元に戻す</button>
-        <button class="cb-btn" onclick="openDataListModal()" style="background:#2980b9;">📋 一覧</button>
-        <button class="cb-btn" onclick="saveCurrentCourseLayout()" style="background:#8e44ad;">💾 コース保存</button>
-        <button class="cb-btn" onclick="startNewCourseLayout()" style="background:#c0392b;">＋ 新規コース</button>
-        <button class="cb-btn" onclick="openSavedCourseLayouts()" style="background:#16a085;">📂 保存コース読み込み</button>
-        <button class="cb-btn" onclick="deleteSavedCourseLayout()" style="background:#c0392b;">🗑️ 保存コース削除</button>
-        
     </div>
-    <div style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-top:8px; border-top:2px solid #555; padding-top:10px;">
-        <button class="cb-btn" onclick="addCurrentPositionObject()" style="background:#27ae60; font-size:15px; padding:10px 16px;">📍 現在位置を登録</button>
-        <div style="display:flex; align-items:center; gap:6px; font-size:15px;">
-            <span>風向:</span>
-            <input type="number" id="cb-wind-deg" value="0" style="width:65px; padding:6px; font-size:14px; text-align:center;" placeholder="°">°
-        </div>
-        <button class="cb-btn" onclick="exitCourseBuilder()" style="background:#c0392b; font-size:15px; padding:10px 16px;">終了</button>
-    </div>
-</div>
 
+    <!-- 2段目: ご指定の3つ（元に戻す、一覧、コース保存） -->
+    <div style="display:flex; gap:8px; justify-content:center; width:100%;">
+        <button class="cb-btn" onclick="undoLastCreatedObjectOrLine()" style="background:#e67e22; border-color:#f39c12; flex:1;" title="直近で置いたブイや線を消去">↩️ 元に戻す</button>
+        <button class="cb-btn" onclick="openDataListModal()" style="background:#2980b9; flex:1;">📋 一覧</button>
+        <button class="cb-btn" onclick="saveCurrentCourseLayout()" style="background:#8e44ad; flex:1;">💾 コース保存</button>
+    </div>
+
+    <!-- 3段目: ご指定の3つ（新規コース、保存コース読込、保存コース削除） -->
+    <div style="display:flex; gap:8px; justify-content:center; width:100%;">
+        <button class="cb-btn" onclick="startNewCourseLayout()" style="background:#c0392b; flex:1;">＋ 新規</button>
+        <button class="cb-btn" onclick="openSavedCourseLayouts()" style="background:#16a085; flex:1;">📂 読込</button>
+        <button class="cb-btn" onclick="deleteSavedCourseLayout()" style="background:#c0392b; flex:1;">🗑️ 削除</button>
+    </div>
+
+    
+<div style="display:flex; flex-direction:column; gap:10px; width:100%; margin-top:8px; border-top:2px solid #555; padding-top:10px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+            <button class="cb-btn" onclick="addCurrentPositionObject()" style="background:#27ae60; font-size:15px; padding:10px 16px; flex:1;">📍 現在位置を登録</button>
+            <div style="display:flex; align-items:center; gap:6px; font-size:15px; margin-left:10px;">
+                <span>風向:</span>
+                <input type="number" id="cb-wind-deg" value="0" style="width:65px; padding:6px; font-size:14px; text-align:center;" placeholder="°">°
+            </div>
+        </div>
+        <!-- 終了ボタンを単独の大きな行にして、タッチミスやボタン被りを完全に防止 -->
+        <button class="cb-btn" ontouchend="event.preventDefault(); exitCourseBuilder();" onclick="exitCourseBuilder()" style="background:#c0392b; font-size:16px; padding:12px; width:100%; font-weight:bold;">✖ コース作成モードを終了する</button>
+    </div>
+  </div>
+    
 <button id="course-builder-minimized" onclick="expandCourseBuilderBar()">🛠️ コース作成バーを表示</button>
 
 <div id="course-data-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:7000; justify-content:center; align-items:center;">
@@ -540,7 +573,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.5.6d by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.3b by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -756,7 +789,7 @@ let wakeLockInterval = null;
 
 async function requestWakeLock() {
     // 画面タッチ・操作時に無音動画も確実にキック
-    enableNoSleepVideo();
+    if (typeof enableNoSleepVideo === 'function') enableNoSleepVideo();
 
     try {
         if ('wakeLock' in navigator) {
@@ -786,7 +819,7 @@ function startWakeLockInterval() {
 // 画面の表示状態が戻ったとき（バックグラウンドから復帰時など）に再取得する
 document.addEventListener('visibilitychange', async () => {
     if (document.visibilityState === 'visible') {
-        enableNoSleepVideo();
+        if (typeof enableNoSleepVideo === 'function') enableNoSleepVideo();
         await requestWakeLock();
     }
 });
@@ -811,41 +844,7 @@ document.addEventListener('touchstart', () => {
 
     
    
-    // すべてのチェックボックスを一括ON/OFF
-window.toggleSelectAllReplays = (masterChk) => {
-    const checkboxes = document.querySelectorAll('.replay-del-chk');
-    checkboxes.forEach(chk => {
-        chk.checked = masterChk.checked;
-    });
-};
 
-// 選択した複数のレースを一括削除
-window.deleteSelectedReplays = () => {
-    if (!checkAdminAuth()) return;
-    
-    const checkboxes = document.querySelectorAll('.replay-del-chk:checked');
-    if (checkboxes.length === 0) {
-        alert("削除するレース記録が選択されていません");
-        return;
-    }
-
-    if (confirm(`選択した ${checkboxes.length} 件のレース記録を削除しますか？（元に戻せません）`)) {
-        let updates = {};
-        checkboxes.forEach(chk => {
-            updates['saved_courses/' + chk.value] = null;
-        });
-
-        db.ref().update(updates, err => {
-            if (!err) {
-                showToast("🗑️ 選択した記録を削除しました");
-                openReplayMenu(); // リストを再読み込み
-            } else {
-                alert("削除に失敗しました: " + (err.message || ''));
-            }
-        });
-    }
-};
-    
     
     
     
@@ -1743,7 +1742,7 @@ showToast("🔴 レース記録をスタートしました！(ローカル)");
         }
     };
 
-    function startGlobalRecordingLoop() {
+ function startGlobalRecordingLoop() {
         if (recordingInterval) clearInterval(recordingInterval);
         recordingInterval = setInterval(() => {
             if (!isRecordingActive) return;
@@ -1770,414 +1769,465 @@ if (u && !u.isViewer && u.partType === 'normal' && (now - (u.ts || 0) <= 600000)
         }, 1000);
     }
 
-   window.stopRaceRecording = () => {
-        if (!isRecordingActive) {
-            alert("現在、記録はスタートしていません");
-            document.getElementById('floating-stop-btn').style.display = 'none';
-            document.getElementById('recording-banner').style.display = 'none';
-            return;
+
+
+// ==========================================
+// 大容量保存（IndexedDB）と古いデータの自動引き継ぎ
+// ==========================================
+let dbPromise = new Promise((resolve, reject) => {
+    const request = indexedDB.open('ToraKingDB', 1);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains('courses')) {
+            db.createObjectStore('courses', { keyPath: 'id' });
+        }
+    };
+});
+
+async function saveCourseToIDB(courseData) {
+    const db = await dbPromise;
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(['courses'], 'readwrite');
+        const store = transaction.objectStore('courses');
+        const request = store.put(courseData);
+        request.onsuccess = () => resolve(true);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function getAllCoursesFromIDB() {
+    const db = await dbPromise;
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(['courses'], 'readonly');
+        const store = transaction.objectStore('courses');
+        const request = store.getAll();
+        request.onsuccess = () => resolve(request.result || []);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function getCourseFromIDB(id) {
+    const db = await dbPromise;
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(['courses'], 'readonly');
+        const store = transaction.objectStore('courses');
+        const request = store.get(id);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function deleteCourseFromIDB(id) {
+    const db = await dbPromise;
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(['courses'], 'readwrite');
+        const store = transaction.objectStore('courses');
+        const request = store.delete(id);
+        request.onsuccess = () => resolve(true);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+// 以前のLocalStorageに残っている古いデータを自動でお引越しさせる処理
+async function migrateOldLocalStorageData() {
+    try {
+        const oldDataStr = localStorage.getItem('tora_king_local_courses');
+        if (!oldDataStr) return;
+
+        const oldCourses = JSON.parse(oldDataStr);
+        const hiddenReplays = JSON.parse(localStorage.getItem('tora_king_hidden_replays') || '[]');
+        let migratedCount = 0;
+
+        for (let id in oldCourses) {
+            if (hiddenReplays.includes(id)) continue;
+            const course = oldCourses[id];
+            if (course) {
+                course.id = id;
+                await saveCourseToIDB(course);
+                migratedCount++;
+            }
         }
 
-        isRecordingActive = false;
-        if (recordingInterval) { clearInterval(recordingInterval); recordingInterval = null; }
-        document.getElementById('recording-banner').style.display = 'none';
+        // お引越し完了後、古い狭い容量（LocalStorage）を空にしてエラーを防ぐ
+        localStorage.removeItem('tora_king_local_courses');
+        localStorage.removeItem('tora_king_hidden_replays');
+
+        if (migratedCount > 0) {
+            showToast(`📦 過去のレース記録 ${migratedCount} 件を大容量エリアへ引き継ぎました！`);
+        }
+    } catch (e) {
+        console.error("データ移行エラー:", e);
+    }
+}
+
+// チェックボックスの一括選択
+window.toggleSelectAllReplays = (masterChk) => {
+    const checkboxes = document.querySelectorAll('.replay-del-chk');
+    checkboxes.forEach(chk => {
+        chk.checked = masterChk.checked;
+    });
+};
+
+// チェックした記録の一括削除
+window.deleteSelectedReplays = async () => {
+    const checkboxes = document.querySelectorAll('.replay-del-chk:checked');
+    if (checkboxes.length === 0) {
+        alert("削除するレース記録が選択されていません");
+        return;
+    }
+
+    if (confirm(`選択した ${checkboxes.length} 件のレース記録を完全に削除しますか？`)) {
+        for (let chk of checkboxes) {
+            await deleteCourseFromIDB(chk.value);
+        }
+        showToast("🗑️ 選択した記録を削除しました");
+        openReplayMenu();
+    }
+};
+
+// ==========================================
+// レース記録の停止・保存
+// ==========================================
+window.stopRaceRecording = async () => {
+    if (!isRecordingActive) {
+        alert("現在、記録はスタートしていません");
         document.getElementById('floating-stop-btn').style.display = 'none';
+        document.getElementById('recording-banner').style.display = 'none';
+        return;
+    }
 
-        const heatName = prompt("記録するヒート名を入力してください\n（例: 第1ヒート、決勝など）", "第1ヒート");
-        if (!heatName) {
-            showToast("⚠️️ 保存がキャンセルされました（記録は停止しました）");
-            return;
-        }
+    isRecordingActive = false;
+    if (recordingInterval) { clearInterval(recordingInterval); recordingInterval = null; }
+    document.getElementById('recording-banner').style.display = 'none';
+    document.getElementById('floating-stop-btn').style.display = 'none';
 
-        const nowTimeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const startTimeInput = prompt("スタート時刻を入力してください\n（例: 10:30）", nowTimeStr);
+    const heatName = prompt("記録するヒート名を入力してください\n（例: 第1ヒート、決勝など）", "第1ヒート");
+    if (!heatName) {
+        showToast("⚠ 保存がキャンセルされました（記録は停止しました）");
+        return;
+    }
 
-        db.ref('temp_history').once('value', tempSnap => {
-            const historyData = tempSnap.val() || {};
+    const nowTimeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const startTimeInput = prompt("スタート時刻を入力してください\n（例: 10:30）", nowTimeStr);
 
-            db.ref('objects').once('value', objSnap => {
-                const currentObjects = objSnap.val() || {};
+    db.ref('temp_history').once('value', tempSnap => {
+        const historyData = tempSnap.val() || {};
 
-                // ▼ ここで custom_lines（点線・実線）も同時に取得して保存する
-                db.ref('custom_lines').once('value', lineSnap => {
-                    const currentLines = lineSnap.val() || {};
+        db.ref('objects').once('value', objSnap => {
+            const currentObjects = objSnap.val() || {};
 
-                    db.ref('saved_courses').push({
-                        title: heatName,
-                        startTime: startTimeInput || '時刻不明',
-                        objects: currentObjects,
-                        lines: currentLines, // ← 保存データに含める
-                        history: historyData,
-                        createdAt: Date.now()
-                    }, err => {
-                        if (!err) {
-                            showToast(`💾 「${heatName} (スタート: ${startTimeInput || '不明'})」を保存しました！`);
-                            db.ref('temp_history').remove();
-                        } else {
-                            alert("サーバーへの保存に失敗しました");
-                        }
-                    });
-                });
+            db.ref('custom_lines').once('value', async (lineSnap) => {
+                const currentLines = lineSnap.val() || {};
+
+                const newCourse = {
+                    id: 'local_' + Date.now(),
+                    title: heatName,
+                    startTime: startTimeInput || '時刻不明',
+                    objects: currentObjects,
+                    lines: currentLines,
+                    history: historyData,
+                    createdAt: Date.now()
+                };
+
+                try {
+                    await saveCourseToIDB(newCourse);
+                    showToast(`💾 「${heatName} (スタート: ${startTimeInput || '不明'})」を保存しました！`);
+                    db.ref('temp_history').remove();
+                } catch (err) {
+                    alert("❌ 保存に失敗しました: " + err.message);
+                }
             });
         });
-    };
+    });
+};
 
-  window.openReplayMenu = () => {
-        toggleMenu();
-        const listDiv = document.getElementById('saved-courses-list');
-        listDiv.innerHTML = "読み込み中...";
-        document.getElementById('saved-courses-modal').style.display = 'flex';
+// ==========================================
+// リプレイメニュー・一覧表示・読み込み・再生
+// ==========================================
+window.openReplayMenu = async () => {
+    toggleMenu();
+    const listDiv = document.getElementById('saved-courses-list');
+    listDiv.innerHTML = "読み込み中...";
+    document.getElementById('saved-courses-modal').style.display = 'flex';
 
-        db.ref('saved_courses').once('value', snap => {
-            const saved = snap.val();
-            
-            // 上部のボタン類（すべて選択・読み込み・削除）のHTML
-            let html = `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:0 5px; flex-wrap:wrap; gap:6px;">
-                    <label style="cursor:pointer; font-size:0.9rem;">
-                        <input type="checkbox" id="select-all-replays" onclick="toggleSelectAllReplays(this)" style="transform:scale(1.2);"> すべて選択
+    // 古いデータがあれば自動でお引越しさせる
+    await migrateOldLocalStorageData();
+
+    try {
+        const courses = await getAllCoursesFromIDB();
+        // 新しい順に並び替え
+        courses.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+        let html = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:0 5px; flex-wrap:wrap; gap:6px;">
+                <label style="cursor:pointer; font-size:0.9rem;">
+                    <input type="checkbox" id="select-all-replays" onclick="toggleSelectAllReplays(this)" style="transform:scale(1.2);"> すべて選択
+                </label>
+                <div style="display:flex; gap:4px;">
+                    <label style="background:#27ae60; color:white; padding:6px 10px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:bold; display:inline-block;">
+                        📤 読み込み<input type="file" accept=".json,application/json,text/plain" onchange="importCourseFromJson(this)" style="display:none;">
                     </label>
-                    <div style="display:flex; gap:4px;">
-                        <label style="background:#27ae60; color:white; padding:6px 10px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:bold; display:inline-block;">
-                            📤 読み込み<input type="file" accept=".json" onchange="importCourseFromJson(this)" style="display:none;">
-                        </label>
-                        <button onclick="deleteSelectedReplays()" style="background:#e74c3c; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:bold;">🗑️ 削除</button>
-                    </div>
+                    <button onclick="deleteSelectedReplays()" style="background:#e74c3c; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:bold;">🗑️ 削除</button>
                 </div>
-            `;
+            </div>
+        `;
 
-            if (!saved) {
-                html += "<p style='color:#666; padding:20px;'>保存されたヒート記録はありません</p>";
-            } else {
-                for (let id in saved) {
-                    const c = saved[id];
-                    const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '';
-                    const startInfo = c.startTime ? `スタート: ${c.startTime}` : '';
+        if (courses.length === 0) {
+            html += "<p style='color:#666; padding:20px;'>保存されたヒート記録はありません</p>";
+        } else {
+            courses.forEach(c => {
+                const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '';
+                const startInfo = c.startTime ? `スタート: ${c.startTime}` : '';
 
-                    html += `
-                    <div class="replay-item-card" style="display:flex; align-items:center; gap:8px;">
-                        <input type="checkbox" class="replay-del-chk" value="${id}" style="transform:scale(1.3); cursor:pointer;">
-                        <div class="replay-item-info" style="flex-grow:1;">
-                            <div class="replay-item-title">🏁 ${c.title || '無題'}</div>
-                            <div class="replay-item-sub">${startInfo} ${dateStr ? ' (' + dateStr + ')' : ''}</div>
-                        </div>
-                        <div class="replay-item-btns">
-                            <button class="replay-item-btn replay-btn-play" onclick="startReplay('${id}')">再生</button>
-                            <button class="replay-item-btn" onclick="exportSingleCourse('${id}')" title="外部保存(JSON)" style="background:#8e44ad; color:white; border:none; padding:4px 6px; border-radius:4px; cursor:pointer;">📥</button>
-                            <button class="replay-item-btn replay-btn-trim" onclick="authAndTrim('${id}')" title="切り出し">✂️</button>
-                            <button class="replay-item-btn replay-btn-edit" onclick="authAndRename('${id}', '${c.title || ''}', '${c.startTime || '10:30'}')" title="編集">✏️</button>
-                            <button class="replay-item-btn replay-btn-del" onclick="authAndDelete('${id}')" title="削除">🗑️</button>
-                        </div>
-                    </div>`;
-                }
-            }
-            listDiv.innerHTML = html;
-        }, (error) => {
-            listDiv.innerHTML = `<p style='color:#e74c3c;'>取得失敗: ${error.message}</p>`;
-        });
-    };
-
-    window.authAndTrim = (id) => {
-        if (!checkAdminAuth()) return;
-        trimAndSaveCourse(id);
-    };
-
-    window.authAndRename = (id, currentTitle, currentStartTime) => {
-        if (!checkAdminAuth()) return;
-        renameCourse(id, currentTitle, currentStartTime);
-    };
-
-    window.authAndDelete = (id) => {
-        if (!checkAdminAuth()) return;
-        deleteCourse(id);
-    };
-
-    window.trimAndSaveCourse = (id) => {
-        db.ref('saved_courses/' + id).once('value', snap => {
-            const data = snap.val();
-            if (!data || !data.history) {
-                alert("切り出しできる履歴データがありません");
-                return;
-            }
-
-            let allTs = [];
-            for (let uid in data.history) {
-                for (let pushId in data.history[uid]) {
-                    allTs.push(data.history[uid][pushId].ts);
-                }
-            }
-            if (allTs.length === 0) {
-                alert("有効なログがありません");
-                return;
-            }
-            allTs.sort((a,b) => a - b);
-            const minTs = allTs[0];
-
-            const startMinutesFromMin = prompt(`全記録の開始から「何分後」を新しいスタートにしますか？\n（例: 5 と入力すると、記録開始から5分後以降を切り出します）`, "0");
-            if (startMinutesFromMin === null) return;
-            const durationMinutes = prompt(`そこから「何分間」を切り出しますか？\n（例: 3 と入力すると、3分間のレース分を切り出します）`, "3");
-            if (durationMinutes === null) return;
-
-            const targetStartTs = minTs + (parseFloat(startMinutesFromMin) || 0) * 60000;
-            const targetEndTs = targetStartTs + (parseFloat(durationMinutes) || 3) * 60000;
-
-            const newHeatName = prompt("切り出した新しいヒート名を入力してください", (data.title || "ヒート") + " (切出)");
-            if (!newHeatName) return;
-            
-            const newStartTimeStr = prompt("新しいスタート時刻（文字表示用）を入力してください\n（例: 10:35）", data.startTime || "10:30");
-
-            let newHistory = {};
-            for (let uid in data.history) {
-                newHistory[uid] = {};
-                for (let pushId in data.history[uid]) {
-                    const log = data.history[uid][pushId];
-                    if (log.ts >= targetStartTs && log.ts <= targetEndTs) {
-                        newHistory[uid][pushId] = log;
-                    }
-                }
-            }
-
-            db.ref('saved_courses').push({
-                title: newHeatName,
-                startTime: newStartTimeStr || '10:30',
-                objects: data.objects || {},
-                history: newHistory,
-                createdAt: Date.now()
-            }, err => {
-                if (!err) {
-                    showToast(`✂️ 「${newHeatName}」として切り出し保存しました！`);
-                    openReplayMenu();
-                } else {
-                    alert("切り出し保存に失敗しました");
-                }
+                html += `
+                <div class="replay-item-card" style="display:flex; align-items:center; gap:8px;">
+                    <input type="checkbox" class="replay-del-chk" value="${c.id}" style="transform:scale(1.3); cursor:pointer;">
+                    <div class="replay-item-info" style="flex-grow:1;">
+                        <div class="replay-item-title">🏁 ${c.title || '無題'}</div>
+                        <div class="replay-item-sub">${startInfo} ${dateStr ? ' (' + dateStr + ')' : ''}</div>
+                    </div>
+                    <div class="replay-item-btns">
+                        <button class="replay-item-btn replay-btn-play" onclick="startReplay('${c.id}')">再生</button>
+                        <button class="replay-item-btn" onclick="exportSingleCourse('${c.id}')" title="外部保存(JSON)" style="background:#8e44ad; color:white; border:none; padding:4px 6px; border-radius:4px; cursor:pointer;">📥</button>
+                        <button class="replay-item-btn replay-btn-edit" onclick="renameCourse('${c.id}', '${(c.title || '').replace(/'/g, "\\'")}', '${c.startTime || '10:30'}')" title="編集">✏️</button>
+                        <button class="replay-item-btn replay-btn-del" onclick="deleteCourse('${c.id}')" title="削除">🗑️</button>
+                    </div>
+                </div>`;
             });
-        });
-    };
+        }
+        listDiv.innerHTML = html;
+    } catch (err) {
+        listDiv.innerHTML = "<p style='color:red; padding:20px;'>データの読み込みに失敗しました</p>";
+    }
+};
 
-    window.renameCourse = (id, currentTitle, currentStartTime) => {
-        const newTitle = prompt("新しいヒート名を入力してください", currentTitle);
-        if (newTitle === null) return;
+window.renameCourse = async (id, currentTitle, currentStartTime) => {
+    const newTitle = prompt("新しいヒート名を入力してください", currentTitle);
+    if (newTitle === null) return;
 
-        const newStartTime = prompt("新しいスタート時刻を入力してください\n（例: 10:30）", currentStartTime || "10:30");
-        if (newStartTime === null) return;
+    const newStartTime = prompt("新しいスタート時刻を入力してください\n（例: 10:30）", currentStartTime || "10:30");
+    if (newStartTime === null) return;
 
-        db.ref('saved_courses/' + id).update({ 
-            title: newTitle,
-            startTime: newStartTime 
-        }, err => {
-            if (!err) {
-                showToast("✏️ 記録情報を更新しました");
-                openReplayMenu();
-            } else {
-                alert("変更に失敗しました: " + (err.message || ''));
-            }
-        });
-    };
+    const data = await getCourseFromIDB(id);
+    if (data) {
+        data.title = newTitle;
+        data.startTime = newStartTime;
+        await saveCourseToIDB(data);
+        showToast("✏️ 記録情報を更新しました");
+        openReplayMenu();
+    } else {
+        alert("該当するデータが見つかりませんでした");
+    }
+};
 
-
-    // 外部からJSONファイルを読み込んでアプリに復元する
+// スマホ・PC両対応のJSONファイル読み込み
 window.importCourseFromJson = (inputElement) => {
     const file = inputElement.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
         try {
-            const importedData = JSON.parse(e.target.result);
-            
-            // 最低限必要なデータ（history等）が入っているか簡易チェック
+            const textResult = e.target.result;
+            if (!textResult || textResult.trim() === "") {
+                throw new Error("ファイルの内容が空です。");
+            }
+
+            const importedData = JSON.parse(textResult);
             if (!importedData || !importedData.history) {
                 alert("❌ 無効なレースデータファイルです。");
                 return;
             }
 
-            // 読み込み時にタイトルの重複がわかるよう「(インポート)」を付与してFirebaseへ追加
+            const newId = 'local_' + Date.now();
             const newTitle = (importedData.title || 'インポートデータ') + " (読込)";
             
             const payload = {
+                id: newId,
                 title: newTitle,
                 startTime: importedData.startTime || '10:30',
                 objects: importedData.objects || {},
+                lines: importedData.lines || {},
                 history: importedData.history,
                 createdAt: Date.now()
             };
 
-            db.ref('saved_courses').push(payload, err => {
-                if (!err) {
-                    showToast("📤 レースデータを正常に読み込みました！");
-                    openReplayMenu(); // リストを更新
-                } else {
-                    alert("データの保存に失敗しました: " + err.message);
-                }
-            });
+            await saveCourseToIDB(payload);
+            showToast("📤 レースデータを読み込みました！");
+            openReplayMenu();
 
         } catch (err) {
-            alert("❌ JSONファイルの解析に失敗しました:\n" + err.message);
+            alert("❌ ファイルの解析に失敗しました:\n" + err.message);
         } finally {
-            // ファイル選択をリセット（同じファイルを再度選べるようにする）
             inputElement.value = "";
         }
     };
-    reader.readAsText(file);
+
+    reader.onerror = () => {
+        alert("❌ ファイルの読み込みに失敗しました。端末に一度保存してから選択してください。");
+        inputElement.value = "";
+    };
+
+    reader.readAsText(file, "UTF-8");
 };
 
+window.exportSingleCourse = async (id) => {
+    const data = await getCourseFromIDB(id);
+    if (!data) {
+        alert("エクスポートするデータが見つかりませんでした");
+        return;
+    }
 
-// 選択した1件のレースデータをJSONファイルとしてダウンロード
-window.exportSingleCourse = (id) => {
-    db.ref('saved_courses/' + id).once('value', snap => {
-        const data = snap.val();
-        if (!data) {
-            alert("エクスポートするデータが見つかりませんでした");
-            return;
-        }
+    const safeTitle = (data.title || 'race_data').replace(/[\/\\?%*:|"<>]/g, '_');
+    const fileName = `${safeTitle}_${id}.json`;
 
-        // ファイル名に使用するタイトル（使えない記号などは置換）
-        const safeTitle = (data.title || 'race_data').replace(/[\/\\?%*:|"<>]/g, '_');
-        const fileName = `${safeTitle}_${id}.json`;
+    const jsonString = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
 
-        // JSON文字列に変換
-        const jsonString = JSON.stringify(data, null, 2);
-        const blob = new Blob([jsonString], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 
-        // ダウンロード用のリンクを自動生成してクリックさせる
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        showToast("📥 レースデータをダウンロードしました！");
-    });
+    showToast("📥 レースデータをダウンロードしました！");
 };
 
+window.deleteCourse = async (id) => {
+    if (confirm("このレース記録を削除しますか？")) {
+        await deleteCourseFromIDB(id);
+        showToast("🗑️ 削除しました");
+        openReplayMenu(); 
+    }
+};
 
+window.startReplay = async (id) => {
+    document.getElementById('saved-courses-modal').style.display = 'none';
 
-
-
+    const localData = await getCourseFromIDB(id);
+    if (localData) {
+        processReplayData(localData);
+    } else {
+        db.ref('saved_courses/' + id).once('value', snap => {
+            const fbData = snap.val();
+            if (!fbData) {
+                alert("再生するデータが見つかりませんでした");
+                return;
+            }
+            processReplayData(fbData);
+        });
+    }
+};
 
 
     
-    window.deleteCourse = (id) => {
-        if (confirm("このレース記録を削除しますか？（元に戻せません）")) {
-            db.ref('saved_courses/' + id).remove(err => {
-                if (!err) {
-                    showToast("🗑️ 記録を削除しました");
-                    openReplayMenu();
-                } else {
-                    alert("削除に失敗しました");
-                }
-            });
+
+ 
+
+// 実際の描画・再生準備を行う共通関数
+function processReplayData(data) {
+    for (let key in objectMarkers) {
+        map.removeLayer(objectMarkers[key]);
+    }
+    customLinesGroup.clearLayers();
+
+    for (let key in replayObjectMarkers) {
+        map.removeLayer(replayObjectMarkers[key]);
+    }
+    replayObjectMarkers = {};
+
+    if (data.objects) {
+        for (let key in data.objects) {
+            const obj = data.objects[key];
+            const letter = obj.assignedLabel || (obj.type === 'ship' ? 'フネ' : 'ブイ');
+            const marker = L.marker([obj.lat, obj.lng], { 
+                icon: createObjectIcon(obj.type, obj.shape, obj.color) 
+            }).addTo(map);
+            marker.bindTooltip(letter, { permanent: true, direction: 'top', className: 'object-label' });
+            replayObjectMarkers[key] = marker;
         }
-    };
+    }
 
-    window.startReplay = (id) => {
-        document.getElementById('saved-courses-modal').style.display = 'none';
-
-        db.ref('saved_courses/' + id).once('value', snap => {
-            const data = snap.val();
-            if (!data) return;
-
-            for (let key in objectMarkers) {
-                map.removeLayer(objectMarkers[key]);
+    // 保存されている点線・実線をリプレイ画面に復元して描画
+    if (data.lines && data.objects) {
+        for (let lineId in data.lines) {
+            const l = data.lines[lineId];
+            if (data.objects[l.from] && data.objects[l.to]) {
+                const p1 = [data.objects[l.from].lat, data.objects[l.from].lng];
+                const p2 = [data.objects[l.to].lat, data.objects[l.to].lng];
+                const poly = L.polyline([p1, p2], {
+                    color: '#ffffff',
+                    weight: 3,
+                    dashArray: l.type === 'dashed' ? '5, 10' : null
+                });
+                customLinesGroup.addLayer(poly);
             }
-            customLinesGroup.clearLayers();
+        }
+    }
 
-            for (let key in replayObjectMarkers) {
-                map.removeLayer(replayObjectMarkers[key]);
-            }
-            replayObjectMarkers = {};
+    const heatTitle = data.title || '再生中';
+    const startStr = data.startTime ? ` (${data.startTime} スタート)` : '';
+    document.getElementById('replay-title-label').innerText = heatTitle + startStr;
+    document.getElementById('minimized-title').innerText = heatTitle;
 
-           if (data.objects) {
-                for (let key in data.objects) {
-                    const obj = data.objects[key];
-                    const letter = obj.assignedLabel || (obj.type === 'ship' ? 'フネ' : 'ブイ');
-                    const marker = L.marker([obj.lat, obj.lng], { 
-                        icon: createObjectIcon(obj.type, obj.shape, obj.color) 
-                    }).addTo(map);
-                    marker.bindTooltip(letter, { permanent: true, direction: 'top', className: 'object-label' });
-                    replayObjectMarkers[key] = marker;
+    setupReplayClassFilters(data.history);
+
+    document.getElementById('header-replay-status').style.display = 'block';
+    document.getElementById('header-replay-time').style.display = 'block';
+
+    let baseDate = new Date();
+    if (data.history) {
+        let firstTs = null;
+        for (let uid in data.history) {
+            const userTracks = data.history[uid];
+            if (userTracks) {
+                for (let pushId in userTracks) {
+                    const ts = userTracks[pushId].ts;
+                    if (ts && (!firstTs || ts < firstTs)) firstTs = ts;
                 }
             }
+        }
+        if (firstTs) baseDate = new Date(firstTs);
+    }
 
-            // ▼ 【追加】保存されている点線・実線をリプレイ画面に復元して描画する
-            if (data.lines && data.objects) {
-                for (let lineId in data.lines) {
-                    const l = data.lines[lineId];
-                    if (data.objects[l.from] && data.objects[l.to]) {
-                        const p1 = [data.objects[l.from].lat, data.objects[l.from].lng];
-                        const p2 = [data.objects[l.to].lat, data.objects[l.to].lng];
-                        const poly = L.polyline([p1, p2], {
-                            color: '#ffffff',
-                            weight: 3,
-                            dashArray: l.type === 'dashed' ? '5, 10' : null
-                        });
-                        customLinesGroup.addLayer(poly);
-                    }
-                }
-            }
+    if (data.startTime && data.startTime.includes(':')) {
+        const parts = data.startTime.split(':');
+        baseDate.setHours(parseInt(parts[0]), parseInt(parts[1]), 0, 0);
+        replayStartTimeMs = baseDate.getTime();
+    } else {
+        replayStartTimeMs = null;
+    }
 
-            const heatTitle = data.title || '再生中';
-            const startStr = data.startTime ? ` (${data.startTime} スタート)` : '';
-            document.getElementById('replay-title-label').innerText = heatTitle + startStr;
-            document.getElementById('minimized-title').innerText = heatTitle;
+    document.getElementById('replay-control-bar').style.display = 'flex';
+    document.getElementById('replay-minimized-btn').style.display = 'none';
 
+    isReplaying = true;
+    replayPaused = false;
+    document.getElementById('btn-pause').innerText = "一時停止";
 
-setupReplayClassFilters(data.history);
+    if (myMarker) {
+        map.removeLayer(myMarker);
+        myMarker = null;
+    }
 
-
-            
-            document.getElementById('header-replay-status').style.display = 'block';
-            document.getElementById('header-replay-time').style.display = 'block';
-
-            let baseDate = new Date();
-            if (data.history) {
-                let firstTs = null;
-                for (let uid in data.history) {
-                    for (let pushId in data.history[uid]) {
-                        const ts = data.history[uid][pushId].ts;
-                        if (!firstTs || ts < firstTs) firstTs = ts;
-                    }
-                }
-                if (firstTs) baseDate = new Date(firstTs);
-            }
-
-            if (data.startTime && data.startTime.includes(':')) {
-                const parts = data.startTime.split(':');
-                baseDate.setHours(parseInt(parts[0]), parseInt(parts[1]), 0, 0);
-                replayStartTimeMs = baseDate.getTime();
-            } else {
-                replayStartTimeMs = null;
-            }
-
-            document.getElementById('replay-control-bar').style.display = 'flex';
-            document.getElementById('replay-minimized-btn').style.display = 'none';
-
-            isReplaying = true;
-            replayPaused = false;
-            document.getElementById('btn-pause').innerText = "一時停止";
-
-            if (myMarker) {
-                map.removeLayer(myMarker);
-                myMarker = null;
-            }
-
-            for (let name in userPolylineLines) {
-                if(userPolylineLines[name]) {
-                    userPolylineLines[name].forEach(seg => map.removeLayer(seg));
-                }
-            }
-            Object.keys(userPolylineLines).forEach(k => delete userPolylineLines[k]);
-            Object.keys(userTrails).forEach(k => delete userTrails[k]);
-            Object.keys(userMarkers).forEach(k => { map.removeLayer(userMarkers[k]); delete userMarkers[k]; });
-            
-            if (data.history) {
-                prepareHistoryTimeline(data.history);
-            }
-        });
-    };
+    for (let name in userPolylineLines) {
+        if(userPolylineLines[name]) {
+            userPolylineLines[name].forEach(seg => map.removeLayer(seg));
+        }
+    }
+    Object.keys(userPolylineLines).forEach(k => delete userPolylineLines[k]);
+    Object.keys(userTrails).forEach(k => delete userTrails[k]);
+    Object.keys(userMarkers).forEach(k => { map.removeLayer(userMarkers[k]); delete userMarkers[k]; });
+    
+    if (data.history) {
+        prepareHistoryTimeline(data.history);
+    }
+}
 
 
 
@@ -2501,29 +2551,52 @@ window.toggleReplayColorFilter = (hex) => {
     };
 
     window.exitReplay = () => {
-        isReplaying = false;
-        if(replayTimer) clearTimeout(replayTimer);
-        document.getElementById('replay-control-bar').style.display = 'none';
-        document.getElementById('replay-minimized-btn').style.display = 'none';
-        document.getElementById('header-replay-status').style.display = 'none';
-        document.getElementById('header-replay-time').style.display = 'none';
-        document.getElementById('replay-countdown-alert').style.display = 'none';
-        
-        for (let key in replayObjectMarkers) {
+    isReplaying = false;
+    
+    // タイマーを確実にクリア
+    if (replayTimer) {
+        clearTimeout(replayTimer);
+        replayTimer = null;
+    }
+    
+    // 各コントロールやアラートの非表示化（要素が存在する場合のみ安全に実行）
+    const controlBar = document.getElementById('replay-control-bar');
+    if (controlBar) controlBar.style.display = 'none';
+    
+    const minimizedBtn = document.getElementById('replay-minimized-btn');
+    if (minimizedBtn) minimizedBtn.style.display = 'none';
+    
+    const statusEl = document.getElementById('header-replay-status');
+    if (statusEl) statusEl.style.display = 'none';
+    
+    const timeEl = document.getElementById('header-replay-time');
+    if (timeEl) timeEl.style.display = 'none';
+    
+    const countdownAlert = document.getElementById('replay-countdown-alert');
+    if (countdownAlert) countdownAlert.style.display = 'none';
+    
+    // リプレイ用オブジェクトマーカーを地図から削除
+    for (let key in replayObjectMarkers) {
+        if (replayObjectMarkers[key]) {
             map.removeLayer(replayObjectMarkers[key]);
         }
-        replayObjectMarkers = {};
+    }
+    replayObjectMarkers = {};
 
-        showToast("⏹️ リプレイを終了しました");
-        setTimeout(() => { location.reload(); }, 500);
-    };
+    showToast("⏹️ リプレイを終了しました");
+
+    // 0.3秒ほどウェイトを置いてから安全にリロード
+    setTimeout(() => {
+        location.reload();
+    }, 300);
+};
 
    function updateUserTrailAndMarker(identifier, lat, lng, color, heading, timestamp, partType = 'normal') {
         if (!userTrails[identifier]) userTrails[identifier] = [];
         userTrails[identifier].push({ lat: lat, lng: lng, ts: timestamp });
         
-        // 【修正】保持するログも5秒（5000ms）分に制限する
-        userTrails[identifier] = userTrails[identifier].filter(p => timestamp - p.ts <= 5000);
+        // 【修正】保持するログも5秒（15000ms）分に制限する
+        userTrails[identifier] = userTrails[identifier].filter(p => timestamp - p.ts <= 15000);
 
         if (userPolylineLines[identifier]) {
             userPolylineLines[identifier].forEach(seg => map.removeLayer(seg));
@@ -2538,11 +2611,11 @@ window.toggleReplayColorFilter = (hex) => {
                 const age = timestamp - p2.ts;
                 let opacity = 0.8;
                 
-                // 5秒（5000ms）を寿命とし、後半の2.5秒（2500ms経過後）からなめらかにフェードアウト
-                if (age > 5000) {
+                // 15秒（15000ms）を寿命とし、後半の7.5秒（7500ms経過後）からなめらかにフェードアウト
+                if (age > 15000) {
                     opacity = 0;
-                } else if (age > 2500) {
-                    opacity = 0.8 * (1.0 - (age - 2500) / 2500);
+                } else if (age > 7500) {
+                    opacity = 0.8 * (1.0 - (age - 7500) / 7500);
                     if (opacity < 0) opacity = 0;
                 }
 
