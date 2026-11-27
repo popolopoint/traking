@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.5e by Popolo App.com</title>
+    <title>虎キング v5.6.5b by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -468,11 +468,9 @@
         <button class="cb-btn" id="cb-finish-chain-btn" onclick="resetLineChain()" style="background:#27ae60; border-color:#2ecc71; padding:8px 12px; font-size:13px; display:none;">✔ 線の連続描画を完了</button>
     </div>
     
-<div style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; width:100%;">
+<div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; width:100%;">
         <button class="cb-btn cb-btn-large" id="cb-mode-ship" onclick="setCourseBuilderMode('ship')">🚤 フネ</button>
         <button class="cb-btn cb-btn-large" id="cb-mode-buoy" onclick="setCourseBuilderMode('buoy')">🚩 ブイ</button>
-        <!-- ★追加: 文字入力モードボタン -->
-        <button class="cb-btn cb-btn-large" id="cb-mode-text" onclick="setCourseBuilderMode('text')">字 文字</button>
         <button class="cb-btn" id="cb-mode-dashed" onclick="setCourseBuilderMode('dashed')">┈ 点線</button>
         <button class="cb-btn" id="cb-mode-solid" onclick="setCourseBuilderMode('solid')">━ 実線</button>
         <button class="cb-btn" id="cb-mode-data" onclick="setCourseBuilderMode('data')">📊 データ</button>
@@ -582,7 +580,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.5e by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.5b by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1533,13 +1531,7 @@ window.renumberCourseObjects = () => {
 
     if (mode === 'ship') document.getElementById('cb-mode-ship').classList.add('active');
     if (mode === 'buoy') document.getElementById('cb-mode-buoy').classList.add('active');
-  if (mode === 'text') {
-            document.getElementById('cb-mode-text').classList.add('active');
-            showToast("🔤 文字入れモード：地図上をタップして文字を配置できます");
-        }
-      
-      
-      if (mode === 'dashed') {
+    if (mode === 'dashed') {
         document.getElementById('cb-mode-dashed').classList.add('active');
         showToast("┈ 点線モード：フネ・ブイまたは地図上を連続タップして線を引けます");
     }
@@ -2859,39 +2851,6 @@ if (card) {
         });
     };
 
-
-   window.saveMapTextToFirebase = (lat, lng) => {
-    const textVal = document.getElementById('map_text_val').value || 'Text';
-    const textSize = document.getElementById('map_text_size').value;
-    const textFont = document.getElementById('map_text_font').value;
-    const textColor = document.getElementById('map_text_color').value;
-
-    const randomKey = "T_" + Math.floor(Math.random() * 10000);
-    const textData = {
-        type: 'map_text',
-        text: textVal,
-        size: textSize,
-        font: textFont,
-        color: textColor,
-        lat: lat,
-        lng: lng,
-        ownerId: myId,
-        ts: Date.now()
-    };
-
-    db.ref('objects/' + randomKey).set(textData, err => {
-        if (!err) {
-            map.closePopup();
-            showToast("🔤 文字を配置しました！");
-        } else {
-            alert("配置に失敗しました");
-        }
-    });
-}; 
-
-
-
-    
     function checkIncomingCourse() {
         const urlParams = new URLSearchParams(window.location.search);
         const mode = urlParams.get('mode');
@@ -2969,15 +2928,6 @@ if (card) {
       sortedKeys.forEach((key) => {
             let obj = objects[key];
 
-
-// ★ここに文字データの判別処理を入れる
-            if (obj.type === 'map_text') {
-                renderMapTextOnMap(key, obj, objectMarkers);
-                return;
-            }
-
-
-          
             // ★独立記号・図形の場合は専用描画を呼び出してスキップ
             if (obj.type === 'shape_marker') {
                 renderShapeMarkerOnMap(key, obj, objectMarkers);
@@ -3431,7 +3381,7 @@ map.on('zoomend', () => {
         return;
     }
         
-        
+        // 2. コース作成モード中の処理
             
        // 2. コース作成モード中の処理
         if (isCourseBuilderActive) {
@@ -3460,43 +3410,6 @@ map.on('zoomend', () => {
                         alert("登録に失敗しました");
                     }
                 });
-
-} else if (cbMode === 'text') {
-                // ★追加：文字入れモードでの入力ポップアップ
-                let colorOpts = '';
-                COLOR_OPTIONS.forEach(c => {
-                    colorOpts += `<option value="${c.hex}">${c.name}</option>`;
-                });
-
-                const textPopupContent = `
-                    <div class="popup-form" style="text-align:center;">
-                        <b>🔤 マップ文字入れ配置</b><br>
-                        <input type="text" id="map_text_val" value="Start" style="width:140px; text-align:center; font-size:14px; margin:4px 0;" placeholder="文字を入力"><br>
-                        <div style="display:flex; gap:4px; margin:4px 0;">
-                            <select id="map_text_size" style="flex:1;">
-                                <option value="12px">小 (12px)</option>
-                                <option value="16px" selected>中 (16px)</option>
-                                <option value="22px">大 (22px)</option>
-                                <option value="30px">特大 (30px)</option>
-                            </select>
-                            <select id="map_text_font" style="flex:1;">
-                                <option value="sans-serif" selected>ゴシック</option>
-                                <option value="serif">明朝体</option>
-                                <option value="monospace">等幅</option>
-                                <option value="cursive">手書き風</option>
-                            </select>
-                        </div>
-                        <select id="map_text_color" style="width:100%; margin:4px 0;">${colorOpts}</select>
-                        <button class="btn-save" onclick="saveMapTextToFirebase(${lat}, ${lng})">配置する</button>
-                    </div>`;
-
-                L.popup().setLatLng([lat, lng]).setContent(textPopupContent).openOn(map);
-            }
-
-
-
-
-                
        } else if (cbMode === 'dashed' || cbMode === 'solid') {
             const tempKey = "P_" + Math.floor(Math.random() * 100000);
             const pointData = {
@@ -4216,8 +4129,8 @@ window.addEventListener('load', () => {
         });
     }
 
-    // --- 独立記号・図形用ヘルパー ---
-    function getShapeIcon(text, col, nameLabel) {
+    // アイコンを生成するヘルパー
+function getShapeIcon(text, col, nameLabel) {
         const nameHtml = nameLabel ? `<span style="font-size:11px; font-weight:bold; color:#fff; background:rgba(0,0,0,0.75); padding:1px 5px; border-radius:4px; white-space:nowrap; border:1px solid rgba(255,153,0,0.6); text-shadow:none;">${nameLabel}</span>` : '';
         
         if (text === '🚤' || text === '🚩') {
@@ -4236,7 +4149,8 @@ window.addEventListener('load', () => {
         });
     }
 
-    // 独立記号用のマップ描画・クリック編集ハンドラ
+    // 既存のオブジェクト描画ループ（db.ref('objects').on）の中に自動統合されますが、
+    // 独立記号用のクリック・編集・削除ハンドラを定義します
     function renderShapeMarkerOnMap(key, obj, markerMap) {
         const marker = L.marker([obj.lat, obj.lng], { 
             icon: getShapeIcon(obj.assignedLabel || '●', obj.color || '#ff3b30', obj.shapeName || '') 
@@ -4301,93 +4215,101 @@ window.addEventListener('load', () => {
         });
     };
 
-    // --- マップ文字入れ用関数 ---
-    function renderMapTextOnMap(key, obj, markerMap) {
-        const icon = L.divIcon({
-            className: 'custom-map-text-marker',
-            html: `<div style="font-size:${obj.size || '16px'}; font-family:${obj.font || 'sans-serif'}; font-weight:bold; color:${obj.color || '#ffffff'}; text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000; white-space:nowrap; pointer-events:auto; cursor:pointer;">${obj.text || ''}</div>`,
-            iconSize: [0, 0],
-            iconAnchor: [0, 0]
+
+
+function createIndependentShapeMarker(latlng, shapeType) {
+    let labelText = '';
+    switch(shapeType) {
+        case 'circle': labelText = '●'; break;
+        case 'triangle': labelText = '▲'; break;
+        case 'square': labelText = '■'; break;
+        case 'diamond': labelText = '◆'; break;
+        case 'star': labelText = '★'; break;
+        case 'boat': labelText = '🚤'; break;
+        case 'buoy': labelText = '🚩'; break;
+    }
+
+    let markerColor = '#ff3b30';
+    let currentLabel = labelText;
+
+    const getIcon = (text, col) => {
+        if (text === '🚤' || text === '🚩') {
+            return L.divIcon({
+                className: 'custom-shape-marker',
+                html: `<div style="font-size:22px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.8)); text-align:center; line-height:22px;">${text}</div>`,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+        }
+        return L.divIcon({
+            className: 'custom-shape-marker',
+            html: `<div style="font-size:20px; font-weight:bold; color:${col}; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff; text-align:center; line-height:16px;">${text}</div>`,
+            iconSize: [16, 16],
+            iconAnchor: [8, 8]
         });
+    };
 
-        const marker = L.marker([obj.lat, obj.lng], { icon: icon }).addTo(map);
+    const marker = L.marker(latlng, { icon: getIcon(currentLabel, markerColor) }).addTo(map);
 
+    // ポップアップを開く処理を共通関数化
+    const bindClickEvent = () => {
+        marker.off('click'); // 既存のイベントを一度クリアして重複を防ぐ
         marker.on('click', function(e) {
             L.DomEvent.stopPropagation(e);
-            L.DomEvent.preventDefault(e);
 
             if (isAdminMode && isShapeDeleteMode) {
-                if (confirm("この文字を削除しますか？")) {
-                    db.ref('objects/' + key).remove().then(() => {
-                        showToast("🗑️ 文字を削除しました");
-                    });
+                if (confirm("本当に削除しますか？")) {
+                    map.removeLayer(marker);
+                    showToast("🗑️ 記号を削除しました");
                 }
             } else if (isAdminMode) {
                 let colorOpts = '';
                 COLOR_OPTIONS.forEach(c => {
-                    colorOpts += `<option value="${c.hex}" ${(obj.color || '#ffffff') === c.hex ? 'selected' : ''}>${c.name}</option>`;
+                    colorOpts += `<option value="${c.hex}" ${markerColor === c.hex ? 'selected' : ''}>${c.name}</option>`;
                 });
 
-                const editPopupContent = `
+                const popupContent = `
                     <div class="popup-form" style="text-align:center;">
-                        <b>🔤 文字の編集・削除</b><br>
-                        <input type="text" id="edit_map_text_${key}" value="${obj.text || ''}" style="width:140px; text-align:center; font-size:14px; margin:4px 0;"><br>
-                        <div style="display:flex; gap:4px; margin:4px 0;">
-                            <select id="edit_map_size_${key}" style="flex:1;">
-                                <option value="12px" ${obj.size==='12px'?'selected':''}>小</option>
-                                <option value="16px" ${obj.size==='16px'?'selected':''}>中</option>
-                                <option value="22px" ${obj.size==='22px'?'selected':''}>大</option>
-                                <option value="30px" ${obj.size==='30px'?'selected':''}>特大</option>
-                            </select>
-                            <select id="edit_map_font_${key}" style="flex:1;">
-                                <option value="sans-serif" ${obj.font==='sans-serif'?'selected':''}>ゴシック</option>
-                                <option value="serif" ${obj.font==='serif'?'selected':''}>明朝</option>
-                                <option value="monospace" ${obj.font==='monospace'?'selected':''}>等幅</option>
-                                <option value="cursive" ${obj.font==='cursive'?'selected':''}>手書き</option>
-                            </select>
-                        </div>
-                        <select id="edit_map_color_${key}" style="width:100%; margin:4px 0;">${colorOpts}</select>
-                        <button class="btn-save" onclick="updateMapTextFirebase('${key}')">更新</button>
-                        <button class="btn-del" onclick="deleteMapTextFirebase('${key}')">削除</button>
+                        <b>◇ 記号の設定変更</b><br>
+                        <input type="text" id="edit_shape_label" value="${currentLabel}" style="width:80px; text-align:center; font-size:14px; margin:6px 0;"><br>
+                        <select id="edit_shape_color" style="width:100%; margin:4px 0;">${colorOpts}</select>
+                        <button class="btn-save" onclick="updateShapeMarker('${marker._leaflet_id}')">更新</button>
                     </div>`;
-
-                L.popup().setLatLng(marker.getLatLng()).setContent(editPopupContent).openOn(map);
-            }
-        });
-
-        markerMap[key] = marker;
-    }
-
-    window.updateMapTextFirebase = (key) => {
-        const text = document.getElementById(`edit_map_text_${key}`).value;
-        const size = document.getElementById(`edit_map_size_${key}`).value;
-        const font = document.getElementById(`edit_map_font_${key}`).value;
-        const color = document.getElementById(`edit_map_color_${key}`).value;
-
-        db.ref('objects/' + key).update({
-            text: text,
-            size: size,
-            font: font,
-            color: color
-        }, err => {
-            if (!err) {
-                map.closePopup();
-                showToast("✨ 文字を更新しました");
-            } else {
-                alert("更新に失敗しました");
+                
+                marker.bindPopup(popupContent).openPopup();
             }
         });
     };
 
-    window.deleteMapTextFirebase = (key) => {
-        if (confirm("この文字を削除しますか？")) {
-            db.ref('objects/' + key).remove().then(() => {
-                map.closePopup();
-                showToast("🗑️ 削除しました");
-            });
+    bindClickEvent();
+
+    window._activeShapeMarkers = window._activeShapeMarkers || {};
+    window._activeShapeMarkers[marker._leaflet_id] = {
+        marker: marker,
+        update: (newText, newColor) => {
+            currentLabel = newText;
+            markerColor = newColor;
+            marker.setIcon(getIcon(currentLabel, markerColor));
+            marker.closePopup();
+            bindClickEvent(); // 更新後にもう一度イベントを再バインドして2回目以降も開けるようにする
+            showToast("✨ 記号を更新しました");
         }
     };
+}
 
+window.updateShapeMarker = (id) => {
+    const textElem = document.getElementById('edit_shape_label');
+    const colorElem = document.getElementById('edit_shape_color');
+    if (!textElem || !colorElem) return;
+
+    const text = textElem.value;
+    const color = colorElem.value;
+
+    if (window._activeShapeMarkers && window._activeShapeMarkers[id]) {
+        window._activeShapeMarkers[id].update(text, color);
+    }
+};
+    // --- 【ここまで】 ---
     
 </script>
 </body>
