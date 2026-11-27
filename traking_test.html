@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.4a by Popolo App.com</title>
+    <title>虎キング v5.6.4b by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -580,7 +580,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.4a by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.4b by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -2961,7 +2961,7 @@ if (card) {
         triggerCustomLinesRedraw();
     });
 
-    function triggerCustomLinesRedraw() {
+   function triggerCustomLinesRedraw() {
         if (isReplaying) return;
 
         db.ref('custom_lines').once('value', lineSnap => {
@@ -2975,7 +2975,7 @@ if (card) {
                     const l = lines[lineId];
                     let p1 = null, p2 = null, fromLet = '任意点', toLet = '任意点';
 
-                    // 起点の判定（オブジェクトキー または 緯度経度）
+                    // 起点データの取得（座標指定またはオブジェクト指定）
                     if (l.fromLat !== undefined && l.fromLng !== undefined) {
                         p1 = [Number(l.fromLat), Number(l.fromLng)];
                     } else if (l.from && objs[l.from]) {
@@ -2983,7 +2983,7 @@ if (card) {
                         fromLet = objs[l.from].assignedLabel !== undefined ? objs[l.from].assignedLabel : 'A';
                     }
 
-                    // 終点の判定（オブジェクトキー または 緯度経度）
+                    // 終点データの取得（座標指定またはオブジェクト指定）
                     if (l.toLat !== undefined && l.toLng !== undefined) {
                         p2 = [Number(l.toLat), Number(l.toLng)];
                     } else if (l.to && objs[l.to]) {
@@ -2991,7 +2991,7 @@ if (card) {
                         toLet = objs[l.to].assignedLabel !== undefined ? objs[l.to].assignedLabel : 'B';
                     }
 
-                    // どちらの点も座標が正常に取得できた場合のみ描画する
+                    // どちらの点も確実に座標として存在する場合にのみ描画
                     if (p1 && p2) {
                         const endStr = l.endArrow ? '（矢印）' : '';
                         const popupHtml = `<b>${l.type === 'dashed' ? '点線' : '実線'}${endStr} (${fromLet} - ${toLet})</b><br><button class="btn-del" onclick="deleteCustomLine('${lineId}')">削除</button>`;
@@ -3011,8 +3011,8 @@ if (card) {
                             arrowMarker.bindPopup(popupHtml);
                             customLinesGroup.addLayer(arrowMarker);
                         }
-                    } else if (l.from && l.to && (!objs[l.from] || !objs[l.to])) {
-                        // 両端がオブジェクト指定だったが、そのオブジェクトが削除されている場合のみ線を削除
+                    } else {
+                        // どちらかのデータが不正な場合はFirebaseから自動クリーンアップ
                         db.ref('custom_lines/' + lineId).remove();
                     }
                 }
@@ -3371,13 +3371,19 @@ map.on('zoomend', () => {
                         alert("登録に失敗しました");
                     }
                 });
-            } else if (cbMode === 'dashed' || cbMode === 'solid') {
-                // ★追加：任意地点タップでの連続線描画
+          } else if (cbMode === 'dashed' || cbMode === 'solid') {
                 if (!cbLineStartPoint) {
-                    cbLineStartPoint = { lat: lat, lng: lng, objKey: null, label: '任意点' };
+                    // 起点の設定（オブジェクトまたは任意の緯度経度）
+                    cbLineStartPoint = { 
+                        lat: lat, 
+                        lng: lng, 
+                        objKey: null, 
+                        label: '任意点' 
+                    };
                     showTempLineStartMarker(lat, lng);
-                    showToast("起点を設定しました。次の場所（地図上またはフネ・ブイ）をタップしてください");
+                    showToast("起点を設定しました。次の場所をタップしてください");
                 } else {
+                    // ペイロードの組み立て（座標ベースを明示的に保持）
                     const payload = {
                         type: cbMode,
                         endArrow: cbLineEndArrow,
@@ -3385,6 +3391,7 @@ map.on('zoomend', () => {
                         toLng: lng,
                         ts: Date.now()
                     };
+
                     if (cbLineStartPoint.objKey) {
                         payload.from = cbLineStartPoint.objKey;
                     } else {
@@ -3399,8 +3406,13 @@ map.on('zoomend', () => {
                         }
                     });
 
-                    // タップした位置を次の起点に更新して連続描画
-                    cbLineStartPoint = { lat: lat, lng: lng, objKey: null, label: '任意点' };
+                    // 連続描画のために次の起点を更新
+                    cbLineStartPoint = { 
+                        lat: lat, 
+                        lng: lng, 
+                        objKey: null, 
+                        label: '任意点' 
+                    };
                     showTempLineStartMarker(lat, lng);
                 }
             }
