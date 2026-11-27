@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.4d by Popolo App.com</title>
+    <title>虎キング v5.6.4e by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -580,7 +580,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.4d by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.4e by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -3371,43 +3371,48 @@ map.on('zoomend', () => {
                         alert("登録に失敗しました");
                     }
                 });
-         } else if (cbMode === 'dashed' || cbMode === 'solid') {
-                if (!cbLineStartPoint) {
-                    // 起点を記憶（任意の緯度経度）
-                    cbLineStartPoint = { 
-                        lat: lat, 
-                        lng: lng, 
-                        objKey: null 
-                    };
-                    showTempLineStartMarker(lat, lng);
-                    showToast("起点を設定しました。次の場所をタップしてください");
-                } else {
-                    // 座標ベースのペイロードを作成（余計なオブジェクトは作らない）
-                    const payload = {
-                        type: cbMode,
-                        endArrow: cbLineEndArrow,
-                        fromLat: cbLineStartPoint.lat,
-                        fromLng: cbLineStartPoint.lng,
-                        toLat: lat,
-                        toLng: lng,
-                        ts: Date.now()
-                    };
+        } else if (cbMode === 'dashed' || cbMode === 'solid') {
+                const tempKey = "P_" + Math.floor(Math.random() * 100000);
+                const pointData = {
+                    type: 'buoy',
+                    shape: 'dot', // 白い小さな点用の形状指定
+                    color: '#ffffff',
+                    lat: lat,
+                    lng: lng,
+                    comment: '',
+                    assignedLabel: '',
+                    isTempLinePoint: true,
+                    ownerId: myId,
+                    ts: Date.now()
+                };
 
-                    db.ref('custom_lines').push(payload, err => {
-                        if (!err) {
-                            showToast("線を引きました（続けて次の場所をタップ可）");
-                            triggerCustomLinesRedraw();
-                        }
-                    });
+                db.ref('objects/' + tempKey).set(pointData, err => {
+                    if (err) return;
 
-                    // 連続描画のために次の起点を更新
-                    cbLineStartPoint = { 
-                        lat: lat, 
-                        lng: lng, 
-                        objKey: null 
-                    };
-                    showTempLineStartMarker(lat, lng);
-                }
+                    if (!cbLineStartPoint) {
+                        cbLineStartPoint = { objKey: tempKey, lat: lat, lng: lng };
+                        showTempLineStartMarker(lat, lng);
+                        showToast("起点を設定しました。次の場所をタップしてください");
+                    } else {
+                        const payload = {
+                            from: cbLineStartPoint.objKey,
+                            to: tempKey,
+                            type: cbMode,
+                            endArrow: cbLineEndArrow,
+                            ts: Date.now()
+                        };
+
+                        db.ref('custom_lines').push(payload, err2 => {
+                            if (!err2) {
+                                showToast("線を引きました（続けて次の場所をタップ可）");
+                                triggerCustomLinesRedraw();
+                            }
+                        });
+
+                        cbLineStartPoint = { objKey: tempKey, lat: lat, lng: lng };
+                        showTempLineStartMarker(lat, lng);
+                    }
+                });
             }
             return;
         }
