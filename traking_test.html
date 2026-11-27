@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.3h by Popolo App.com</title>
+    <title>虎キング v5.6.3i by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -573,7 +573,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.3h by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.3i by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -3922,18 +3922,20 @@ window.addEventListener('load', () => {
     }
 
     // アイコンを生成するヘルパー
-    function getShapeIcon(text, col) {
+function getShapeIcon(text, col, nameLabel) {
+        const nameHtml = nameLabel ? `<span style="font-size:11px; font-weight:bold; color:#fff; background:rgba(0,0,0,0.75); padding:1px 5px; border-radius:4px; white-space:nowrap; border:1px solid rgba(255,153,0,0.6); text-shadow:none;">${nameLabel}</span>` : '';
+        
         if (text === '🚤' || text === '🚩') {
             return L.divIcon({
                 className: 'custom-shape-marker',
-                html: `<div style="font-size:22px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.8)); text-align:center; line-height:22px;">${text}</div>`,
+                html: `<div style="display:flex; align-items:center; gap:4px; width:max-content;"><div style="font-size:22px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.8)); line-height:22px;">${text}</div>${nameHtml}</div>`,
                 iconSize: [24, 24],
                 iconAnchor: [12, 12]
             });
         }
         return L.divIcon({
             className: 'custom-shape-marker',
-            html: `<div style="font-size:20px; font-weight:bold; color:${col}; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff; text-align:center; line-height:16px;">${text}</div>`,
+            html: `<div style="display:flex; align-items:center; gap:4px; width:max-content;"><div style="font-size:20px; font-weight:bold; color:${col}; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff; line-height:16px;">${text}</div>${nameHtml}</div>`,
             iconSize: [16, 16],
             iconAnchor: [8, 8]
         });
@@ -3943,7 +3945,7 @@ window.addEventListener('load', () => {
     // 独立記号用のクリック・編集・削除ハンドラを定義します
     function renderShapeMarkerOnMap(key, obj, markerMap) {
         const marker = L.marker([obj.lat, obj.lng], { 
-            icon: getShapeIcon(obj.assignedLabel || '●', obj.color || '#ff3b30') 
+            icon: getShapeIcon(obj.assignedLabel || '●', obj.color || '#ff3b30', obj.shapeName || '') 
         }).addTo(map);
 
         marker.on('click', function(e) {
@@ -3965,7 +3967,8 @@ window.addEventListener('load', () => {
                 const popupContent = `
                     <div class="popup-form" style="text-align:center;">
                         <b>◇ 記号の設定変更</b><br>
-                        <input type="text" id="edit_shape_label_${key}" value="${obj.assignedLabel || '●'}" style="width:80px; text-align:center; font-size:14px; margin:6px 0;"><br>
+                        <input type="text" id="edit_shape_label_${key}" value="${obj.assignedLabel || '●'}" style="width:80px; text-align:center; font-size:14px; margin:4px 0;" placeholder="記号"><br>
+                        <input type="text" id="edit_shape_name_${key}" value="${obj.shapeName || ''}" style="width:120px; text-align:center; font-size:13px; margin:4px 0;" placeholder="名称（例: スタート）"><br>
                         <select id="edit_shape_color_${key}" style="width:100%; margin:4px 0;">${colorOpts}</select>
                         <button class="btn-save" onclick="updateShapeMarkerFirebase('${key}')">更新</button>
                     </div>`;
@@ -3982,14 +3985,17 @@ window.addEventListener('load', () => {
 
     window.updateShapeMarkerFirebase = (key) => {
         const textElem = document.getElementById(`edit_shape_label_${key}`);
+        const nameElem = document.getElementById(`edit_shape_name_${key}`);
         const colorElem = document.getElementById(`edit_shape_color_${key}`);
         if (!textElem || !colorElem) return;
 
         const newText = textElem.value;
+        const newName = nameElem ? nameElem.value : '';
         const newColor = colorElem.value;
 
         db.ref('objects/' + key).update({
             assignedLabel: newText,
+            shapeName: newName,
             color: newColor
         }, err => {
             if (!err) {
@@ -3999,7 +4005,7 @@ window.addEventListener('load', () => {
                 alert("更新に失敗しました");
             }
         });
-    };  
+    };
 
 
 
