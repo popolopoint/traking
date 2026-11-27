@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.5 by Popolo App.com</title>
+    <title>虎キング v5.6.5a by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -580,7 +580,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.5 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.5a by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -2935,6 +2935,7 @@ if (card) {
             }
 
 // ★白くて小さい点（中継点）の描画処理
+            // ★白くて小さい点（中継点）の描画処理（ポップアップ付き）
             if (obj.shape === 'dot' || obj.isTempLinePoint) {
                 const dotIcon = L.divIcon({
                     className: 'line-dot-marker',
@@ -2944,19 +2945,24 @@ if (card) {
                 });
                 const dotMarker = L.marker([obj.lat, obj.lng], { icon: dotIcon }).addTo(map);
                 
-                // タップして線結びの起点にできるようにする
+                // タップしたときの動作
                 dotMarker.on('click', (e) => {
+                    L.DomEvent.stopPropagation(e);
+                    L.DomEvent.preventDefault(e);
+
                     if (isCourseBuilderActive) {
+                        // コース作成モード中の場合は線結びの起点にする
                         handleCourseBuilderClick(key, obj, '');
-                        L.DomEvent.stopPropagation(e);
-                        L.DomEvent.preventDefault(e);
+                    } else {
+                        // 通常時はタップで削除ポップアップを表示する
+                        const popupHtml = `<b>中継点（白丸）</b><br><button class="btn-del" onclick="deleteObject('${key}')">削除</button>`;
+                        dotMarker.bindPopup(popupHtml).openPopup();
                     }
                 });
 
                 objectMarkers[key] = dotMarker;
-                return; // 通常のブイ処理を通さずにスキップ
+                return;
             }
-
           
             let letter = obj.assignedLabel;
             if (letter === undefined) {
