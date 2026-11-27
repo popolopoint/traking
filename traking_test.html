@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.5j by Popolo App.com</title>
+    <title>虎キング v5.6.5k by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -580,7 +580,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.5j by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.5k by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1091,7 +1091,7 @@ window.saveCurrentCourseLayout = () => {
 
         Object.keys(objects).forEach(key => {
             const obj = objects[key];
-            // コース関連のオブジェクト（フネ・ブイ・中継点など）を全て対象にする
+            // フネ、ブイ、中継点、コース作成用のオブジェクトをすべて対象にする
             if (obj && (obj.type === 'ship' || obj.type === 'buoy' || obj.courseLayoutObject || obj.isTempLinePoint || obj.shape === 'dot')) {
                 courseObjects[key] = {
                     ...obj,
@@ -1101,20 +1101,44 @@ window.saveCurrentCourseLayout = () => {
             }
         });
 
-        // custom_lines（線データ）を丸ごと取得して一緒に保存する
+        if (Object.keys(courseObjects).length === 0) {
+            alert('保存できるフネ・ブイ・中継点がありません');
+            return;
+        }
+
         db.ref('custom_lines').once('value', lineSnap => {
             const allLines = lineSnap.val() || {};
+            const courseLines = {};
+
+            // 線データ（custom_lines）をすべて走査し、関連するものを確実に保持する
+            Object.keys(allLines).forEach(lineId => {
+                const line = allLines[lineId];
+                if (!line) return;
+
+                // 1. 結ばれている両端のポイントが、今回のコース内に含まれている場合
+                const fromMatches = line.from && courseKeys.has(line.from);
+                const toMatches = line.to && courseKeys.has(line.to);
+
+                // 2. 緯度経度座標（fromLat/toLat）で直接結ばれている線の場合
+                const hasCoordLine = (line.fromLat !== undefined && line.toLat !== undefined);
+
+                if ((fromMatches && toMatches) || hasCoordLine) {
+                    courseLines[lineId] = line;
+                }
+            });
 
             db.ref('course_layouts').push({
                 name: name.trim(),
                 objects: courseObjects,
-                lines: allLines, // ★ここで自由な線も含めて丸ごと保存！
+                lines: courseLines, // ★正確に抽出された線データを保存
                 createdAt: Date.now()
             }, err => {
                 if (err) {
-                    alert('コースの保存に失敗しました: ' + err.message);
+                    console.error("コース保存エラー:", err);
+                    alert('コースの保存に失敗しました。\n詳細：' + (err.message || '不明'));
                     return;
                 }
+
                 showToast('💾「' + name.trim() + '」を保存しました（線データ含む）');
             });
         });
