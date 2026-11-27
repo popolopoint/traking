@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.3k by Popolo App.com</title>
+    <title>虎キング v5.6.4 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -461,6 +461,13 @@
         <span style="font-weight:bold; color:#ff9900; font-size:18px;">🛠️ コース作成コントロールパネル</span>
         <button onclick="minimizeCourseBuilderBar()" style="background:rgba(255,255,255,0.25); border:none; color:white; border-radius:6px; padding:6px 14px; font-size:14px; cursor:pointer; font-weight:bold;">収納する</button>
     </div>
+
+<!-- 線モード時の終端（線 / 矢印）選択＆連続描画リセットバー -->
+    <div id="cb-line-options" style="display:none; gap:8px; align-items:center; justify-content:center; background:rgba(0,0,0,0.5); padding:8px; border-radius:10px; border:1px solid #ff9900; width:100%; box-sizing:border-box;">
+        <button class="cb-btn" id="cb-arrow-toggle-btn" onclick="toggleLineEndArrow()" style="background:#2980b9; border-color:#3498db; padding:8px 12px; font-size:13px; flex:1;">終端: 線のみ</button>
+        <button class="cb-btn" id="cb-finish-chain-btn" onclick="resetLineChain()" style="background:#27ae60; border-color:#2ecc71; padding:8px 12px; font-size:13px; display:none;">✔ 線の連続描画を完了</button>
+    </div>
+    
 <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; width:100%;">
         <button class="cb-btn cb-btn-large" id="cb-mode-ship" onclick="setCourseBuilderMode('ship')">🚤 フネ</button>
         <button class="cb-btn cb-btn-large" id="cb-mode-buoy" onclick="setCourseBuilderMode('buoy')">🚩 ブイ</button>
@@ -573,7 +580,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.3k by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.4 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -961,6 +968,12 @@ let replayColorFilters = {};
     let cbMode = 'ship';
     let cbSelectedFirstObj = null;
 
+let cbLineStartPoint = null;   // 任意地点・連続線描画用の起点 { lat, lng, objKey? }
+let cbLineEndArrow = false;    // 線の終端を矢印にするか (false: 線のみ, true: 矢印)
+let cbTempStartMarker = null;  // 連続描画中の起点一時マーカー
+
+
+    
     let lastBatchDeletedObjects = null;
 
     const userMarkers = {}, objectMarkers = {}, userTrails = {}, userPolylineLines = {};
@@ -1501,33 +1514,41 @@ window.renumberCourseObjects = () => {
 };
 
     
-   window.setCourseBuilderMode = (mode) => {
+  window.setCourseBuilderMode = (mode) => {
     cbMode = mode;
+    resetLineChain(); // モード切替時に連続描画の起点をリセット
 
     if (mode === 'ship' || mode === 'buoy') {
         window.renumberCourseObjects();
     }
-        cbSelectedFirstObj = null;
-        document.querySelectorAll('.cb-btn').forEach(btn => btn.classList.remove('active'));
-        if (mode === 'ship') document.getElementById('cb-mode-ship').classList.add('active');
-        if (mode === 'buoy') document.getElementById('cb-mode-buoy').classList.add('active');
-        if (mode === 'dashed') {
-            document.getElementById('cb-mode-dashed').classList.add('active');
-            showToast("┈ 点線モード：1つ目の点を選択してください（タップで消去）");
-        }
-        if (mode === 'solid') {
-            document.getElementById('cb-mode-solid').classList.add('active');
-            showToast("━ 実線モード：1つ目の点を選択してください（タップで消去）");
-        }
-        if (mode === 'data') document.getElementById('cb-mode-data').classList.add('active');
-    };
+    document.querySelectorAll('.cb-btn').forEach(btn => btn.classList.remove('active'));
+    
+    // 点線・実線モードのときだけ終端オプションバーを表示
+    const lineOpts = document.getElementById('cb-line-options');
+    if (lineOpts) {
+        lineOpts.style.display = (mode === 'dashed' || mode === 'solid') ? 'flex' : 'none';
+    }
 
-    window.exitCourseBuilder = () => {
-        isCourseBuilderActive = false;
-        document.getElementById('course-builder-bar').style.display = 'none';
-        document.getElementById('course-builder-minimized').style.display = 'none';
-        showToast("コース作成モードを終了しました");
-    };
+    if (mode === 'ship') document.getElementById('cb-mode-ship').classList.add('active');
+    if (mode === 'buoy') document.getElementById('cb-mode-buoy').classList.add('active');
+    if (mode === 'dashed') {
+        document.getElementById('cb-mode-dashed').classList.add('active');
+        showToast("┈ 点線モード：フネ・ブイまたは地図上を連続タップして線を引けます");
+    }
+    if (mode === 'solid') {
+        document.getElementById('cb-mode-solid').classList.add('active');
+        showToast("━ 実線モード：フネ・ブイまたは地図上を連続タップして線を引けます");
+    }
+    if (mode === 'data') document.getElementById('cb-mode-data').classList.add('active');
+};
+
+window.exitCourseBuilder = () => {
+    resetLineChain();
+    isCourseBuilderActive = false;
+    document.getElementById('course-builder-bar').style.display = 'none';
+    document.getElementById('course-builder-minimized').style.display = 'none';
+    showToast("コース作成モードを終了しました");
+};
 
     window.undoLastCreatedObjectOrLine = () => {
         db.ref('custom_lines').once('value', lineSnap => {
@@ -2952,20 +2973,43 @@ if (card) {
                 const objs = objSnap.val() || {};
                 for (let lineId in lines) {
                     const l = lines[lineId];
-                    if (objs[l.from] && objs[l.to]) {
-                        const p1 = [objs[l.from].lat, objs[l.from].lng];
-                        const p2 = [objs[l.to].lat, objs[l.to].lng];
-                        const fromLet = objs[l.from].assignedLabel !== undefined ? objs[l.from].assignedLabel : 'A';
-                        const toLet = objs[l.to].assignedLabel !== undefined ? objs[l.to].assignedLabel : 'B';
+                    let p1 = null, p2 = null, fromLet = '任意点', toLet = '任意点';
+
+                    if (l.fromLat !== undefined && l.fromLng !== undefined) {
+                        p1 = [Number(l.fromLat), Number(l.fromLng)];
+                    } else if (l.from && objs[l.from]) {
+                        p1 = [objs[l.from].lat, objs[l.from].lng];
+                        fromLet = objs[l.from].assignedLabel !== undefined ? objs[l.from].assignedLabel : 'A';
+                    }
+
+                    if (l.toLat !== undefined && l.toLng !== undefined) {
+                        p2 = [Number(l.toLat), Number(l.toLng)];
+                    } else if (l.to && objs[l.to]) {
+                        p2 = [objs[l.to].lat, objs[l.to].lng];
+                        toLet = objs[l.to].assignedLabel !== undefined ? objs[l.to].assignedLabel : 'B';
+                    }
+
+                    if (p1 && p2) {
+                        const endStr = l.endArrow ? '（矢印）' : '';
+                        const popupHtml = `<b>${l.type === 'dashed' ? '点線' : '実線'}${endStr} (${fromLet} - ${toLet})</b><br><button class="btn-del" onclick="deleteCustomLine('${lineId}')">削除</button>`;
                         
                         const poly = L.polyline([p1, p2], {
                             color: '#ffffff',
                             weight: 3,
                             dashArray: l.type === 'dashed' ? '5, 10' : null
                         });
-                        poly.bindPopup(`<b>${l.type === 'dashed' ? '点線' : '実線'} (${fromLet} - ${toLet})</b><br><button class="btn-del" onclick="deleteCustomLine('${lineId}')">削除</button>`);
+                        poly.bindPopup(popupHtml);
                         customLinesGroup.addLayer(poly);
-                    } else {
+
+                        // 終端が矢印の場合は矢印マーカーを描画
+                        if (l.endArrow) {
+                            const deg = calcArrowRotationDeg(p1, p2);
+                            const arrowMarker = L.marker(p2, { icon: createLineArrowIcon(deg, '#ffffff') });
+                            arrowMarker.bindPopup(popupHtml);
+                            customLinesGroup.addLayer(arrowMarker);
+                        }
+                    } else if (l.from && l.to) {
+                        // オブジェクト接続線なのに片方のオブジェクトが消えている場合のみ削除
                         db.ref('custom_lines/' + lineId).remove();
                     }
                 }
@@ -2984,47 +3028,130 @@ if (card) {
         }
     };
 
-    function handleCourseBuilderClick(key, obj, letter) {
-        if (cbMode === 'dashed' || cbMode === 'solid') {
-            if (!cbSelectedFirstObj) {
-                cbSelectedFirstObj = key;
-                showToast(`1つ目の点 (${letter || '点'}) を選択しました。2つ目の点を選んでください。（タップで消去）`);
-            } else {
-                if (cbSelectedFirstObj === key) {
-                    showToast("同じ点は選べません。別の点を選んでください。");
-                    return;
-                }
-                const fromKey = cbSelectedFirstObj;
-                const toKey = key;
-                db.ref('custom_lines').push({
-                    from: fromKey,
-                    to: toKey,
-                    type: cbMode,
-                    ts: Date.now()
-                }, err => {
-                    if (!err) {
-                        showToast(`直線（${cbMode === 'dashed' ? '点線' : '実線'}）を結びました！`);
-                        triggerCustomLinesRedraw();
-                    } else {
-                        alert("線の結びつけに失敗しました: " + (err.message || ''));
-                    }
-                });
-                cbSelectedFirstObj = null;
-            }
-        } else if (cbMode === 'data') {
-            if (!cbSelectedFirstObj) {
-                cbSelectedFirstObj = { key: key, letter: letter || '', lng: obj.lng };
-                showToast(`データ起点 (${letter || '点'}) 設定完了。もう一方の点を選んでください。（タップで消去）`);
-            } else {
-                if (cbSelectedFirstObj.key === key) return;
-                const fromObj = cbSelectedFirstObj;
-                const toObj = { key: key, letter: letter || '', lng: obj.lng };
-                cbSelectedFirstObj = null;
-                calculateAndShowData(fromObj, toObj);
-            }
+
+// 2点間の画面上の角度を算出（矢印の向き用）
+function calcArrowRotationDeg(p1, p2) {
+    const pt1 = map.latLngToLayerPoint(L.latLng(p1[0], p1[1]));
+    const pt2 = map.latLngToLayerPoint(L.latLng(p2[0], p2[1]));
+    return Math.atan2(pt2.y - pt1.y, pt2.x - pt1.x) * 180 / Math.PI;
+}
+
+// 矢印ヘッド用のアイコン生成
+function createLineArrowIcon(deg, color = '#ffffff') {
+    return L.divIcon({
+        className: 'line-arrow-head',
+        html: `<div style="transform: rotate(${deg}deg); width: 22px; height: 22px; display:flex; align-items:center; justify-content:center; pointer-events:none;">
+            <svg width="22" height="22" viewBox="0 0 24 24">
+                <polygon points="2,4 22,12 2,20 7,12" fill="${color}" stroke="#000000" stroke-width="1.5"/>
+            </svg>
+        </div>`,
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
+    });
+}
+
+// 終端（線のみ / 矢印）の切り替え
+window.toggleLineEndArrow = () => {
+    cbLineEndArrow = !cbLineEndArrow;
+    const btn = document.getElementById('cb-arrow-toggle-btn');
+    if (btn) {
+        if (cbLineEndArrow) {
+            btn.innerText = '終端: 矢印 ➤';
+            btn.style.background = '#e67e22';
+            btn.style.borderColor = '#f39c12';
+            showToast("➤ 線の終端を【矢印】にしました");
+        } else {
+            btn.innerText = '終端: 線のみ';
+            btn.style.background = '#2980b9';
+            btn.style.borderColor = '#3498db';
+            showToast("━ 線の終端を【線のみ】にしました");
         }
     }
+};
 
+// 連続描画の起点をクリアする
+window.resetLineChain = () => {
+    cbLineStartPoint = null;
+    cbSelectedFirstObj = null;
+    if (cbTempStartMarker) {
+        map.removeLayer(cbTempStartMarker);
+        cbTempStartMarker = null;
+    }
+    const finishBtn = document.getElementById('cb-finish-chain-btn');
+    if (finishBtn) finishBtn.style.display = 'none';
+};
+
+// 連続描画の起点に一時的な丸印を表示
+function showTempLineStartMarker(lat, lng) {
+    if (cbTempStartMarker) map.removeLayer(cbTempStartMarker);
+    cbTempStartMarker = L.circleMarker([lat, lng], {
+        radius: 6, color: '#ff9900', fillColor: '#ffffff', fillOpacity: 1, weight: 3
+    }).addTo(map);
+    const finishBtn = document.getElementById('cb-finish-chain-btn');
+    if (finishBtn) finishBtn.style.display = 'inline-block';
+}
+
+// ズーム変更時に矢印の向きを再計算
+map.on('zoomend', () => {
+    if (!isReplaying) triggerCustomLinesRedraw();
+});
+
+
+
+
+    
+    function handleCourseBuilderClick(key, obj, letter) {
+    if (cbMode === 'dashed' || cbMode === 'solid') {
+        if (!cbLineStartPoint) {
+            cbLineStartPoint = { lat: Number(obj.lat), lng: Number(obj.lng), objKey: key, label: letter || '点' };
+            showTempLineStartMarker(obj.lat, obj.lng);
+            showToast(`起点を設定 (${letter || '点'})。次の点（フネ・ブイ・地図上）をタップしてください`);
+        } else {
+            if (cbLineStartPoint.objKey === key) {
+                showToast("同じ点は選べません。別の場所をタップしてください");
+                return;
+            }
+            const payload = {
+                type: cbMode,
+                endArrow: cbLineEndArrow,
+                ts: Date.now()
+            };
+            if (cbLineStartPoint.objKey) {
+                payload.from = cbLineStartPoint.objKey;
+            } else {
+                payload.fromLat = cbLineStartPoint.lat;
+                payload.fromLng = cbLineStartPoint.lng;
+            }
+            payload.to = key;
+
+            db.ref('custom_lines').push(payload, err => {
+                if (!err) {
+                    showToast(`線を結びました（続けて次の点をタップ可）`);
+                    triggerCustomLinesRedraw();
+                }
+            });
+
+            // 終点をそのまま次の起点にして連続描画できるようにする
+            cbLineStartPoint = { lat: Number(obj.lat), lng: Number(obj.lng), objKey: key, label: letter || '点' };
+            showTempLineStartMarker(obj.lat, obj.lng);
+        }
+    } else if (cbMode === 'data') {
+        // ※ここは元のコードのまま変更なし
+        if (!cbSelectedFirstObj) {
+            cbSelectedFirstObj = { key: key, letter: letter || '', lng: obj.lng };
+            showToast(`データ起点 (${letter || '点'}) 設定完了。もう一方の点を選んでください。（タップで消去）`);
+        } else {
+            if (cbSelectedFirstObj.key === key) return;
+            const fromObj = cbSelectedFirstObj;
+            const toObj = { key: key, letter: letter || '', lng: obj.lng };
+            cbSelectedFirstObj = null;
+            calculateAndShowData(fromObj, toObj);
+        }
+    }
+}
+
+
+    
     function calculateAndShowData(fromObj, toObj) {
         db.ref('objects').once('value', snap => {
             const objs = snap.val() || {};
@@ -3213,9 +3340,11 @@ if (card) {
     }
         
         // 2. コース作成モード中の処理
-                // 2. コース作成モード中の処理
+            
+       // 2. コース作成モード中の処理
         if (isCourseBuilderActive) {
             if (cbMode === 'ship' || cbMode === 'buoy') {
+                // ※ここは元のフネ・ブイ設置処理のまま変更なし
                 const commentText = cbMode === 'ship' ? 'フネ' : 'マーク';
                 const initialLabel = cbMode === 'ship' ? 'フネ' : 'ブイ';
                 const randomKey = "C" + Math.floor(Math.random() * 10000);
@@ -3226,16 +3355,11 @@ if (card) {
                     color: '#ff3b30',
                     lat: lat,
                     lng: lng,
-
-                    
                     comment: commentText,
-assignedLabel: initialLabel,
-ownerId: myId,
-courseLayoutObject: true,
-ts: Date.now()
-
-
-                    
+                    assignedLabel: initialLabel,
+                    ownerId: myId,
+                    courseLayoutObject: true,
+                    ts: Date.now()
                 }, err => {
                     if (!err) {
                         window.renumberCourseObjects();
@@ -3244,6 +3368,38 @@ ts: Date.now()
                         alert("登録に失敗しました");
                     }
                 });
+            } else if (cbMode === 'dashed' || cbMode === 'solid') {
+                // ★追加：任意地点タップでの連続線描画
+                if (!cbLineStartPoint) {
+                    cbLineStartPoint = { lat: lat, lng: lng, objKey: null, label: '任意点' };
+                    showTempLineStartMarker(lat, lng);
+                    showToast("起点を設定しました。次の場所（地図上またはフネ・ブイ）をタップしてください");
+                } else {
+                    const payload = {
+                        type: cbMode,
+                        endArrow: cbLineEndArrow,
+                        toLat: lat,
+                        toLng: lng,
+                        ts: Date.now()
+                    };
+                    if (cbLineStartPoint.objKey) {
+                        payload.from = cbLineStartPoint.objKey;
+                    } else {
+                        payload.fromLat = cbLineStartPoint.lat;
+                        payload.fromLng = cbLineStartPoint.lng;
+                    }
+
+                    db.ref('custom_lines').push(payload, err => {
+                        if (!err) {
+                            showToast("線を引きました（続けて次の場所をタップ可）");
+                            triggerCustomLinesRedraw();
+                        }
+                    });
+
+                    // タップした位置を次の起点に更新して連続描画
+                    cbLineStartPoint = { lat: lat, lng: lng, objKey: null, label: '任意点' };
+                    showTempLineStartMarker(lat, lng);
+                }
             }
             return;
         }
