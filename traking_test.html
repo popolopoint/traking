@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.5m by Popolo App.com</title>
+    <title>虎キング v5.6.5n by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -580,7 +580,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.5m by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.5n by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1089,9 +1089,9 @@ window.saveCurrentCourseLayout = () => {
         const courseObjects = {};
         const courseKeys = new Set();
 
+        // 1. コースに関係するオブジェクトを抽出
         Object.keys(objects).forEach(key => {
             const obj = objects[key];
-            // フネ、ブイ、中継点、コース作成用のオブジェクトをすべて対象にする
             if (obj && (obj.type === 'ship' || obj.type === 'buoy' || obj.courseLayoutObject || obj.isTempLinePoint || obj.shape === 'dot')) {
                 courseObjects[key] = {
                     ...obj,
@@ -1106,31 +1106,37 @@ window.saveCurrentCourseLayout = () => {
             return;
         }
 
+        // 2. 線データ（custom_lines）を取得して確実に紐付け・保存
         db.ref('custom_lines').once('value', lineSnap => {
             const allLines = lineSnap.val() || {};
             const courseLines = {};
 
-            // 線データ（custom_lines）をすべて走査し、関連するものを確実に保持する
             Object.keys(allLines).forEach(lineId => {
                 const line = allLines[lineId];
                 if (!line) return;
 
-                // 1. 結ばれている両端のポイントが、今回のコース内に含まれている場合
-                const fromMatches = line.from && courseKeys.has(line.from);
-                const toMatches = line.to && courseKeys.has(line.to);
-
-                // 2. 緯度経度座標（fromLat/toLat）で直接結ばれている線の場合
+                const fromValid = line.from && courseKeys.has(line.from);
+                const toValid = line.to && courseKeys.has(line.to);
                 const hasCoordLine = (line.fromLat !== undefined && line.toLat !== undefined);
 
-                if ((fromMatches && toMatches) || hasCoordLine) {
-                    courseLines[lineId] = line;
+                if ((fromValid && toValid) || hasCoordLine) {
+                    courseLines[lineId] = {
+                        ...line,
+                        from: line.from || null,
+                        to: line.to || null,
+                        fromLat: line.fromLat !== undefined ? line.fromLat : null,
+                        fromLng: line.fromLng !== undefined ? line.fromLng : null,
+                        toLat: line.toLat !== undefined ? line.toLat : null,
+                        toLng: line.toLng !== undefined ? line.toLng : null
+                    };
                 }
             });
 
+            // 3. course_layoutsへ保存
             db.ref('course_layouts').push({
                 name: name.trim(),
                 objects: courseObjects,
-                lines: courseLines, // ★正確に抽出された線データを保存
+                lines: courseLines,
                 createdAt: Date.now()
             }, err => {
                 if (err) {
@@ -1324,7 +1330,7 @@ function loadCourseLayout(layout) {
             }
         });
 
-        // 2. 保存データのオブジェクトを復元
+        // 2. 保存データのオブジェクトを復元し、新旧のキーの対応関係（keyMap）を作る
         Object.keys(savedObjects).forEach(oldKey => {
             const obj = savedObjects[oldKey];
             if (!obj) return;
@@ -1339,41 +1345,44 @@ function loadCourseLayout(layout) {
             }
         });
 
-        // 3. 保存されていたカスタム線をクリアして復元
-        db.ref('custom_lines').remove().then(() => {
-            const lineUpdates = {};
-            Object.keys(savedLines).forEach(lineId => {
-                const line = savedLines[lineId];
-                if (!line) return;
+        // 3. オブジェクトのデータベース更新を実行
+        db.ref().update(updates, err => {
+            if (err) {
+                alert('オブジェクトの読み込みに失敗しました');
+                return;
+            }
 
-                const newLineKey = db.ref('custom_lines').push().key;
-                const newClearlyLine = { ...line };
+            // 4. 線データ（custom_lines）をクリアして新キーに付け替えて復元
+            db.ref('custom_lines').remove().then(() => {
+                const lineUpdates = {};
+                Object.keys(savedLines).forEach(lineId => {
+                    const line = savedLines[lineId];
+                    if (!line) return;
 
-                // 結び先のキーが変わる場合は新しいキーに付け替える
-                if (line.from && keyMap[line.from]) newClearlyLine.from = keyMap[line.from];
-                if (line.to && keyMap[line.to]) newClearlyLine.to = keyMap[line.to];
+                    const newLineKey = db.ref('custom_lines').push().key;
+                    const newClearlyLine = { ...line };
 
-                lineUpdates[newLineKey] = newClearlyLine;
-            });
+                    // 結び先のキーが変わる場合は新しいキーに付け替える
+                    if (line.from && keyMap[line.from]) newClearlyLine.from = keyMap[line.from];
+                    if (line.to && keyMap[line.to]) newClearlyLine.to = keyMap[line.to];
 
-            db.ref('custom_lines').set(lineUpdates);
-            db.ref().update(updates, err => {
-                if (err) {
-                    alert('コースの読み込みに失敗しました');
-                    return;
-                }
+                    lineUpdates[newLineKey] = newClearlyLine;
+                });
 
-                cbSelectedFirstObj = null;
-                window.renumberCourseObjects();
+                db.ref('custom_lines').set(lineUpdates, () => {
+                    cbSelectedFirstObj = null;
+                    window.renumberCourseObjects();
+                    triggerCustomLinesRedraw(); // 線を即座に再描画
 
-                setTimeout(() => {
-                    map.invalidateSize(true);
-                    if (boundsPoints.length > 0) {
-                        map.fitBounds(L.latLngBounds(boundsPoints), { padding: [30, 30] });
-                    }
-                }, 300);
+                    setTimeout(() => {
+                        map.invalidateSize(true);
+                        if (boundsPoints.length > 0) {
+                            map.fitBounds(L.latLngBounds(boundsPoints), { padding: [30, 30] });
+                        }
+                    }, 300);
 
-                showToast('📂「' + (layout.name || '保存コース') + '」を読み込みました');
+                    showToast('📂「' + (layout.name || '保存コース') + '」を読み込みました');
+                });
             });
         });
     });
