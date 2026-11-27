@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.5b by Popolo App.com</title>
+    <title>虎キング v5.6.5g by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -580,7 +580,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.5b by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.5g by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1233,10 +1233,13 @@ window.openSavedCourseLayouts = () => {
     db.ref('course_layouts').once('value', snap => {
         const layouts = snap.val() || {};
 
+        // ↓ 古い順（昇順：a - b）に書き換える
         const ids = Object.keys(layouts).sort((a, b) =>
-            (layouts[b].createdAt || 0) -
-            (layouts[a].createdAt || 0)
+            (layouts[a].createdAt || 0) -
+            (layouts[b].createdAt || 0)
         );
+        
+        // ... (以下略)
 
         if (ids.length === 0) {
             alert('保存されたコースはありません');
@@ -1979,7 +1982,7 @@ window.openReplayMenu = async () => {
     try {
         const courses = await getAllCoursesFromIDB();
         // 新しい順に並び替え
-        courses.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        courses.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
 
         let html = `
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:0 5px; flex-wrap:wrap; gap:6px;">
