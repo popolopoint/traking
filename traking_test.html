@@ -3196,14 +3196,14 @@ if (card) {
         const { lat, lng } = e.latlng;
         const latlng = e.latlng;
 
-        // 1. 管理者かつ管理パネルが開いていて、削除モードでない場合の独立記号配置処理
-        const panel = document.getElementById('marker-management-panel');
-        if (isAdminMode && panel && panel.style.display === 'block' && !isShapeDeleteMode) {
-            if (isCourseBuilderActive) return;
-            const shapeType = document.getElementById('select-shape-type').value;
-            createIndependentShapeMarker(latlng, shapeType);
-            return;
-        }
+   // 1. 管理者かつ管理パネルが開いていて、削除モードでない場合の独立記号配置処理
+    const panel = document.getElementById('marker-management-panel');
+    if (isAdminMode && panel && panel.style.display === 'block' && !isShapeDeleteMode) {
+        if (isCourseBuilderActive) return;
+        const shapeType = document.getElementById('select-shape-type').value;
+        saveNewShapeMarkerToFirebase(latlng, shapeType);
+        return;
+    }
         
         // 2. コース作成モード中の処理
                 // 2. コース作成モード中の処理
@@ -3839,8 +3839,9 @@ window.addEventListener('load', () => {
     
 
 
-
-// --- 【追加】独立記号・図形管理用の変数とロジック ---
+// ==========================================
+    // 独立記号・図形（◯△□など）のFirebase同期・配置処理
+    // ==========================================
     let isShapeDeleteMode = false;
 
     window.toggleMarkerManagementPanel = () => {
@@ -3872,8 +3873,122 @@ window.addEventListener('load', () => {
         }
     };
 
-    // 【追加】独立記号・図形マーカーを生成する関数
-  
+    // 画面中央に記号を配置するボタン用
+    window.addShapeAtMapCenter = () => {
+        const centerLatLng = map.getCenter();
+        const shapeType = document.getElementById('select-shape-type').value;
+        saveNewShapeMarkerToFirebase(centerLatLng, shapeType);
+    };
+
+    // Firebaseに新しい記号を保存する
+    function saveNewShapeMarkerToFirebase(latlng, shapeType) {
+        let labelText = '';
+        switch(shapeType) {
+            case 'circle': labelText = '●'; break;
+            case 'triangle': labelText = '▲'; break;
+            case 'square': labelText = '■'; break;
+            case 'diamond': labelText = '◆'; break;
+            case 'star': labelText = '★'; break;
+            case 'boat': labelText = '🚤'; break;
+            case 'buoy': labelText = '🚩'; break;
+        }
+
+        const randomKey = "S_" + Math.floor(Math.random() * 10000);
+        const shapeData = {
+            type: 'shape_marker',
+            shapeType: shapeType,
+            assignedLabel: labelText,
+            color: '#ff3b30',
+            lat: latlng.lat,
+            lng: latlng.lng,
+            ownerId: myId,
+            ts: Date.now()
+        };
+
+        db.ref('objects/' + randomKey).set(shapeData, err => {
+            if (!err) {
+                showToast("📍 記号を配置しました（全員に同期）");
+            } else {
+                alert("配置に失敗しました");
+            }
+        });
+    }
+
+    // アイコンを生成するヘルパー
+    function getShapeIcon(text, col) {
+        if (text === '🚤' || text === '🚩') {
+            return L.divIcon({
+                className: 'custom-shape-marker',
+                html: `<div style="font-size:22px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.8)); text-align:center; line-height:22px;">${text}</div>`,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+        }
+        return L.divIcon({
+            className: 'custom-shape-marker',
+            html: `<div style="font-size:20px; font-weight:bold; color:${col}; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff; text-align:center; line-height:16px;">${text}</div>`,
+            iconSize: [16, 16],
+            iconAnchor: [8, 8]
+        });
+    }
+
+    // 既存のオブジェクト描画ループ（db.ref('objects').on）の中に自動統合されますが、
+    // 独立記号用のクリック・編集・削除ハンドラを定義します
+    function renderShapeMarkerOnMap(key, obj, markerMap) {
+        const marker = L.marker([obj.lat, obj.lng], { 
+            icon: getShapeIcon(obj.assignedLabel || '●', obj.color || '#ff3b30') 
+        }).addTo(map);
+
+        marker.on('click', function(e) {
+            L.DomEvent.stopPropagation(e);
+
+            if (isAdminMode && isShapeDeleteMode) {
+                if (confirm("本当に削除しますか？")) {
+                    db.ref('objects/' + key).remove().then(() => {
+                        showToast("🗑️ 記号を削除しました");
+                    });
+                }
+            } else if (isAdminMode) {
+                let colorOpts = '';
+                COLOR_OPTIONS.forEach(c => {
+                    colorOpts += `<option value="${c.hex}" ${(obj.color || '#ff3b30') === c.hex ? 'selected' : ''}>${c.name}</option>`;
+                });
+
+                const popupContent = `
+                    <div class="popup-form" style="text-align:center;">
+                        <b>◇ 記号の設定変更</b><br>
+                        <input type="text" id="edit_shape_label_${key}" value="${obj.assignedLabel || '●'}" style="width:80px; text-align:center; font-size:14px; margin:6px 0;"><br>
+                        <select id="edit_shape_color_${key}" style="width:100%; margin:4px 0;">${colorOpts}</select>
+                        <button class="btn-save" onclick="updateShapeMarkerFirebase('${key}')">更新</button>
+                    </div>`;
+                
+                marker.bindPopup(popupContent).openPopup();
+            }
+        });
+
+        markerMap[key] = marker;
+    }
+
+    window.updateShapeMarkerFirebase = (key) => {
+        const textElem = document.getElementById(`edit_shape_label_${key}`);
+        const colorElem = document.getElementById(`edit_shape_color_${key}`);
+        if (!textElem || !colorElem) return;
+
+        const newText = textElem.value;
+        const newColor = colorElem.value;
+
+        db.ref('objects/' + key).update({
+            assignedLabel: newText,
+            color: newColor
+        }, err => {
+            if (!err) {
+                map.closePopup();
+                showToast("✨ 記号を更新しました");
+            } else {
+                alert("更新に失敗しました");
+            }
+        });
+    };  
 
 
 
