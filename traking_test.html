@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.4b by Popolo App.com</title>
+    <title>虎キング v5.6.4c by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -580,7 +580,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.4b by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.4c by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -3371,50 +3371,60 @@ map.on('zoomend', () => {
                         alert("登録に失敗しました");
                     }
                 });
-          } else if (cbMode === 'dashed' || cbMode === 'solid') {
-                if (!cbLineStartPoint) {
-                    // 起点の設定（オブジェクトまたは任意の緯度経度）
-                    cbLineStartPoint = { 
-                        lat: lat, 
-                        lng: lng, 
-                        objKey: null, 
-                        label: '任意点' 
-                    };
-                    showTempLineStartMarker(lat, lng);
-                    showToast("起点を設定しました。次の場所をタップしてください");
-                } else {
-                    // ペイロードの組み立て（座標ベースを明示的に保持）
-                    const payload = {
-                        type: cbMode,
-                        endArrow: cbLineEndArrow,
-                        toLat: lat,
-                        toLng: lng,
-                        ts: Date.now()
-                    };
+         } else if (cbMode === 'dashed' || cbMode === 'solid') {
+                // タップされた位置に「任意の点（マーク）」を自動作成してオブジェクトとして登録する
+                const tempKey = "P_" + Math.floor(Math.random() * 100000);
+                const pointData = {
+                    type: 'buoy',
+                    shape: 'triangle',
+                    color: '#ff3b30',
+                    lat: lat,
+                    lng: lng,
+                    comment: '線の中継点',
+                    assignedLabel: '',
+                    isTempLinePoint: true, // 独立した線の中継点フラグ
+                    ownerId: myId,
+                    ts: Date.now()
+                };
 
-                    if (cbLineStartPoint.objKey) {
-                        payload.from = cbLineStartPoint.objKey;
+                db.ref('objects/' + tempKey).set(pointData, err => {
+                    if (err) return;
+
+                    if (!cbLineStartPoint) {
+                        // 1点目を記憶（作成したオブジェクトのキーを保持）
+                        cbLineStartPoint = { 
+                            objKey: tempKey, 
+                            lat: lat, 
+                            lng: lng 
+                        };
+                        showTempLineStartMarker(lat, lng);
+                        showToast("起点を設定しました。次の場所をタップしてください");
                     } else {
-                        payload.fromLat = cbLineStartPoint.lat;
-                        payload.fromLng = cbLineStartPoint.lng;
+                        // 2点目が決まったので、ブイ間と同じようにオブジェクトキー同士（from と to）で線を結ぶ
+                        const payload = {
+                            from: cbLineStartPoint.objKey,
+                            to: tempKey,
+                            type: cbMode,
+                            endArrow: cbLineEndArrow,
+                            ts: Date.now()
+                        };
+
+                        db.ref('custom_lines').push(payload, err2 => {
+                            if (!err2) {
+                                showToast("線を引きました（続けて次の場所をタップ可）");
+                                triggerCustomLinesRedraw();
+                            }
+                        });
+
+                        // 連続描画のために次の起点を更新
+                        cbLineStartPoint = { 
+                            objKey: tempKey, 
+                            lat: lat, 
+                            lng: lng 
+                        };
+                        showTempLineStartMarker(lat, lng);
                     }
-
-                    db.ref('custom_lines').push(payload, err => {
-                        if (!err) {
-                            showToast("線を引きました（続けて次の場所をタップ可）");
-                            triggerCustomLinesRedraw();
-                        }
-                    });
-
-                    // 連続描画のために次の起点を更新
-                    cbLineStartPoint = { 
-                        lat: lat, 
-                        lng: lng, 
-                        objKey: null, 
-                        label: '任意点' 
-                    };
-                    showTempLineStartMarker(lat, lng);
-                }
+                });
             }
             return;
         }
