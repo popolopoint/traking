@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.3e by Popolo App.com</title>
+    <title>虎キング v5.6.3f by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -573,7 +573,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.3e by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.3f by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -3878,40 +3878,42 @@ window.addEventListener('load', () => {
 
 
 function createIndependentShapeMarker(latlng, shapeType) {
-        let labelText = '';
-        switch(shapeType) {
-            case 'circle': labelText = '●'; break; // 塗りつぶし丸
-            case 'triangle': labelText = '▲'; break; // 塗りつぶし三角
-            case 'square': labelText = '■'; break; // 塗りつぶし四角
-            case 'diamond': labelText = '◆'; break; // 塗りつぶしひし形
-            case 'star': labelText = '★'; break; // 塗りつぶし星
-            case 'boat': labelText = '🚤'; break;
-            case 'buoy': labelText = '🚩'; break;
-        }
+    let labelText = '';
+    switch(shapeType) {
+        case 'circle': labelText = '●'; break;
+        case 'triangle': labelText = '▲'; break;
+        case 'square': labelText = '■'; break;
+        case 'diamond': labelText = '◆'; break;
+        case 'star': labelText = '★'; break;
+        case 'boat': labelText = '🚤'; break;
+        case 'buoy': labelText = '🚩'; break;
+    }
 
-        let markerColor = '#ff3b30';
-        let currentLabel = labelText;
+    let markerColor = '#ff3b30';
+    let currentLabel = labelText;
 
-        const getIcon = (text, col) => {
-            if (text === '🚤' || text === '🚩') {
-                return L.divIcon({
-                    className: 'custom-shape-marker',
-                    html: `<div style="font-size:22px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.8)); text-align:center; line-height:22px;">${text}</div>`,
-                    iconSize: [24, 24],
-                    iconAnchor: [12, 12]
-                });
-            }
-            // 半分のサイズ（約14px〜16px）にして塗りつぶした図形を描画
+    const getIcon = (text, col) => {
+        if (text === '🚤' || text === '🚩') {
             return L.divIcon({
                 className: 'custom-shape-marker',
-                html: `<div style="font-size:20px; font-weight:bold; color:${col}; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff; text-align:center; line-height:16px;">${text}</div>`,
-                iconSize: [16, 16],
-                iconAnchor: [8, 8]
+                html: `<div style="font-size:22px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.8)); text-align:center; line-height:22px;">${text}</div>`,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
             });
-        };
+        }
+        return L.divIcon({
+            className: 'custom-shape-marker',
+            html: `<div style="font-size:20px; font-weight:bold; color:${col}; text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff; text-align:center; line-height:16px;">${text}</div>`,
+            iconSize: [16, 16],
+            iconAnchor: [8, 8]
+        });
+    };
 
-        const marker = L.marker(latlng, { icon: getIcon(currentLabel, markerColor) }).addTo(map);
+    const marker = L.marker(latlng, { icon: getIcon(currentLabel, markerColor) }).addTo(map);
 
+    // ポップアップを開く処理を共通関数化
+    const bindClickEvent = () => {
+        marker.off('click'); // 既存のイベントを一度クリアして重複を防ぐ
         marker.on('click', function(e) {
             L.DomEvent.stopPropagation(e);
 
@@ -3937,27 +3939,36 @@ function createIndependentShapeMarker(latlng, shapeType) {
                 marker.bindPopup(popupContent).openPopup();
             }
         });
+    };
 
-        window._activeShapeMarkers = window._activeShapeMarkers || {};
-        window._activeShapeMarkers[marker._leaflet_id] = {
-            marker: marker,
-            update: (newText, newColor) => {
-                currentLabel = newText;
-                markerColor = newColor;
-                marker.setIcon(getIcon(currentLabel, markerColor));
-                marker.closePopup();
-                showToast("✨ 記号を更新しました");
-            }
-        };
-    }
+    bindClickEvent();
 
-    window.updateShapeMarker = (id) => {
-        const text = document.getElementById('edit_shape_label').value;
-        const color = document.getElementById('edit_shape_color').value;
-        if (window._activeShapeMarkers && window._activeShapeMarkers[id]) {
-            window._activeShapeMarkers[id].update(text, color);
+    window._activeShapeMarkers = window._activeShapeMarkers || {};
+    window._activeShapeMarkers[marker._leaflet_id] = {
+        marker: marker,
+        update: (newText, newColor) => {
+            currentLabel = newText;
+            markerColor = newColor;
+            marker.setIcon(getIcon(currentLabel, markerColor));
+            marker.closePopup();
+            bindClickEvent(); // 更新後にもう一度イベントを再バインドして2回目以降も開けるようにする
+            showToast("✨ 記号を更新しました");
         }
     };
+}
+
+window.updateShapeMarker = (id) => {
+    const textElem = document.getElementById('edit_shape_label');
+    const colorElem = document.getElementById('edit_shape_color');
+    if (!textElem || !colorElem) return;
+
+    const text = textElem.value;
+    const color = colorElem.value;
+
+    if (window._activeShapeMarkers && window._activeShapeMarkers[id]) {
+        window._activeShapeMarkers[id].update(text, color);
+    }
+};
     // --- 【ここまで】 ---
     
 </script>
