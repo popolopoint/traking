@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.3g by Popolo App.com</title>
+    <title>虎キング v5.6.3h by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -573,7 +573,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.3g by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.3h by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -2904,8 +2904,15 @@ if (card) {
 
         const sortedKeys = Object.keys(objects).sort((a, b) => (objects[a].ts || 0) - (objects[b].ts || 0));
 
-        sortedKeys.forEach((key) => {
+      sortedKeys.forEach((key) => {
             let obj = objects[key];
+
+            // ★独立記号・図形の場合は専用描画を呼び出してスキップ
+            if (obj.type === 'shape_marker') {
+                renderShapeMarkerOnMap(key, obj, objectMarkers);
+                return;
+            }
+
             let letter = obj.assignedLabel;
             if (letter === undefined) {
                 letter = (obj.type === 'ship') ? 'フネ' : 'ブイ';
@@ -3941,6 +3948,7 @@ window.addEventListener('load', () => {
 
         marker.on('click', function(e) {
             L.DomEvent.stopPropagation(e);
+            L.DomEvent.preventDefault(e);
 
             if (isAdminMode && isShapeDeleteMode) {
                 if (confirm("本当に削除しますか？")) {
@@ -3962,7 +3970,10 @@ window.addEventListener('load', () => {
                         <button class="btn-save" onclick="updateShapeMarkerFirebase('${key}')">更新</button>
                     </div>`;
                 
-                marker.bindPopup(popupContent).openPopup();
+                L.popup()
+                    .setLatLng(marker.getLatLng())
+                    .setContent(popupContent)
+                    .openOn(map);
             }
         });
 
