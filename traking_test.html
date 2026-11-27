@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.4e by Popolo App.com</title>
+    <title>虎キング v5.6.5 by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -580,7 +580,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.4e by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.5 by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -2934,6 +2934,30 @@ if (card) {
                 return;
             }
 
+// ★白くて小さい点（中継点）の描画処理
+            if (obj.shape === 'dot' || obj.isTempLinePoint) {
+                const dotIcon = L.divIcon({
+                    className: 'line-dot-marker',
+                    html: '<div style="width: 8px; height: 8px; background: #ffffff; border: 1.5px solid #333333; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.3);"></div>',
+                    iconSize: [8, 8],
+                    iconAnchor: [4, 4]
+                });
+                const dotMarker = L.marker([obj.lat, obj.lng], { icon: dotIcon }).addTo(map);
+                
+                // タップして線結びの起点にできるようにする
+                dotMarker.on('click', (e) => {
+                    if (isCourseBuilderActive) {
+                        handleCourseBuilderClick(key, obj, '');
+                        L.DomEvent.stopPropagation(e);
+                        L.DomEvent.preventDefault(e);
+                    }
+                });
+
+                objectMarkers[key] = dotMarker;
+                return; // 通常のブイ処理を通さずにスキップ
+            }
+
+          
             let letter = obj.assignedLabel;
             if (letter === undefined) {
                 letter = (obj.type === 'ship') ? 'フネ' : 'ブイ';
@@ -3371,49 +3395,49 @@ map.on('zoomend', () => {
                         alert("登録に失敗しました");
                     }
                 });
-        } else if (cbMode === 'dashed' || cbMode === 'solid') {
-                const tempKey = "P_" + Math.floor(Math.random() * 100000);
-                const pointData = {
-                    type: 'buoy',
-                    shape: 'dot', // 白い小さな点用の形状指定
-                    color: '#ffffff',
-                    lat: lat,
-                    lng: lng,
-                    comment: '',
-                    assignedLabel: '',
-                    isTempLinePoint: true,
-                    ownerId: myId,
-                    ts: Date.now()
-                };
+       } else if (cbMode === 'dashed' || cbMode === 'solid') {
+            const tempKey = "P_" + Math.floor(Math.random() * 100000);
+            const pointData = {
+                type: 'buoy',
+                shape: 'dot', // 白い小さな点用の指定
+                color: '#ffffff',
+                lat: lat,
+                lng: lng,
+                comment: '',
+                assignedLabel: '', // 名前を一切つけない
+                isTempLinePoint: true,
+                ownerId: myId,
+                ts: Date.now()
+            };
 
-                db.ref('objects/' + tempKey).set(pointData, err => {
-                    if (err) return;
+            db.ref('objects/' + tempKey).set(pointData, err => {
+                if (err) return;
 
-                    if (!cbLineStartPoint) {
-                        cbLineStartPoint = { objKey: tempKey, lat: lat, lng: lng };
-                        showTempLineStartMarker(lat, lng);
-                        showToast("起点を設定しました。次の場所をタップしてください");
-                    } else {
-                        const payload = {
-                            from: cbLineStartPoint.objKey,
-                            to: tempKey,
-                            type: cbMode,
-                            endArrow: cbLineEndArrow,
-                            ts: Date.now()
-                        };
+                if (!cbLineStartPoint) {
+                    cbLineStartPoint = { objKey: tempKey, lat: lat, lng: lng };
+                    showTempLineStartMarker(lat, lng);
+                    showToast("起点を設定しました。次の場所をタップしてください");
+                } else {
+                    const payload = {
+                        from: cbLineStartPoint.objKey,
+                        to: tempKey,
+                        type: cbMode,
+                        endArrow: cbLineEndArrow,
+                        ts: Date.now()
+                    };
 
-                        db.ref('custom_lines').push(payload, err2 => {
-                            if (!err2) {
-                                showToast("線を引きました（続けて次の場所をタップ可）");
-                                triggerCustomLinesRedraw();
-                            }
-                        });
+                    db.ref('custom_lines').push(payload, err2 => {
+                        if (!err2) {
+                            showToast("線を引きました（続けて次の場所をタップ可）");
+                            triggerCustomLinesRedraw();
+                        }
+                    });
 
-                        cbLineStartPoint = { objKey: tempKey, lat: lat, lng: lng };
-                        showTempLineStartMarker(lat, lng);
-                    }
-                });
-            }
+                    cbLineStartPoint = { objKey: tempKey, lat: lat, lng: lng };
+                    showTempLineStartMarker(lat, lng);
+                }
+            });
+        }
             return;
         }
 
