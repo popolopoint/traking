@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.5i by Popolo App.com</title>
+    <title>虎キング v5.6.5j by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -580,7 +580,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.5i by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.5j by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1090,77 +1090,32 @@ window.saveCurrentCourseLayout = () => {
         const courseKeys = new Set();
 
         Object.keys(objects).forEach(key => {
-            if (isCourseLayoutObject(key, objects[key])) {
-            
-
+            const obj = objects[key];
+            // コース関連のオブジェクト（フネ・ブイ・中継点など）を全て対象にする
+            if (obj && (obj.type === 'ship' || obj.type === 'buoy' || obj.courseLayoutObject || obj.isTempLinePoint || obj.shape === 'dot')) {
                 courseObjects[key] = {
-                    ...objects[key],
+                    ...obj,
                     courseLayoutObject: true
                 };
-
-                // 設定画面に入力されている最新の名前を取得
-                const card = document.querySelector(
-                    `.point-card[data-key="${key}"]`
-                );
-                const labelInput = card
-                    ? card.querySelector('.label-input')
-                    : null;
-
-                if (labelInput) {
-                    courseObjects[key].assignedLabel = labelInput.value;
-                }
-
                 courseKeys.add(key);
             }
         });
 
-        if (courseKeys.size === 0) {
-            alert('保存できるフネ・ブイがありません');
-            return;
-        }
-
+        // custom_lines（線データ）を丸ごと取得して一緒に保存する
         db.ref('custom_lines').once('value', lineSnap => {
             const allLines = lineSnap.val() || {};
-            const courseLines = {};
-
-            Object.keys(allLines).forEach(lineId => {
-                const line = allLines[lineId];
-
-                if (line &&
-                    courseKeys.has(line.from) &&
-                    courseKeys.has(line.to)) {
-                    courseLines[lineId] = line;
-                }
-            });
 
             db.ref('course_layouts').push({
                 name: name.trim(),
                 objects: courseObjects,
-                lines: courseLines,
+                lines: allLines, // ★ここで自由な線も含めて丸ごと保存！
                 createdAt: Date.now()
             }, err => {
-              
                 if (err) {
-    console.error("コース保存エラー:", err);
-    alert(
-        'コースの保存に失敗しました。\n' +
-        'エラーコード：' + (err.code || '不明') + '\n' +
-        '詳細：' + (err.message || '不明')
-    );
-    return;
-}
-
-                // 旧形式のコース点にも判定用フラグを付ける
-                const updates = {};
-                courseKeys.forEach(key => {
-                    updates[key + '/courseLayoutObject'] = true;
-                });
-
-                if (Object.keys(updates).length > 0) {
-                    db.ref('objects').update(updates);
+                    alert('コースの保存に失敗しました: ' + err.message);
+                    return;
                 }
-
-                showToast('💾「' + name.trim() + '」を保存しました');
+                showToast('💾「' + name.trim() + '」を保存しました（線データ含む）');
             });
         });
     });
@@ -1181,7 +1136,6 @@ window.startNewCourseLayout = () => {
         const objects = objSnap.val() || {};
         const updates = {};
 
-        // フネ、ブイ、コース用オブジェクト、中継点（白丸など）をすべて削除対象にする
         Object.keys(objects).forEach(key => {
             const obj = objects[key];
             if (obj && (
@@ -1195,7 +1149,6 @@ window.startNewCourseLayout = () => {
             }
         });
 
-        // カスタム線（custom_lines）をすべて削除
         db.ref('custom_lines').remove().then(() => {
             db.ref().update(updates, err => {
                 if (err) {
@@ -1204,8 +1157,8 @@ window.startNewCourseLayout = () => {
                 }
 
                 cbSelectedFirstObj = null;
-                resetLineChain(); // 連続描画の起点もリセット
-                customLinesGroup.clearLayers(); // マップ上の線も即座に消去
+                resetLineChain();
+                customLinesGroup.clearLayers();
                 showToast('＋ 新しいコースを作成しました');
             });
         });
@@ -1328,87 +1281,58 @@ function loadCourseLayout(layout) {
     const savedObjects = layout.objects || {};
     const savedLines = layout.lines || {};
 
-    if (Object.keys(savedObjects).length === 0) {
-        alert('このコースには読み込めるポイントがありません');
-        return;
-    }
-
     if (!confirm(
-        '現在のコース用フネ・ブイと線を入れ替えて、\n' +
+        '現在のコース用フネ・ブイ・線を入れ替えて、\n' +
         '「' + (layout.name || '保存コース') + '」を読み込みますか？'
     )) return;
 
     db.ref('objects').once('value', objSnap => {
         const currentObjects = objSnap.val() || {};
-        const currentCourseKeys = new Set();
+        const updates = {};
+        const keyMap = {};
+        const boundsPoints = [];
 
+        // 1. 既存のコース関連オブジェクトや中継点をクリア
         Object.keys(currentObjects).forEach(key => {
-            if (isCourseLayoutObject(key, currentObjects[key])) {
-                currentCourseKeys.add(key);
+            const obj = currentObjects[key];
+            if (obj && (obj.type === 'ship' || obj.type === 'buoy' || obj.courseLayoutObject || obj.isTempLinePoint || obj.shape === 'dot')) {
+                updates['objects/' + key] = null;
             }
         });
 
-        db.ref('custom_lines').once('value', lineSnap => {
-            const currentLines = lineSnap.val() || {};
-            const updates = {};
-            const keyMap = {};
-            const boundsPoints = [];
+        // 2. 保存データのオブジェクトを復元
+        Object.keys(savedObjects).forEach(oldKey => {
+            const obj = savedObjects[oldKey];
+            if (!obj) return;
 
-            // 現在のコースに関係する線を削除
-            Object.keys(currentLines).forEach(lineId => {
-                const line = currentLines[lineId];
+            const newKey = db.ref('objects').push().key;
+            keyMap[oldKey] = newKey;
 
-                if (line &&
-                    (currentCourseKeys.has(line.from) ||
-                     currentCourseKeys.has(line.to))) {
-                    updates['custom_lines/' + lineId] = null;
-                }
-            });
+            updates['objects/' + newKey] = { ...obj };
 
-            // 現在のコース用ポイントを削除
-            currentCourseKeys.forEach(key => {
-                updates['objects/' + key] = null;
-            });
+            if (obj.lat && obj.lng) {
+                boundsPoints.push([Number(obj.lat), Number(obj.lng)]);
+            }
+        });
 
-            // 保存データのポイントを新しいキーで復元
-            Object.keys(savedObjects).forEach(oldKey => {
-                const obj = savedObjects[oldKey];
-                if (!obj) return;
-
-                const newKey = db.ref('objects').push().key;
-                keyMap[oldKey] = newKey;
-
-                updates['objects/' + newKey] = {
-                    ...obj,
-                    courseLayoutObject: true
-                };
-
-                boundsPoints.push([
-                    Number(obj.lat),
-                    Number(obj.lng)
-                ]);
-            });
-
-            // 保存していた線を復元
+        // 3. 保存されていたカスタム線をクリアして復元
+        db.ref('custom_lines').remove().then(() => {
+            const lineUpdates = {};
             Object.keys(savedLines).forEach(lineId => {
                 const line = savedLines[lineId];
                 if (!line) return;
 
-                const fromKey = keyMap[line.from];
-                const toKey = keyMap[line.to];
-
-                if (!fromKey || !toKey) return;
-
                 const newLineKey = db.ref('custom_lines').push().key;
+                const newClearlyLine = { ...line };
 
-                updates['custom_lines/' + newLineKey] = {
-                    from: fromKey,
-                    to: toKey,
-                    type: line.type,
-                    ts: line.ts || Date.now()
-                };
+                // 結び先のキーが変わる場合は新しいキーに付け替える
+                if (line.from && keyMap[line.from]) newClearlyLine.from = keyMap[line.from];
+                if (line.to && keyMap[line.to]) newClearlyLine.to = keyMap[line.to];
+
+                lineUpdates[newLineKey] = newClearlyLine;
             });
 
+            db.ref('custom_lines').set(lineUpdates);
             db.ref().update(updates, err => {
                 if (err) {
                     alert('コースの読み込みに失敗しました');
@@ -1418,27 +1342,18 @@ function loadCourseLayout(layout) {
                 cbSelectedFirstObj = null;
                 window.renumberCourseObjects();
 
-                // 読み込んだコース全体が見えるようにする
-                // 地図のサイズを再認識してからコース全体を表示
-setTimeout(() => {
-    map.invalidateSize(true);
+                setTimeout(() => {
+                    map.invalidateSize(true);
+                    if (boundsPoints.length > 0) {
+                        map.fitBounds(L.latLngBounds(boundsPoints), { padding: [30, 30] });
+                    }
+                }, 300);
 
-    if (boundsPoints.length > 0) {
-        map.fitBounds(
-            L.latLngBounds(boundsPoints),
-            { padding: [30, 30] }
-        );
-    }
-}, 300);
-
-                showToast(
-                    '📂「' + (layout.name || '保存コース') +
-                    '」を読み込みました'
-                );
+                showToast('📂「' + (layout.name || '保存コース') + '」を読み込みました');
             });
         });
     });
-};
+}
 
     
     window.promptCourseCreate = () => {
