@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.5g by Popolo App.com</title>
+    <title>虎キング v5.6.5h by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -580,7 +580,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.5g by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.5h by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -4175,14 +4175,15 @@ function getShapeIcon(text, col, nameLabel) {
                     colorOpts += `<option value="${c.hex}" ${(obj.color || '#ff3b30') === c.hex ? 'selected' : ''}>${c.name}</option>`;
                 });
 
-                const popupContent = `
-                    <div class="popup-form" style="text-align:center;">
-                        <b>◇ 記号の設定変更</b><br>
-                        <input type="text" id="edit_shape_label_${key}" value="${obj.assignedLabel || '●'}" style="width:80px; text-align:center; font-size:14px; margin:4px 0;" placeholder="記号"><br>
-                        <input type="text" id="edit_shape_name_${key}" value="${obj.shapeName || ''}" style="width:120px; text-align:center; font-size:13px; margin:4px 0;" placeholder="名称（例: スタート）"><br>
-                        <select id="edit_shape_color_${key}" style="width:100%; margin:4px 0;">${colorOpts}</select>
-                        <button class="btn-save" onclick="updateShapeMarkerFirebase('${key}')">更新</button>
-                    </div>`;
+               const popupContent = `
+    <div class="popup-form" style="text-align:center;">
+        <b>◇ 記号の設定変更</b><br>
+        <input type="text" id="edit_shape_label_${key}" value="${obj.assignedLabel || '●'}" style="width:80px; text-align:center; font-size:14px; margin:4px 0;" placeholder="記号"><br>
+        <input type="text" id="edit_shape_name_${key}" value="${obj.shapeName || ''}" style="width:120px; text-align:center; font-size:13px; margin:4px 0;" placeholder="名称（例: スタート）"><br>
+        <select id="edit_shape_color_${key}" style="width:100%; margin:4px 0;">${colorOpts}</select>
+        <button class="btn-save" onclick="updateShapeMarkerFirebase('${key}')">更新</button>
+        <button class="btn-del" onclick="deleteShapeMarkerFirebase('${key}')" style="margin-top:6px; background:#e74c3c; color:white; border:none; width:100%; padding:6px; border-radius:4px; font-weight:bold; cursor:pointer;">🗑️ 削除</button>
+    </div>`;
                 
                 L.popup()
                     .setLatLng(marker.getLatLng())
@@ -4218,6 +4219,18 @@ function getShapeIcon(text, col, nameLabel) {
         });
     };
 
+
+
+window.deleteShapeMarkerFirebase = (key) => {
+    if (confirm("この記号を削除しますか？")) {
+        db.ref('objects/' + key).remove().then(() => {
+            map.closePopup();
+            showToast("🗑️ 記号を削除しました");
+        }).catch(err => {
+            alert("削除に失敗しました: " + err.message);
+        });
+    }
+};
 
 
 function createIndependentShapeMarker(latlng, shapeType) {
