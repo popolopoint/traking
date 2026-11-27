@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.4 by Popolo App.com</title>
+    <title>虎キング v5.6.4a by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -580,7 +580,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.4 by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.4a by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -2975,6 +2975,7 @@ if (card) {
                     const l = lines[lineId];
                     let p1 = null, p2 = null, fromLet = '任意点', toLet = '任意点';
 
+                    // 起点の判定（オブジェクトキー または 緯度経度）
                     if (l.fromLat !== undefined && l.fromLng !== undefined) {
                         p1 = [Number(l.fromLat), Number(l.fromLng)];
                     } else if (l.from && objs[l.from]) {
@@ -2982,6 +2983,7 @@ if (card) {
                         fromLet = objs[l.from].assignedLabel !== undefined ? objs[l.from].assignedLabel : 'A';
                     }
 
+                    // 終点の判定（オブジェクトキー または 緯度経度）
                     if (l.toLat !== undefined && l.toLng !== undefined) {
                         p2 = [Number(l.toLat), Number(l.toLng)];
                     } else if (l.to && objs[l.to]) {
@@ -2989,6 +2991,7 @@ if (card) {
                         toLet = objs[l.to].assignedLabel !== undefined ? objs[l.to].assignedLabel : 'B';
                     }
 
+                    // どちらの点も座標が正常に取得できた場合のみ描画する
                     if (p1 && p2) {
                         const endStr = l.endArrow ? '（矢印）' : '';
                         const popupHtml = `<b>${l.type === 'dashed' ? '点線' : '実線'}${endStr} (${fromLet} - ${toLet})</b><br><button class="btn-del" onclick="deleteCustomLine('${lineId}')">削除</button>`;
@@ -3008,8 +3011,8 @@ if (card) {
                             arrowMarker.bindPopup(popupHtml);
                             customLinesGroup.addLayer(arrowMarker);
                         }
-                    } else if (l.from && l.to) {
-                        // オブジェクト接続線なのに片方のオブジェクトが消えている場合のみ削除
+                    } else if (l.from && l.to && (!objs[l.from] || !objs[l.to])) {
+                        // 両端がオブジェクト指定だったが、そのオブジェクトが削除されている場合のみ線を削除
                         db.ref('custom_lines/' + lineId).remove();
                     }
                 }
