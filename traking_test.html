@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
-    <title>虎キング v5.6.5h by Popolo App.com</title>
+    <title>虎キング v5.6.5i by Popolo App.com</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
    
     
@@ -580,7 +580,7 @@
 
 <button id="header-expand-btn" onclick="toggleHeaderMinimize()">▼ メニュー表示</button>
 
-<div id="map-watermark">虎キング v5.6.5h by Popolo App.com</div>
+<div id="map-watermark">虎キング v5.6.5i by Popolo App.com</div>
 
 <div id="user-list">
     <div class="list-title" id="user-list-title" onclick="toggleSpeedUnit()" title="タップして単位切替">参加者 (km/h)</div>
@@ -1172,46 +1172,31 @@ window.saveCurrentCourseLayout = () => {
 // ------------------------------------------
 window.startNewCourseLayout = () => {
     if (!confirm(
-        '現在のコース用フネ・ブイと、それらを結ぶ線を削除します。\n' +
+        '現在のコース用フネ・ブイ、点線・実線、および中継点をすべて削除します。\n' +
         '参加者のGPS位置とヒート記録は削除されません。\n\n' +
         '新しいコースを作成しますか？'
     )) return;
 
     db.ref('objects').once('value', objSnap => {
         const objects = objSnap.val() || {};
-        const courseKeys = new Set();
+        const updates = {};
 
+        // フネ、ブイ、コース用オブジェクト、中継点（白丸など）をすべて削除対象にする
         Object.keys(objects).forEach(key => {
-            if (isCourseLayoutObject(key, objects[key])) {
-                courseKeys.add(key);
+            const obj = objects[key];
+            if (obj && (
+                obj.type === 'ship' || 
+                obj.type === 'buoy' || 
+                obj.courseLayoutObject || 
+                obj.isTempLinePoint ||
+                obj.shape === 'dot'
+            )) {
+                updates['objects/' + key] = null;
             }
         });
 
-        db.ref('custom_lines').once('value', lineSnap => {
-            const lines = lineSnap.val() || {};
-            const updates = {};
-
-            // コース点に接続している線だけ削除
-            Object.keys(lines).forEach(lineId => {
-                const line = lines[lineId];
-
-                if (line &&
-                    (courseKeys.has(line.from) ||
-                     courseKeys.has(line.to))) {
-                    updates['custom_lines/' + lineId] = null;
-                }
-            });
-
-            // コース用のフネ・ブイだけ削除
-            courseKeys.forEach(key => {
-                updates['objects/' + key] = null;
-            });
-
-            if (Object.keys(updates).length === 0) {
-                showToast('新しいコースを作成できます');
-                return;
-            }
-
+        // カスタム線（custom_lines）をすべて削除
+        db.ref('custom_lines').remove().then(() => {
             db.ref().update(updates, err => {
                 if (err) {
                     alert('新規コースの準備に失敗しました');
@@ -1219,7 +1204,9 @@ window.startNewCourseLayout = () => {
                 }
 
                 cbSelectedFirstObj = null;
-                showToast('＋ 新しいコースを作成できます');
+                resetLineChain(); // 連続描画の起点もリセット
+                customLinesGroup.clearLayers(); // マップ上の線も即座に消去
+                showToast('＋ 新しいコースを作成しました');
             });
         });
     });
